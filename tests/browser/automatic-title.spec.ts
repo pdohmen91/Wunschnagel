@@ -16,6 +16,28 @@ test('automatically loads title and image from a pasted link and saves the wish'
   await expect(page.getByRole('article').filter({ hasText: 'Automatisch geladener Produkttitel' })).toBeVisible()
 })
 
+test('editing a saved wish without an image retries the preview and preserves its title', async ({ page }) => {
+  let calls = 0
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: 'Titel aus dem Shop', image_url: ++calls === 1 ? '' : 'https://www.thalia.de/recovered.png', description: '' } }))
+  await page.route('https://www.thalia.de/recovered.png', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="orange"/></svg>' }))
+  await page.getByRole('textbox', { name: 'Link zum Wunsch' }).fill('https://www.thalia.de/produkt')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('kein verwendbares Bild')
+  await page.getByRole('textbox', { name: 'Dein Wunsch', exact: true }).fill('Mein persönlicher Wunschtitel')
+  await page.getByRole('button', { name: 'Wunsch speichern' }).click()
+  const card = page.getByRole('article').filter({ hasText: 'Mein persönlicher Wunschtitel' })
+  await card.locator('summary').click()
+  await card.getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+  const image = page.getByRole('img', { name: 'Bildvorschau zum Wunsch', exact: true })
+  await expect(image).toBeVisible()
+  await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Mein persönlicher Wunschtitel')
+  await page.getByRole('button', { name: 'Wunsch speichern' }).click()
+  await expect(card.getByRole('img', { name: 'Mein persönlicher Wunschtitel', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(card.getByRole('img', { name: 'Mein persönlicher Wunschtitel', exact: true })).toBeVisible()
+  expect(calls).toBe(2)
+})
+
 test('keeps a manually entered title and leaves other fields editable while loading', async ({ page }) => {
   let release!: () => void
   const pending = new Promise<void>(resolve => { release = resolve })
@@ -28,7 +50,7 @@ test('keeps a manually entered title and leaves other fields editable while load
   await page.getByRole('textbox', { name: 'Dein Wunsch', exact: true }).fill('Mein eigener Titel')
   await page.getByRole('textbox', { name: 'Notizen & Hinweise' }).fill('Während des Abrufs bearbeitet')
   release()
-  await expect(page.getByRole('dialog').getByRole('status')).toContainText('Shop-Daten geladen')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('Titel geladen')
   await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Mein eigener Titel')
   await expect(page.getByRole('textbox', { name: 'Notizen & Hinweise' })).toHaveValue('Während des Abrufs bearbeitet')
 })

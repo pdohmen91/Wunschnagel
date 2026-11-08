@@ -21,3 +21,25 @@ test('metadata handles attribute order, relative images, entities and fallback t
   assert.equal(metadata('<meta property="og:image" content="javascript:alert(1)">', 'https://shop.de/').image_url, '')
   assert.equal(metadata('<meta property="og:image" content="https://127.0.0.1/track">', 'https://shop.de/').image_url, '')
 })
+
+test('finds Amazon product images in the body rather than unrelated page images', () => {
+  const html = '<head><title>Eine Kanne</title></head><body><img src="https://images.shop.de/logo.png"><img data-old-hires="https://m.media-amazon.com/images/I/product.jpg" id="landingImage" src="https://m.media-amazon.com/images/I/small.jpg"></body>'
+  assert.equal(metadata(html, 'https://www.amazon.de/dp/EXAMPLE').image_url, 'https://m.media-amazon.com/images/I/product.jpg')
+  assert.equal(metadata(html, 'https://www.thalia.de/produkt').image_url, '')
+  assert.equal(metadata('<img id="imgBlkFront" src="https://m.media-amazon.com/images/I/book.jpg">', 'https://www.amazon.de/dp/EXAMPLE').image_url, 'https://m.media-amazon.com/images/I/book.jpg')
+})
+
+test('reads Product and ProductGroup images from nested JSON-LD safely', () => {
+  const html = `<script type="application/ld+json">${JSON.stringify({ '@graph': [{ '@type': 'Organization', image: 'https://images.shop.de/logo.png' }, { '@type': ['Thing', 'Product'], name: 'Mein Produkt', description: 'Eine Idee', image: [{ '@type': 'ImageObject', contentUrl: '/product.jpg' }] }] })}</script>`
+  assert.deepEqual(metadata(html, 'https://shop.de/item'), { title: 'Mein Produkt', description: 'Eine Idee', image_url: 'https://shop.de/product.jpg' })
+  assert.equal(metadata('<script type="application/ld+json">{"@type":"https://schema.org/ProductGroup","image":["javascript:alert(1)","https://127.0.0.1/internal","/safe.jpg"]}</script>', 'https://shop.de/').image_url, 'https://shop.de/safe.jpg')
+  assert.doesNotThrow(() => metadata('<script type="application/ld+json">invalid</script><script type="application/ld+json">null</script>', 'https://shop.de/'))
+})
+
+test('supports image_src and microdata, skipping unusable Open Graph images', () => {
+  assert.equal(metadata('<meta property="og:image:secure_url" content="javascript:alert(1)"><meta property="og:image" content="/real.jpg">', 'https://shop.de/').image_url, 'https://shop.de/real.jpg')
+  assert.equal(metadata('<link rel="image_src" href="/preview.jpg">', 'https://shop.de/item').image_url, 'https://shop.de/preview.jpg')
+  assert.equal(metadata('<meta itemprop="image" content="/product.jpg">', 'https://shop.de/').image_url, 'https://shop.de/product.jpg')
+  assert.equal(metadata('<img itemprop="image" data-src="/lazy.jpg">', 'https://shop.de/').image_url, 'https://shop.de/lazy.jpg')
+  assert.equal(metadata('<img itemprop="image" src="data:image/svg+xml,invalid"><img src="/logo.jpg">', 'https://shop.de/').image_url, '')
+})

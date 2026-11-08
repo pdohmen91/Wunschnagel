@@ -57,20 +57,80 @@ function decode(value: string): string {
   }).trim()
 }
 
+function attributes(tag: string): Map<string, string> {
+  const result = new Map<string, string>()
+  for (const attr of tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) result.set(attr[1].toLowerCase(), decode(attr[2] ?? attr[3] ?? attr[4] ?? ''))
+  return result
+}
+
+function imageUrl(value: unknown, base: string): string {
+  if (typeof value !== 'string' || !value.trim()) return ''
+  try { return destination(new URL(value, base).href).href } catch { return '' }
+}
+
+function structuredProducts(html: string): Record<string, unknown>[] {
+  const products: Record<string, unknown>[] = []
+  let visited = 0
+  const visit = (value: unknown, depth: number) => {
+    if (depth > 12 || ++visited > 2000 || !value || typeof value !== 'object') return
+    if (Array.isArray(value)) { for (const entry of value) visit(entry, depth + 1); return }
+    const node = value as Record<string, unknown>
+    const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']]
+    if (types.some(type => typeof type === 'string' && /(?:^|[/#])Product(?:Group)?$/.test(type))) products.push(node)
+    for (const entry of Object.values(node)) visit(entry, depth + 1)
+  }
+  for (const match of html.matchAll(/<script\b([^>]{0,8000})>([\s\S]*?)<\/script\s*>/gi)) {
+    if (attributes(match[1]).get('type')?.toLowerCase() !== 'application/ld+json') continue
+    try { visit(JSON.parse(match[2]), 0) } catch { /* Ignore malformed or incomplete structured data. */ }
+  }
+  return products
+}
+
+function structuredImage(value: unknown, base: string, depth = 0): string {
+  if (depth > 4) return ''
+  if (typeof value === 'string') return imageUrl(value, base)
+  if (Array.isArray(value)) {
+    for (const entry of value) { const image = structuredImage(entry, base, depth + 1); if (image) return image }
+  } else if (value && typeof value === 'object') {
+    const object = value as Record<string, unknown>
+    return imageUrl(object.contentUrl, base) || imageUrl(object.url, base)
+  }
+  return ''
+}
+
 export function metadata(html: string, base: string): { title: string; image_url: string; description: string } {
   const tags = new Map<string, string>()
   for (const match of html.matchAll(/<meta\s+[^>]{0,8000}>/gi)) {
-    const attrs = new Map<string, string>()
-    for (const attr of match[0].matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) attrs.set(attr[1].toLowerCase(), decode(attr[2] ?? attr[3] ?? attr[4] ?? ''))
-    const key = (attrs.get('property') || attrs.get('name'))?.toLowerCase()
-    if (key && attrs.has('content') && !tags.has(key)) tags.set(key, attrs.get('content')!)
+    const attrs = attributes(match[0])
+    const key = (attrs.get('property') || attrs.get('name') || (attrs.get('itemprop')?.split(/\s+/).includes('image') ? 'image' : ''))?.toLowerCase()
+    if (key && attrs.get('content') && !tags.has(key)) tags.set(key, attrs.get('content')!)
   }
-  const rawImage = tags.get('og:image:secure_url') || tags.get('og:image') || tags.get('twitter:image') || ''
   let image = ''
-  try { if (rawImage) image = destination(new URL(rawImage, base).href).href } catch { /* No active/non-HTTPS image URLs. */ }
+  for (const key of ['og:image:secure_url', 'og:image', 'og:image:url', 'twitter:image', 'twitter:image:src', 'image']) {
+    image = imageUrl(tags.get(key), base)
+    if (image) break
+  }
+  const products = structuredProducts(html)
+  if (!image) for (const product of products) { image = structuredImage(product.image, base); if (image) break }
+  if (!image) for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
+    const attrs = attributes(match[0])
+    if (attrs.get('rel')?.toLowerCase().split(/\s+/).includes('image_src')) image = imageUrl(attrs.get('href'), base)
+    if (image) break
+  }
+  if (!image) for (const match of html.matchAll(/<img\b[^>]{0,16000}>/gi)) {
+    const attrs = attributes(match[0])
+    // Use identified product images, never arbitrary logos, banners or tracking pixels.
+    const amazonProduct = ['landingImage', 'imgBlkFront'].includes(attrs.get('id') || '') && /(^|\.)amazon\.[a-z.]+$/.test(new URL(base).hostname)
+    const productImage = attrs.get('itemprop')?.split(/\s+/).includes('image')
+    if (!amazonProduct && !productImage) continue
+    image = imageUrl(attrs.get('data-old-hires'), base) || imageUrl(attrs.get('data-src'), base) || imageUrl(attrs.get('src'), base)
+    if (image) break
+  }
+  const productTitle = products.find(product => typeof product.name === 'string')?.name as string | undefined
+  const productDescription = products.find(product => typeof product.description === 'string')?.description as string | undefined
   return {
-    title: (tags.get('og:title') || tags.get('twitter:title') || decode(html.match(/<title[^>]*>([^<]{0,1000})<\/title>/i)?.[1] || '')).slice(0, 200),
+    title: (tags.get('og:title') || tags.get('twitter:title') || productTitle || decode(html.match(/<title[^>]*>([^<]{0,1000})<\/title>/i)?.[1] || '')).slice(0, 200),
     image_url: image,
-    description: (tags.get('og:description') || tags.get('description') || '').slice(0, 1000),
+    description: (tags.get('og:description') || tags.get('description') || productDescription || '').slice(0, 1000),
   }
 }

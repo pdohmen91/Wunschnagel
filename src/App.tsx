@@ -463,7 +463,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   const [error, setError] = useState('')
   const customTitle = useRef(Boolean(item?.title))
   const customImage = useRef(Boolean(item?.image_url))
-  const preview = useLinkPreview(url, repo, !item || url !== item.url)
+  const preview = useLinkPreview(url, repo, !item || url !== item.url || !item.image_url)
   const previewBusy = preview.status === 'loading'
   const previewImage = image || (preview.url === item?.url ? item.image_url : '')
   const [imageFailed, setImageFailed] = useState(false)

@@ -26,7 +26,7 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
   let url = shopDestination(input, allowedHosts)
   for (let redirect = 0; redirect < 4; redirect++) {
     await checkDns(url)
-    const response = await fetcher(url, { signal, redirect: 'manual', headers: { Accept: 'text/html', 'User-Agent': 'Herzenswuensche-LinkPreview/1.0' } })
+    const response = await fetcher(url, { signal, redirect: 'manual', headers: { Accept: 'text/html', 'User-Agent': 'Wunschnagel-LinkPreview/1.0' } })
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location')
       await response.body?.cancel()
@@ -43,6 +43,8 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
     const decoder = new TextDecoder()
     let bytes = 0
     let html = ''
+    let headRead = false
+    let nextProbe = 65_536
     try {
       while (bytes < 1_048_576) {
         const { done, value } = await reader.read()
@@ -50,7 +52,14 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
         const allowed = value.subarray(0, 1_048_576 - bytes)
         html += decoder.decode(allowed, { stream: true })
         bytes += allowed.length
-        if (/<\/head\s*>/i.test(html)) break
+        const headJustRead = !headRead && /<\/head\s*>/i.test(html)
+        if (headJustRead) headRead = true
+        // Some shops put product images in the body instead of Open Graph tags.
+        // Keep the one-megabyte cap; stop early as soon as an image is available.
+        if (headJustRead || bytes >= nextProbe) {
+          nextProbe = bytes + 65_536
+          if (metadata(html, url.href).image_url) break
+        }
       }
       html += decoder.decode()
     } finally { await reader.cancel() }

@@ -18,7 +18,7 @@ export function useLinkPreview(input: string, repo: Pick<Repository, 'preview'>,
       try {
         const data = await repo.preview(url, controller.signal)
         if (controller.signal.aborted) return
-        setState({ url, data, status: 'done', hint: data.title || data.image_url ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.' })
+        setState({ url, data, status: 'done', hint: data.image_url ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : data.title ? 'Titel geladen. Der Shop liefert kein verwendbares Bild. Du kannst unter „Preis & Bild-Link ergänzen“ eine Bildadresse eintragen.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.' })
       } catch (error) {
         if (!controller.signal.aborted) setState({ url, data: null, status: 'error', hint: error instanceof Error ? error.message : 'Der Titel konnte nicht geladen werden. Bitte gib ihn manuell ein.' })
       }
