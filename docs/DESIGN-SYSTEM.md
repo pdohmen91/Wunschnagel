@@ -58,6 +58,8 @@ Die Gestaltung richtet sich nach der tatsächlich sichtbaren App-Breite. Die Kor
 
 Die Mindestgröße wichtiger Bedienelemente beträgt 44 px. Formulare verwenden mindestens 16 px Schrift in Eingaben, sichtbaren Tastaturfokus, einen Fokusrahmen innerhalb des Dialogs und erreichbare Speichern-/Abbrechen-Aktionen auch bei kurzen Fenstern. Reduzierte Bewegung wird respektiert.
 
+Die Darstellung ist bewusst kompakt: Auf Handys bis 620 px stehen ein 88 × 96 px großes Produktbild und die Wunschangaben nebeneinander. Titel verwenden 17 px, Hinweise 13 px; lange Titel umbrechen vollständig und Hinweise bleiben aufklappbar. „Bearbeiten“ bleibt ausgeschrieben unter dem Bild, das Menü öffnet sich nach oben. Fehlende Notizen oder Preise erzeugen mobil keine Platzhalterzeilen. Die ungefilterte Anzahl wird bereits im Filter angezeigt und beansprucht keine zusätzliche sichtbare Zeile. Zwei vollständige Beispielwünsche müssen bei 390 × 844 px über die untere Aktionsleiste passen. Desktop-Karten verwenden 176 px hohe Bilder und kleinere Abstände. Eingaben und Touchflächen werden nicht proportional mit verkleinert.
+
 ## Überprüfung
 
 Die Umsetzung wurde mit Chrome und WebKit in Desktop- und mobilen Ansichten geprüft. Zur bestehenden Browserprüfung gehören WCAG-Kontrastprüfungen, Tastaturbedienung, Breiten von 320 bis 2560 px, kurze Formulare, lange Inhalte, tatsächliche Sichtbarkeit der Aktionen sowie die reproduzierte Dia-Fensterkonstellation. Zusätzlich werden Übersicht, Leerzustand, Formular und Dia-Ansicht visuell anhand von Screenshots beurteilt.

@@ -44,6 +44,9 @@
 .wish-number { transform-origin: 15% 0; transition: rotate var(--motion-layout) var(--motion-ease), background-color var(--motion-normal); }
 .wish-card:focus-within { border-color: #9b7f92; }
 .card-menu > div { transform-origin: top right; }
+@container app-viewport (max-width: 620px) {
+  .card-menu > div { transform-origin: bottom left; }
+}
 .notes-toggle svg, .optional-fields summary svg { transition: transform var(--motion-normal) var(--motion-ease); }
 .motion-ghost { position: fixed; z-index: 1; pointer-events: none; user-select: none; }
 .motion-ghost > .wish-card { height: 100%; margin: 0; }

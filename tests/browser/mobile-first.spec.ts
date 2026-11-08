@@ -30,6 +30,8 @@ test('primary actions remain reachable while scrolling and leave the last wish u
     await unobstructed(button, 0, 844)
   }
   await expect.poll(async () => (await page.getByRole('article').first().boundingBox())!.y).toBeLessThan(360)
+  const secondWish = await page.getByRole('article').nth(1).boundingBox()
+  expect(secondWish!.y + secondWish!.height, 'two complete wishes should fit above the mobile action bar').toBeLessThanOrEqual((await actions.boundingBox())!.y)
   await page.screenshot({ path: `test-results/${info.project.name}-phone-start.png` })
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight))
   await unobstructed(page.getByRole('article').last().getByRole('link', { name: 'Zum Shop', exact: true }), 0, (await actions.boundingBox())!.y)

@@ -1,20 +1,21 @@
 # Prüfung für überwiegende Handynutzung
 
-Stand: 7. November 2026.
+Stand: 8. November 2026.
 
 ## Änderungen
 
 - Die untere Aktionsleiste zeigt die einzeiligen Aktionen „Teilen“ und „+ Wunsch“. Beide bleiben nach dem Scrollen erreichbar. Auf großen Bildschirmen stehen die ausgeschriebenen Aktionen weiterhin am Listenkopf.
 - Oben öffnet „Listen“ die vollständigen Listennamen und „Neue Wunschliste“. Die abgeschnittene Auswahl entfällt. Beschreibung, Sichtbarkeit und Kurzanleitung stehen unter „Details & Hilfe“; der Stift daneben öffnet die Listenbearbeitung.
 - Die Übersicht zeigt Titel, Statusfilter und Wünsche. Suche und Sortierung öffnen einen eigenen Dialog mit breiten Feldern, Abbrechen und explizitem Übernehmen. Zusätzliche Erklärungen verdrängen die Wünsche nicht mehr.
-- Bei 320 und 390 Pixel Breite beginnt die erste Wunschkarte im gemeldeten Zustand „Offen · 2 von 3 Wünschen“ bei 318 CSS-Pixeln. Die Regression prüft diesen Zustand ausdrücklich, einschließlich einzeiliger Hauptaktionen.
+- Auf Handys stehen Produktbild und Text nebeneinander. Die erste Beispielkarte ist bei 390 Pixel Breite 166 statt zuvor 361 CSS-Pixel hoch. Zwei vollständige Wünsche passen bei 390 × 844 Pixeln über die untere Leiste; dieser Platzgewinn wird im Browsertest geprüft. Die ungefilterte Übersicht beginnt bei 250 statt zuvor 310 CSS-Pixeln, einschließlich des zusätzlichen Demo-Hinweises. Die angemeldete Ansicht benötigt diese Hinweiszeile nicht.
+- Überschriften, Abstände, Desktop-Bilder und Formulare sind kleiner. Texteingaben behalten 16 Pixel Schrift, Hauptaktionen 48 Pixel Höhe und weitere interaktive Elemente mindestens 44 Pixel. Lange Wunschtitel umbrechen vollständig, Hinweise lassen sich ausklappen. Das Bearbeitungsmenü sitzt unter dem Vorschaubild und öffnet sich nach oben. Fehlende Preise und Notizen erzeugen auf Handys keine zusätzlichen Platzhalterzeilen.
 - Die Aktionsleiste berücksichtigt Notch und Home-Indikator. Am Seitenende bleibt genug Platz, um die letzte Karte und ihren Shop-Link darüber zu lesen und zu bedienen. Rückmeldungen erscheinen oberhalb der Leiste.
 - Formulare richten sich nach der sichtbaren Höhe über der Tastatur. Bei geöffneter Tastatur werden die lange Einleitung und zusätzliche Footer-Hinweise ausgeblendet. Die Eingaben scrollen, während Speichern und Abbrechen erreichbar bleiben.
 - Pinch-Zoom verkleinert nicht künstlich die Formularfläche. Die vorhandene Breitenkorrektur für ein abgeschnittenes Dia-Fenster bleibt aktiv.
 
 ## Browserprüfungen
 
-109 Browserprüfungen bestanden; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Dazu kommen 33 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des Laufs.
+113 Browserprüfungen bestanden; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Dazu kommen 38 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des Laufs.
 
 | Bereich | Prüfung |
 | --- | --- |
@@ -23,6 +24,7 @@ Stand: 7. November 2026.
 | Tastatur | Nachgestellter Visual Viewport mit 344 bzw. 304 Pixeln sichtbarer Höhe und zusätzlichem vertikalem Versatz |
 | Systemränder | Nachgestellte sichere Insets für Notch und Home-Indikator, Hoch- und Querformat |
 | Scrollen | Untere Aktionen bleiben sichtbar; der letzte Shop-Link wird nicht verdeckt |
+| Platz für Inhalte | Zwei vollständige Beispielwünsche gleichzeitig sichtbar bei 390 × 844 Pixeln; vorher war es einer |
 | Rückmeldungen | Hinweise überdecken die untere Aktionsleiste nicht |
 | Formular | Neuer Wunsch und neue Liste lassen sich bei begrenzter sichtbarer Höhe anlegen |
 | Gemeldete Ansicht | Zwei von drei Wünschen offen, erste Karte vor 360 Pixeln, keine umgebrochenen Hauptbuttons |
