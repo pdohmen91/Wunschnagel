@@ -1,5 +1,9 @@
 project_id = "wunschnagel"
 
+[auth]
+site_url = "https://pdohmen91.github.io/Wunschnagel/"
+additional_redirect_urls = ["https://pdohmen91.github.io/Wunschnagel/", "http://127.0.0.1:5173/"]
+
 [functions.link-preview]
 # Authentication is checked in the handler with auth.getUser(jwt), supporting
 # Supabase's current signing keys as well as legacy JWTs.

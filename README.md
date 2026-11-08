@@ -76,8 +76,10 @@ Alternative bei störenden Pausen: Cloudflare Workers Free + D1. Das wäre ein a
 
 ## Supabase einrichten
 
+Das Projekt [wunschnagel](https://supabase.com/dashboard/project/gjlvrtzsrecgmqdghhgj) ist angelegt. Migration, Zugriffsregeln, Site-URL, Rückleitungen und die Edge Function `link-preview` sind eingerichtet und live geprüft. Vor dem Umschalten der öffentlichen App fehlen Google-OAuth-Client und der vollständige Anmeldetest.
+
 1. Erstelle ein Supabase-Projekt im **Free-Tarif**, möglichst in einer passenden EU-Region. Die Supabase-Organisation braucht kein kostenpflichtiges Upgrade für diese App.
-2. Führe den Inhalt von `supabase/migrations/202611070001_initial.sql` einmal im Supabase SQL Editor aus. Alternativ kannst du mit der Supabase CLI ein Projekt verknüpfen und die Migration mit `supabase db push` anwenden.
+2. Führe den Inhalt von `supabase/migrations/202611070001_initial.sql` einmal im Supabase SQL Editor aus. Mit Supabase CLI 3 kannst du nach `supabase login` auch `supabase db push --remote=gjlvrtzsrecgmqdghhgj --skip-vault` verwenden. Die bereits angewendete Migration wird dabei nicht erneut ausgeführt.
 3. Kopiere `.env.example` nach `.env`. Trage Projekt-URL und **Publishable Key** (alternativ den bisherigen `anon`-Key) ein. Einen `service_role`- oder Secret-Key niemals ins Frontend oder GitHub-Repository schreiben.
 4. Starte `npm run dev` neu. Mit Backend-Konfiguration erscheint die Anmeldung; über „Erst einmal ausprobieren“ bleibt die unabhängige lokale Demo erreichbar.
 5. Richte Google als Supabase-Anmeldeprovider ein, wie unten beschrieben.
@@ -87,7 +89,8 @@ Alternative bei störenden Pausen: Cloudflare Workers Free + D1. Das wäre ein a
 
 Im [Supabase-Leitfaden für Google](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) sind die aktuellen Einrichtungsschritte beschrieben. Du legst dafür einen OAuth-Web-Client in einem Google-Cloud-Projekt an und trägst dessen Client-ID und Client-Secret **nur beim Google-Provider im Supabase-Dashboard** ein. Für diesen OAuth-Client braucht die App keine kostenpflichtige Google-API.
 
-- Die autorisierte Redirect-Adresse bei Google ist die Supabase-Callback-Adresse aus dem Provider-Dashboard, gewöhnlich `https://DEIN_PROJEKT.supabase.co/auth/v1/callback`.
+- Die autorisierte Redirect-Adresse bei Google ist die Supabase-Callback-Adresse aus dem Provider-Dashboard, `https://gjlvrtzsrecgmqdghhgj.supabase.co/auth/v1/callback`.
+- Als **Authorized JavaScript origin** bei Google verwendest du `https://pdohmen91.github.io`, ohne den Repository-Pfad.
 - Die Supabase **Site URL** ist `https://pdohmen91.github.io/Wunschnagel/`.
 - Unter Supabase **Redirect URLs** erlaubst du genau diese Veröffentlichungsadresse sowie zur Entwicklung `http://127.0.0.1:5173/`.
 - Im Google-OAuth-Testmodus müssen Freunde und Familie als Testnutzer zugelassen sein. Für weitere Nutzer musst du den passenden Veröffentlichungsstatus und Googles Anforderungen berücksichtigen. Eine eigene Datenschutzerklärung für die tatsächlich eingesetzten Dienste solltest du vor einer breiteren Veröffentlichung ergänzen.
@@ -96,12 +99,11 @@ E-Mail-Login ist bewusst nicht enthalten: Supabases eingebauter Mailversand ist 
 
 ### Shop-Vorschauen bereitstellen
 
-Mit installierter [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started):
+Mit installierter [Supabase CLI 3](https://supabase.com/docs/guides/local-development/cli/getting-started):
 
 ```sh
 supabase login
-supabase link --project-ref DEIN_PROJEKT_REF
-supabase functions deploy link-preview
+supabase functions deploy link-preview --remote=gjlvrtzsrecgmqdghhgj --use-api
 ```
 
 Die Funktion prüft die Supabase-Sitzung selbst mit `auth.getUser()`. Deshalb ist die Gateway-Prüfung in `supabase/config.toml` deaktiviert. **Die Funktion ist trotzdem nur mit gültiger Nutzeranmeldung nutzbar.** Sie verwendet den öffentlichen Anon-Key und die Nutzersitzung; ein Service-Role-Key ist nicht nötig.
@@ -125,7 +127,7 @@ Ausgehende Anfragen sind auf HTTPS, bekannte Hosts, öffentliche DNS-Adressen, d
 
 Der Workflow setzt den Unterpfad automatisch auf den Repository-Namen. Für ein User-Repository namens `DEIN_NAME.github.io` oder eine eigene Domain ändere `VITE_BASE_PATH` im Workflow auf `/`. Lokal steht der Wert in `.env`. Die Linkrouten verwenden den URL-Hash und brauchen deshalb keine Server-Umschreibregeln oder `404.html`-Tricks auf GitHub Pages.
 
-**Veröffentlichungsadresse:** [pdohmen91.github.io/Wunschnagel](https://pdohmen91.github.io/Wunschnagel/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Solange die Backend-Variablen fehlen, läuft die veröffentlichte App als lokale Vorschau pro Browser. Supabase, Google-Anmeldung und die Online-Shop-Vorschau müssen noch eingerichtet werden.
+**Veröffentlichungsadresse:** [pdohmen91.github.io/Wunschnagel](https://pdohmen91.github.io/Wunschnagel/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Solange die Backend-Variablen fehlen, läuft die veröffentlichte App als lokale Vorschau pro Browser. Datenbank und Online-Shop-Vorschau sind im Supabase-Projekt eingerichtet. Google-OAuth-Client und Anmeldetest stehen noch aus; erst danach werden die Frontend-Variablen auf GitHub gesetzt und die gemeinsame Nutzung aktiviert.
 
 ## Was „privat“ und „geteilt“ bedeuten
 
@@ -174,4 +176,4 @@ tests/browser/                     Echte Browserabläufe auf zwei Bildschirmgrö
 .github/workflows/pages.yml        Build und Veröffentlichung
 ```
 
-Ein Live-Login, die online bereitgestellte Edge Function und geräteübergreifendes Teilen können erst nach Einrichtung des externen Projekts vollständig geprüft werden. Der lokale automatische Titel- und Bildabruf wurde mit einem echten Produktlink erfolgreich geprüft. Reservierungen durch Schenkende, Einladungen für bestimmte Konten, Push-Mitteilungen, Bild-Uploads und gemeinsame Bearbeitung sind nicht Teil dieser ersten Version.
+Die echte Datenbank wurde mit zwei isolierten Testkonten auf private/öffentliche Zugriffe, Lesen über geheime Links, Schreibschutz und Link-Widerruf geprüft. Die Edge Function verlangt eine Anmeldung; ein Live-Aufruf lieferte Titel und Bild aus einem unterstützten Shop. Die kurzlebigen Testkonten und Testdaten wurden anschließend entfernt. Die vollständige Google-Anmeldung muss noch geprüft werden. Der lokale automatische Titel- und Bildabruf wurde mit einem echten Produktlink erfolgreich geprüft. Reservierungen durch Schenkende, Einladungen für bestimmte Konten, Push-Mitteilungen, Bild-Uploads und gemeinsame Bearbeitung sind nicht Teil dieser ersten Version.
