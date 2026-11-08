@@ -466,6 +466,10 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
 .mobile-action-bar .button { min-height: 48px; padding-inline: 12px; font-size: 15px; white-space: nowrap; }
 
 @container app-viewport (max-width: 960px) {
+  .welcome { margin-top: 12px; }
+  .welcome-icon { display: none; }
+  .welcome h1 { font-size: 30px; }
+  .welcome > p { margin: 12px 0 18px; font-size: 14px; line-height: 1.6; }
   .sidebar-body { display: none; }
   .brand { min-height: calc(60px + var(--safe-top)); max-width: calc(100% - 104px); padding-block: calc(10px + var(--safe-top)) 10px; font-size: 19px; gap: 7px; }
   .brand-icon, .brand-icon svg { width: 27px; height: 32px; }

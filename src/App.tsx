@@ -205,7 +205,8 @@ export default function App() {
       <header className="topbar">
         <span>{route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
         <div>
-          {compact && !route && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
+          {compact && !route && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
+          {compact && !route && !demo && !user && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
           {compact && route && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Meine Listen</a>}
           {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
           {user && !demo && <button className="icon-button mobile-account" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={19} /></button>}
@@ -218,7 +219,7 @@ export default function App() {
         {!authReady ? <Loading /> : !demo && !user && !route ? <section className="welcome">
           <div className="welcome-icon"><WishMark /></div>
           <h1>Deine Wünsche.<br />Festgehalten.</h1>
-          <p>Ein fester Platz für deine Geschenkideen. Sammle Wünsche auf eigenen Listen und teile sie mit Freunden und Familie. Du entscheidest, wer sie sehen darf.</p>
+          <p>Sammle Wünsche und teile sie mit deinen Lieblingsmenschen.</p>
           <button className="button primary" disabled={busy} onClick={() => run(login)}><LogIn size={18} /> Mit Google anmelden</button>
           <button className="text-button" onClick={() => { setDemo(true); setSelectedId(null) }}>Ohne Anmeldung ausprobieren <ArrowUpRight size={15} /></button>
           {error && <p role="alert" className="form-error">{error}</p>}

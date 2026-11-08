@@ -76,7 +76,7 @@ Alternative bei störenden Pausen: Cloudflare Workers Free + D1. Das wäre ein a
 
 ## Supabase einrichten
 
-Das Projekt [wunschnagel](https://supabase.com/dashboard/project/gjlvrtzsrecgmqdghhgj) ist angelegt. Migration, Zugriffsregeln, Site-URL, Rückleitungen und die Edge Function `link-preview` sind eingerichtet und live geprüft. Vor dem Umschalten der öffentlichen App fehlen Google-OAuth-Client und der vollständige Anmeldetest.
+Das Projekt [wunschnagel](https://supabase.com/dashboard/project/gjlvrtzsrecgmqdghhgj) ist angelegt. Migration, Zugriffsregeln, Site-URL, Rückleitungen, Google-Anbieter und die Edge Function `link-preview` sind eingerichtet. Die Datenzugriffe und Shop-Vorschau wurden live geprüft; die vollständige Google-Anmeldung wird abschließend mit einem eigenen Google-Konto bestätigt.
 
 1. Erstelle ein Supabase-Projekt im **Free-Tarif**, möglichst in einer passenden EU-Region. Die Supabase-Organisation braucht kein kostenpflichtiges Upgrade für diese App.
 2. Führe den Inhalt von `supabase/migrations/202611070001_initial.sql` einmal im Supabase SQL Editor aus. Mit Supabase CLI 3 kannst du nach `supabase login` auch `supabase db push --remote=gjlvrtzsrecgmqdghhgj --skip-vault` verwenden. Die bereits angewendete Migration wird dabei nicht erneut ausgeführt.
@@ -93,7 +93,7 @@ Im [Supabase-Leitfaden für Google](https://supabase.com/docs/guides/auth/social
 - Als **Authorized JavaScript origin** bei Google verwendest du `https://pdohmen91.github.io`, ohne den Repository-Pfad.
 - Die Supabase **Site URL** ist `https://pdohmen91.github.io/Wunschnagel/`.
 - Unter Supabase **Redirect URLs** erlaubst du genau diese Veröffentlichungsadresse sowie zur Entwicklung `http://127.0.0.1:5173/`.
-- Im Google-OAuth-Testmodus müssen Freunde und Familie als Testnutzer zugelassen sein. Für weitere Nutzer musst du den passenden Veröffentlichungsstatus und Googles Anforderungen berücksichtigen. Eine eigene Datenschutzerklärung für die tatsächlich eingesetzten Dienste solltest du vor einer breiteren Veröffentlichung ergänzen.
+- Die Anmeldung fragt ausschließlich die Basisdaten `email` und `profile` ab. Google nimmt reine Basis-Identitätsdaten von der üblichen Testnutzer-Beschränkung im Testmodus aus. Für zusätzliche Berechtigungen gelten andere Vorgaben. Siehe [Google: App-Zielgruppe und Testmodus](https://support.google.com/cloud/answer/15549945?hl=en). Eine eigene Datenschutzerklärung für die tatsächlich eingesetzten Dienste sollte vor einer breiteren Veröffentlichung ergänzt werden.
 
 E-Mail-Login ist bewusst nicht enthalten: Supabases eingebauter Mailversand ist für Tests eingeschränkt und verschickt ohne eigenes SMTP nicht allgemein an Familie und Freunde. Google-Anmeldung vermeidet hier einen zusätzlichen Mailanbieter. Siehe [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
@@ -127,7 +127,7 @@ Ausgehende Anfragen sind auf HTTPS, bekannte Hosts, öffentliche DNS-Adressen, d
 
 Der Workflow setzt den Unterpfad automatisch auf den Repository-Namen. Für ein User-Repository namens `DEIN_NAME.github.io` oder eine eigene Domain ändere `VITE_BASE_PATH` im Workflow auf `/`. Lokal steht der Wert in `.env`. Die Linkrouten verwenden den URL-Hash und brauchen deshalb keine Server-Umschreibregeln oder `404.html`-Tricks auf GitHub Pages.
 
-**Veröffentlichungsadresse:** [pdohmen91.github.io/Wunschnagel](https://pdohmen91.github.io/Wunschnagel/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Solange die Backend-Variablen fehlen, läuft die veröffentlichte App als lokale Vorschau pro Browser. Datenbank und Online-Shop-Vorschau sind im Supabase-Projekt eingerichtet. Google-OAuth-Client und Anmeldetest stehen noch aus; erst danach werden die Frontend-Variablen auf GitHub gesetzt und die gemeinsame Nutzung aktiviert.
+**Veröffentlichungsadresse:** [pdohmen91.github.io/Wunschnagel](https://pdohmen91.github.io/Wunschnagel/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Der Produktionsbuild verwendet die öffentlichen Supabase-Verbindungswerte aus den GitHub-Variablen und bietet Google-Anmeldung sowie gemeinsame Listen an. Über „Ohne Anmeldung ausprobieren“ bleibt die lokale Vorschau pro Browser erreichbar. Datenbank, Google-Anbieter und Online-Shop-Vorschau sind im Supabase-Projekt eingerichtet. Vorhandene lokale Demo-Listen werden beim Anmelden nicht automatisch in das Konto übernommen.
 
 ## Was „privat“ und „geteilt“ bedeuten
 
