@@ -1,0 +1,19 @@
+// !$*UTF8*$!
+{archiveVersion = 1; classes = {}; objectVersion = 56; objects = {
+000000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 2600;}; buildConfigurationList = 00000000000000000000000B; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; knownRegions = (en,Base); mainGroup = 000000000000000000000002; productRefGroup = 000000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (000000000000000000000005);};
+000000000000000000000002 = {isa = PBXGroup; children = (000000000000000000000003,000000000000000000000004); sourceTree = "<group>";};
+000000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileQA.swift; sourceTree = "<group>";};
+000000000000000000000004 = {isa = PBXGroup; children = (000000000000000000000006); name = Products; sourceTree = "<group>";};
+000000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = 00000000000000000000000E; buildPhases = (000000000000000000000008,000000000000000000000009,00000000000000000000000A); buildRules = (); dependencies = (); name = MobileQA; productName = MobileQA; productReference = 000000000000000000000006; productType = "com.apple.product-type.bundle.ui-testing";};
+000000000000000000000006 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MobileQA.xctest; sourceTree = BUILT_PRODUCTS_DIR;};
+000000000000000000000007 = {isa = PBXBuildFile; fileRef = 000000000000000000000003;};
+000000000000000000000008 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (000000000000000000000007); runOnlyForDeploymentPostprocessing = 0;};
+000000000000000000000009 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+00000000000000000000000A = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+00000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (00000000000000000000000C,00000000000000000000000D); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug;};
+00000000000000000000000E = {isa = XCConfigurationList; buildConfigurations = (00000000000000000000000F,000000000000000000000010); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug;};
+00000000000000000000000C = {isa = XCBuildConfiguration; name = Debug; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SWIFT_VERSION = 5.0;};};
+00000000000000000000000D = {isa = XCBuildConfiguration; name = Release; buildSettings = {CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SWIFT_VERSION = 5.0;};};
+00000000000000000000000F = {isa = XCBuildConfiguration; name = Debug; buildSettings = {PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = local.wunschliste.MobileQA; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; ENABLE_TESTING_SEARCH_PATHS = YES; TARGETED_DEVICE_FAMILY = 1; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone";};};
+000000000000000000000010 = {isa = XCBuildConfiguration; name = Release; buildSettings = {PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = local.wunschliste.MobileQA; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; ENABLE_TESTING_SEARCH_PATHS = YES; TARGETED_DEVICE_FAMILY = 1; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone";};};
+}; rootObject = 000000000000000000000001;}

@@ -1,0 +1,6 @@
+project_id = "wunschliste"
+
+[functions.link-preview]
+# Authentication is checked in the handler with auth.getUser(jwt), supporting
+# Supabase's current signing keys as well as legacy JWTs.
+verify_jwt = false
