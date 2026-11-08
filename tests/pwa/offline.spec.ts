@@ -8,8 +8,8 @@ test('production build works under GitHub Pages subpath and opens offline after 
     return { url: link.href, body: await fetch(link.href).then(response => response.json()) }
   })
   expect(manifest.url).toContain('/Wishling/manifest.webmanifest')
-  expect(manifest.body.name).toBe('Wishling')
-  expect(manifest.body.short_name).toBe('Wishling')
+  expect(manifest.body.name).toBe('Wunschnagel')
+  expect(manifest.body.short_name).toBe('Wunschnagel')
   expect(manifest.body.display).toBe('standalone')
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready

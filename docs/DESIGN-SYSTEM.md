@@ -1,6 +1,6 @@
 # Designsprache: persönliche Wunschkartei
 
-Stand: 8. November 2026. Der vom Nutzer ausgewählte Produktname ist **Wishling**.
+Stand: 8. November 2026. Der vom Nutzer ausgewählte Produktname ist **Wunschnagel**. Der Claim lautet **Deine Wünsche. Festgehalten.**
 
 Die visuelle Grundlage sind beschriftete Geschenkanhänger und eine sorgfältig angelegte Kartei. Sie verbindet die persönlichen Inhalte einer Wunschliste mit gut lesbarer, einfacher Bedienung. Produktbilder und eigene Notizen bleiben der Inhalt; zusätzliche Werbesprüche sind nicht Teil der Oberfläche.
 
@@ -32,7 +32,13 @@ Alle Schriften sind auf dem Gerät vorhanden. Die Oberfläche benötigt keinen e
 
 Kleine Ecken von 2–4 px bilden die Grundform. Anhänger und Inhaltskarten erhalten unten rechts eine größere Rundung. Diese Form wiederholt sich in Listensymbolen, Kartenindizes, Leerzuständen, Installationsschritten und Dialogen.
 
-Das eigene Markenzeichen kombiniert einen Anhänger mit Falz, Herz und Beschriftungslinie. Dasselbe Motiv erscheint in Navigation, Favicon und den installierbaren App-Symbolen.
+Das eigene Markenzeichen zeigt einen Wunschzettel mit Falz, Herz und Beschriftungslinie, der an einem kleinen Nagel hängt. Dasselbe Motiv erscheint in Navigation, Favicon und den installierbaren App-Symbolen. Name und Claim bilden gemeinsam die Wortmarke, auch in der kompakten mobilen Kopfzeile.
+
+## Sprache: Wünsche festhalten
+
+Die persönliche Wunschkartei wird zu einer Sammlung aufgehängter Wunschzettel. Wiederkehrende Nagel-Anspielungen geben Rückmeldungen, Anleitungen und Leerzuständen Charakter: „Deine nagelneue Wunschliste ist bereit“, „Festgehalten! Dein Wunsch hängt an der Liste“ und „Nagel auf den Kopf! Wunsch als erfüllt markiert“. Bearbeiten bekommt „Sitzt jetzt genau richtig“, das Löschen schafft „Platz für nagelneue Ideen“. Auch Suche, Teilen, Hinweise zum Schenken und Installation greifen das Festhalten, Hängenbleiben und Weitergeben auf.
+
+Handlungsnamen, Pflichtfelder, Datenschutz und Fehlermeldungen bleiben eindeutig. „Wunsch hinzufügen“, „Liste teilen“, „Als erfüllt markieren“, „Löschen“ und die Statusfilter behalten ihre gewohnten Bedeutungen. Ein Nagel ist hier das Bild für einen festen Platz; Wünsche und Sichtbarkeit bleiben veränderbar.
 
 Einfarbige Linien ordnen Bereiche. Die gestrichelte Linie trennt die Beschreibung einer Wunschkarte von Preis und Shop-Aktion. Ein kleiner versetzter Schatten setzt Inhaltskarten vom Papier ab. Menüs werden nicht durch abgeschnittene Kartenformen verdeckt.
 

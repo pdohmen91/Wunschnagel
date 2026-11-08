@@ -1,4 +1,6 @@
-# Wishling
+# Wunschnagel
+
+**Deine Wünsche. Festgehalten.**
 
 Eine installierbare Wunschlisten-Web-App für Freunde und Familie. React und TypeScript im Frontend, Supabase für Anmeldung, Daten und Shop-Vorschauen. Die Web-App kann später mit Capacitor in Android- und iOS-Projekte übernommen werden.
 

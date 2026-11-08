@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Wishling",
-  "short_name": "Wishling",
-  "description": "Wunschlisten für Freunde und Familie",
+  "name": "Wunschnagel",
+  "short_name": "Wunschnagel",
+  "description": "Deine Wünsche. Festgehalten. Wunschlisten für Freunde und Familie.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

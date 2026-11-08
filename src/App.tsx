@@ -175,9 +175,9 @@ export default function App() {
 
   return <div className="app-shell" data-compact={compact} data-account-actions={!!(user && !demo || demo && supabase)}>
     <aside className="sidebar">
-      <a className="brand" href={import.meta.env.BASE_URL} aria-label="Wishling Startseite">
+      <a className="brand" href={import.meta.env.BASE_URL} aria-label="Wunschnagel Startseite">
         <span className="brand-icon"><WishMark /></span>
-        <span>Wishling</span>
+        <span className="brand-wordmark"><strong>Wunschnagel</strong><small>Deine Wünsche. Festgehalten.</small></span>
       </a>
       <div className="sidebar-body">
         <div className="nav-title"><span>{route ? 'Geteilte Liste' : 'Meine Listen'}</span>{!route && <span className="count">{lists.length}</span>}</div>
@@ -195,7 +195,7 @@ export default function App() {
       <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> Auf dem Handy installieren</button>
       <div className="profile">
         <span className="avatar">{demo ? 'D' : name.slice(0, 1)}</span>
-        <span><strong>{demo ? 'Lokale Demo' : user ? name : 'Wishling'}</strong><small>{demo ? 'Nur auf diesem Gerät' : user ? 'Dein Konto' : 'Wunschlisten für alle Anlässe'}</small></span>
+        <span><strong>{demo ? 'Lokale Demo' : user ? name : 'Wunschnagel'}</strong><small>{demo ? 'Nur auf diesem Gerät' : user ? 'Dein Konto' : 'Wunschlisten für alle Anlässe'}</small></span>
         {user && !demo && <button className="icon-button" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={17} /></button>}
         {demo && supabase && <button className="icon-button" aria-label="Zur Anmeldung" onClick={() => setDemo(false)}><LogIn size={17} /></button>}
       </div>
@@ -216,9 +216,9 @@ export default function App() {
       {!online && <div className="offline-banner"><WifiOff size={16} /> Du bist offline. Gemeinsame Listen benötigen eine Internetverbindung.</div>}
       <div className="page-content">
         {!authReady ? <Loading /> : !demo && !user && !route ? <section className="welcome">
-          <div className="welcome-icon"><Gift size={32} /></div>
-          <h1>Deine Wunschlisten.<br />An einem Ort.</h1>
-          <p>Sammle Geschenkideen und teile sie mit Freunden und Familie. Du entscheidest, wer deine Listen sehen darf.</p>
+          <div className="welcome-icon"><WishMark /></div>
+          <h1>Deine Wünsche.<br />Festgehalten.</h1>
+          <p>Ein fester Platz für deine Geschenkideen. Sammle Wünsche auf eigenen Listen und teile sie mit Freunden und Familie. Du entscheidest, wer sie sehen darf.</p>
           <button className="button primary" disabled={busy} onClick={() => run(login)}><LogIn size={18} /> Mit Google anmelden</button>
           <button className="text-button" onClick={() => { setDemo(true); setSelectedId(null) }}>Ohne Anmeldung ausprobieren <ArrowUpRight size={15} /></button>
           {error && <p role="alert" className="form-error">{error}</p>}
@@ -242,13 +242,13 @@ export default function App() {
               {!compact && listActions && <div className="heading-actions">{listActions}</div>}
             </section>
             {!compact && <div className={`usage-guide ${canEdit ? 'own-list-guide' : ''}`}>
-              <p>{canEdit ? <>Sammle hier deine Wünsche. Über <strong>„Wunsch hinzufügen“</strong> fügst du einen Shop-Link ein.</> : <>Öffne <strong>„Zum Shop“</strong>, um dir ein Geschenk anzusehen. Einkäufe werden hier nicht reserviert.</>}</p>
+              <p>{canEdit ? <>Hier hängen deine Geschenkideen. Über <strong>„Wunsch hinzufügen“</strong> fügst du einen Shop-Link ein.</> : <>Öffne <strong>„Zum Shop“</strong>, um dir ein Geschenk anzusehen. Einkäufe werden hier nicht reserviert.</>}</p>
               <button className="text-button" onClick={() => setModal('help')}><CircleHelp size={17} /> So funktioniert’s</button>
             </div>}
             {!loading && items.length === 0 ? <section className="list-empty">
-              <span className="empty-icon"><Gift size={29} strokeWidth={1.5} /></span>
+              <span className="empty-icon"><WishMark /></span>
               <h2>Noch keine Wünsche</h2>
-              <p>{canEdit ? 'Öffne einen Artikel im Shop und kopiere seinen Link. Mit „Ersten Wunsch hinzufügen“ kannst du ihn hier speichern.' : 'Die Person hat noch keine Wünsche eingetragen. Schau einfach später noch einmal vorbei.'}</p>
+              <p>{canEdit ? 'Der erste Nagel sitzt. Jetzt fehlen nur noch deine Wünsche: Kopiere einen Shop-Link und wähle „Ersten Wunsch hinzufügen“.' : 'An diesem Wunschzettel hängt noch nichts. Die Person hat noch keine Wünsche eingetragen. Schau später noch einmal vorbei.'}</p>
               {canEdit && <button className="button primary" onClick={() => { setEditItem(null); setModal('item') }}><Plus size={18} /> Ersten Wunsch hinzufügen</button>}
             </section> : <>
               {items.length > 0 && <div className="items-toolbar">
@@ -266,17 +266,17 @@ export default function App() {
               </div>}
               {items.length > 0 && <p className={`status-explanation ${compact ? 'screen-reader-only' : ''}`} id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
               {items.length > 0 && (compact ? <div className="mobile-result-summary"><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
-              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id) })} />)}</WishGrid>}
-              {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : 'Hier erscheinen Wünsche, die zum gewählten Status passen.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
+              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
+              {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
             </>}
             {items.length > 0 && <footer className="list-footer"><span key={`${openItems.length}:${items.length}`}>{openItems.length} offen <span className="meta-dot">·</span> {items.length - openItems.length} erfüllt</span>{total > 0 && <span>Offene Wünsche: ca. {money.format(total)}</span>}</footer>}
-          </div> : !loading && !error ? <section className="empty-state first-list"><span className="empty-icon"><Gift size={29} /></span><h1>Deine erste Wunschliste</h1><p>Erstelle eine Liste für einen Anlass oder sammle deine Ideen für später.</p>{canEdit && <button className="button primary" onClick={() => setModal('list')}><Plus size={18} /> Wunschliste erstellen</button>}</section> : loading ? <Loading /> : null}
+          </div> : !loading && !error ? <section className="empty-state first-list"><span className="empty-icon"><WishMark /></span><h1>Deine erste Wunschliste</h1><p>Ein Nagel, ein Zettel, deine Wünsche. Erstelle eine Liste für einen Anlass oder sammle deine Ideen für später.</p>{canEdit && <button className="button primary" onClick={() => setModal('list')}><Plus size={18} /> Wunschliste erstellen</button>}</section> : loading ? <Loading /> : null}
         </>}
       </div>
     </main>
 
     {modal === 'lists' && <Dialog title="Meine Wunschlisten" onClose={closeModal}>
-      <p className="dialog-intro">Wähle eine Liste oder lege eine neue für einen anderen Anlass an.</p>
+      <p className="dialog-intro">Alle deine Wunschzettel an einem Platz. Wähle eine Liste oder lege eine neue an.</p>
       <div className="list-picker-options">{lists.map(list => <button key={list.id} className={selectedId === list.id ? 'selected' : ''} onClick={async () => { await closeModal(); setSelectedId(list.id); setQuery(''); setFilter('all') }}><span aria-hidden="true">{list.emoji}</span><span>{list.title}<small>{visibilityLabels[list.visibility]}</small></span>{selectedId === list.id && <Check size={18} aria-label="Ausgewählt" />}</button>)}</div>
       {canEdit && <button className="button primary list-create" onClick={async () => { await closeModal(); setModal('list') }}><Plus size={17} /> Neue Wunschliste</button>}
       <div className="list-picker-footer"><button className="text-button" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={17} /> So funktioniert’s</button><button className="text-button" onClick={async () => { await closeModal(); setModal('install') }}><ArrowDownToLine size={17} /> App installieren</button></div>
@@ -287,18 +287,18 @@ export default function App() {
       <div className="help-note"><strong>{visibilityLabels[selected.visibility]}</strong><p>{visibilityDescriptions[selected.visibility]}</p></div>
       <div className="dialog-actions"><button className="button secondary" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={16} /> So funktioniert’s</button>{canEdit && <button className="button primary" onClick={async () => { await closeModal(); setModal('edit-list') }}><Pencil size={16} /> Liste bearbeiten</button>}</div>
     </Dialog>}
-    {modal === 'preview' && <Dialog title="Lokale Vorschau" onClose={closeModal}><p className="dialog-intro">Du kannst Beispielwünsche ändern und eigene Listen anlegen.</p><div className="help-note"><strong>Nur in diesem Browser gespeichert</strong><p>Deine Änderungen bleiben auf diesem Gerät. Teilen mit anderen ist in dieser Vorschau noch nicht möglich.</p></div><div className="dialog-actions"><button className="button primary" onClick={closeModal}>Verstanden</button></div></Dialog>}
+    {modal === 'preview' && <Dialog title="Lokale Vorschau" onClose={closeModal}><p className="dialog-intro">Probiere Wunschnagel aus: Ändere die Beispielwünsche oder halte nagelneue Ideen auf eigenen Listen fest.</p><div className="help-note"><strong>Nur in diesem Browser gespeichert</strong><p>Deine Änderungen bleiben auf diesem Gerät. Teilen mit anderen ist in dieser Vorschau noch nicht möglich.</p></div><div className="dialog-actions"><button className="button primary" onClick={closeModal}>Verstanden</button></div></Dialog>}
     {modal === 'tools' && <CollectionToolsDialog query={query} sort={sort} onClose={closeModal} onApply={async (nextQuery, nextSort) => { setQuery(nextQuery); setSort(nextSort); await closeModal() }} />}
     {(modal === 'list' || modal === 'edit-list') && <ListDialog list={modal === 'edit-list' ? selected : null} onClose={closeModal} onSave={async input => {
       if (modal === 'edit-list' && selected) await repo.updateList(selected.id, input)
       else { const created = await repo.createList(input); setSelectedId(created.id) }
-      await reloadLists(); await closeModal(); setNotice(modal === 'edit-list' ? 'Wunschliste gespeichert.' : 'Deine neue Wunschliste ist bereit.')
+      await reloadLists(); await closeModal(); setNotice(modal === 'edit-list' ? 'Wunschliste gespeichert. Alles sitzt.' : 'Deine nagelneue Wunschliste ist bereit.')
     }} onDelete={selected && modal === 'edit-list' ? async () => { await closeModal(); setDeleteTarget({ kind: 'list', id: selected.id, title: selected.title }) } : undefined} />}
-    {modal === 'item' && selected && <ItemDialog item={editItem} listTitle={selected.title} repo={repo} onClose={closeModal} onSave={async input => { await repo.saveItem(selected.id, input, editItem?.id); if (!editItem) { setQuery(''); setFilter('all') } await refreshItems(selected.id); await closeModal(); setNotice(editItem ? 'Wunsch aktualisiert.' : 'Dein Wunsch wurde hinzugefügt.') }} />}
+    {modal === 'item' && selected && <ItemDialog item={editItem} listTitle={selected.title} repo={repo} onClose={closeModal} onSave={async input => { await repo.saveItem(selected.id, input, editItem?.id); if (!editItem) { setQuery(''); setFilter('all') } await refreshItems(selected.id); await closeModal(); setNotice(editItem ? 'Wunsch aktualisiert. Sitzt jetzt genau richtig.' : 'Festgehalten! Dein Wunsch hängt an der Liste.') }} />}
     {modal === 'share' && selected && <ShareDialog demo={demo} list={selected} onClose={closeModal} onUpdate={async input => { await repo.updateList(selected.id, input); await reloadLists() }} onRotate={async () => { await repo.rotateLink(selected.id); await reloadLists() }} />}
     {modal === 'help' && <HelpDialog guest={!!route} demo={demo} onClose={closeModal} />}
-    {modal === 'install' && <Dialog title="App auf dem Handy installieren" onClose={closeModal}><p className="dialog-intro">Füge Wishling zu deinem Startbildschirm hinzu. So öffnet sich die Web-App wie eine eigene App.</p><div className="install-step"><span>1</span><div><strong>Auf dem iPhone</strong><p>Öffne die veröffentlichte App in Safari, tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.</p></div></div><div className="install-step"><span>2</span><div><strong>Auf Android</strong><p>Öffne die veröffentlichte App in Chrome. Wähle im Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div><div className="hint"><Info size={17} /><span>Für die Installation brauchst du eine HTTPS-Adresse. Gemeinsame Listen und Shop-Vorschauen benötigen Internet.</span></div></Dialog>}
-    {deleteTarget && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete() })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
+    {modal === 'install' && <Dialog title="App auf dem Handy installieren" onClose={closeModal}><p className="dialog-intro">Gib Wunschnagel einen festen Platz auf deinem Startbildschirm. So öffnet sich die Web-App wie eine eigene App.</p><div className="install-step"><span>1</span><div><strong>Auf dem iPhone</strong><p>Öffne die veröffentlichte App in Safari, tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.</p></div></div><div className="install-step"><span>2</span><div><strong>Auf Android</strong><p>Öffne die veröffentlichte App in Chrome. Wähle im Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div><div className="hint"><Info size={17} /><span>Für die Installation brauchst du eine HTTPS-Adresse. Gemeinsame Listen und Shop-Vorschauen benötigen Internet.</span></div></Dialog>}
+    {deleteTarget && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete(); setNotice(deleteTarget.kind === 'list' ? 'Wunschliste gelöscht. Platz für nagelneue Ideen.' : 'Wunsch gelöscht. Platz für nagelneue Ideen.') })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
     {compact && listActions && createPortal(<nav className="mobile-action-bar" aria-label="Aktionen für die Wunschliste">{listActions}</nav>, document.body)}
     <MotionToast message={notice} onClose={() => setNotice('')} />
   </div>
@@ -328,7 +328,7 @@ function MotionToast({ message, onClose }: { message: string; onClose: () => voi
 function Loading() { return <div className="loading" role="status"><LoaderCircle className="spin" size={24} /><span>Deine Wünsche werden geladen …</span></div> }
 
 function WishMark() {
-  return <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 5h19l7 8v22H8z" stroke="currentColor" strokeWidth="2" /><path d="M27 5v8h7M8 28h26" stroke="currentColor" strokeWidth="2" /><path d="M21 23s-7-4.2-7-8a3.5 3.5 0 0 1 7-1 3.5 3.5 0 0 1 7 1c0 3.8-7 8-7 8Z" fill="currentColor" /></svg>
+  return <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 10h19l7 8v19H8z" stroke="currentColor" strokeWidth="2" /><path d="M27 10v8h7M8 32h26" stroke="currentColor" strokeWidth="2" /><path d="M21 29s-7-4.2-7-8a3.5 3.5 0 0 1 7-1 3.5 3.5 0 0 1 7 1c0 3.8-7 8-7 8Z" fill="currentColor" /><path d="M20 3v12m-4-12h8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
 }
 
 function WishCard({ item, number, canEdit, busy, onEdit, onDelete, onFulfill }: { item: Wish; number: number; canEdit: boolean; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void }) {
@@ -393,7 +393,7 @@ function CollectionToolsDialog({ query, sort, onClose, onApply }: { query: strin
   const [draftQuery, setDraftQuery] = useState(query)
   const [draftSort, setDraftSort] = useState(sort)
   return <Dialog formLayout title="Suchen & sortieren" onClose={onClose}>
-    <p className="dialog-intro">Suche nach einem Wunsch oder ordne die Liste nach Name, Preis oder Datum.</p>
+    <p className="dialog-intro">Finde genau den Wunsch, der den Nagel auf den Kopf trifft. Suche nach Name, Shop oder Hinweis und sortiere deine Liste.</p>
     <form onSubmit={event => { event.preventDefault(); void onApply(draftQuery, draftSort) }}>
       <div className="form-fields"><fieldset>
         <label className="field">Wünsche durchsuchen<input autoFocus aria-label="Wünsche durchsuchen" value={draftQuery} onChange={event => setDraftQuery(event.target.value)} placeholder="Name, Shop oder Hinweis" inputMode="search" enterKeyHint="search" autoCapitalize="none" autoCorrect="off" /></label>
@@ -407,7 +407,7 @@ function CollectionToolsDialog({ query, sort, onClose, onApply }: { query: strin
 
 function HelpDialog({ guest, demo, onClose }: { guest: boolean; demo: boolean; onClose: () => void }) {
   return <Dialog title="So funktioniert’s" onClose={onClose}>
-    <p className="dialog-intro">{guest ? 'Du schaust dir die Wünsche einer anderen Person an.' : demo ? 'Du kannst die Beispielwünsche ändern oder eigene Listen und Wünsche anlegen.' : 'Für jeden Anlass eine Liste. Für jeden Wunsch ein Shop-Link.'}</p>
+    <p className="dialog-intro">{guest ? 'Hier hängen die Wünsche einer anderen Person. Vielleicht ist das Geschenk dabei, das den Nagel auf den Kopf trifft.' : demo ? 'Willkommen bei Wunschnagel. Hier bekommen deine Wünsche einen festen Platz. Du kannst die Beispielwünsche ändern oder eigene Listen und Wünsche anlegen.' : 'Für jeden Anlass ein Wunschzettel. Für jeden Wunsch ein fester Platz. So funktioniert Wunschnagel.'}</p>
     <ol className="howto-steps">
       {guest ? <>
         <li><strong>Wünsche ansehen</strong><p>Lies die Hinweise zu Größe, Farbe oder Ausführung. „Offen“ zeigt, was sich die Person noch wünscht.</p></li>
@@ -415,7 +415,7 @@ function HelpDialog({ guest, demo, onClose }: { guest: boolean; demo: boolean; o
         <li><strong>Geschenke absprechen</strong><p>Hier kannst du nichts reservieren. Sprich dich mit anderen Schenkenden ab, damit nichts doppelt gekauft wird.</p></li>
       </> : <>
         <li><strong>Liste auswählen oder anlegen</strong><p>Öffne auf dem Handy oben „Listen“. Dort kannst du eine Liste auswählen oder mit „Neue Wunschliste“ eine anlegen, zum Beispiel für Geburtstag oder Weihnachten. Am Computer findest du deine Listen links.</p></li>
-        <li><strong>Wünsche hinzufügen</strong><p>Öffne ein Produkt im Shop und kopiere seinen Link. Tippe unten auf „+ Wunsch“ oder am Computer auf „Wunsch hinzufügen“. Füge den Link ein, prüfe den Titel, ergänze bei Bedarf Hinweise und speichere.</p></li>
+        <li><strong>Wünsche festhalten</strong><p>Öffne ein Produkt im Shop und kopiere seinen Link. Tippe unten auf „+ Wunsch“ oder am Computer auf „Wunsch hinzufügen“. Füge den Link ein, prüfe den Titel, ergänze bei Bedarf Hinweise und speichere.</p></li>
         <li><strong>Mit Freunden und Familie teilen</strong><p>{demo ? 'In der lokalen Demo ist Teilen noch nicht möglich. Deine Listen bleiben in diesem Browser.' : 'Wähle „Teilen“ oder am Computer „Liste teilen“, erstelle einen Link und schicke ihn weiter. Die Empfänger brauchen kein Konto und können deine Liste ansehen.'}</p></li>
       </>}
     </ol>
@@ -433,7 +433,7 @@ function ListDialog({ list, onClose, onSave, onDelete }: { list: Wishlist | null
   const [error, setError] = useState('')
   async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); setError(''); try { await onSave({ title: title.trim(), description: description.trim(), emoji, visibility }) } catch (e) { setError(message(e)); setBusy(false) } }
   return <Dialog formLayout title={list ? 'Wunschliste bearbeiten' : 'Neue Wunschliste'} onClose={() => !busy && onClose()}>
-    <p className="dialog-intro">{list ? 'Ändere Name, Beschreibung oder wer die Liste sehen darf.' : 'Gib deiner Liste einen Namen. Du kannst für jeden Anlass eine eigene Liste anlegen.'}</p>
+    <p className="dialog-intro">{list ? 'Ändere Name, Beschreibung oder wer die Liste sehen darf.' : 'Ein neuer Anlass? Zeit für einen nagelneuen Wunschzettel. Gib deiner Liste einen Namen.'}</p>
     <form onSubmit={submit}><div className="form-fields"><fieldset disabled={busy}>
       <label className="field">Name deiner Liste<input autoFocus required maxLength={100} value={title} onChange={e => setTitle(e.target.value)} placeholder="Zum Beispiel: Zum Geburtstag" pattern=".*\S.*" /></label>
       <label className="field">Beschreibung <span>optional</span><textarea aria-describedby="list-description-help" maxLength={1000} rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Zum Beispiel: Ideen für meinen Geburtstag" /></label>
@@ -510,7 +510,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         <label className="field">Notizen &amp; Hinweise <span>optional</span>
           <textarea rows={3} aria-describedby="wish-notes-help" maxLength={3000} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Zum Beispiel Größe, Farbe oder was dir daran gefällt …" />
         </label>
-        <p className="input-help" id="wish-notes-help">Diese Hinweise helfen beim Schenken und werden mit der Liste geteilt.</p>
+        <p className="input-help" id="wish-notes-help">Diese Hinweise helfen beim Schenken und werden mit der Liste geteilt. Damit das Geschenk den Nagel auf den Kopf trifft.</p>
 
         <details className="optional-fields" open={item !== null}>
           <summary>Preis &amp; Bild-Link ergänzen <span>optional</span><ChevronDown size={16} /></summary>
@@ -538,7 +538,7 @@ function ShareDialog({ list, demo, onClose, onUpdate, onRotate }: { list: Wishli
   async function act(action: () => Promise<void>) { setBusy(true); setStatus(''); try { await action() } catch (e) { setStatus(message(e)) } finally { setBusy(false) } }
   if (demo) return <Dialog title="Liste teilen" onClose={onClose}>
     <p className="dialog-intro">In der lokalen Demo kannst du noch keine Liste mit anderen teilen.</p>
-    <div className="help-note"><strong>Deine Listen bleiben in diesem Browser.</strong><p>Du kannst hier Wünsche sammeln und die App ausprobieren. Ein kopierter Link würde deine Liste auf einem anderen Gerät noch nicht anzeigen.</p></div>
+    <div className="help-note"><strong>Deine Listen bleiben in diesem Browser.</strong><p>Deine Wunschzettel hängen hier zum Ausprobieren. Ein kopierter Link würde deine Liste auf einem anderen Gerät noch nicht anzeigen.</p></div>
     <p className="share-explanation">In der gemeinsam nutzbaren Version kannst du einen Link weitergeben. Freunde und Familie können deine Wünsche dann ohne Anmeldung ansehen.</p>
     <div className="dialog-actions"><button className="button primary" onClick={onClose}>Zurück zur Liste</button></div>
   </Dialog>
@@ -550,9 +550,9 @@ function ShareDialog({ list, demo, onClose, onUpdate, onRotate }: { list: Wishli
     </> : <>
       <label className="field">Dein Link zum Weitergeben<input aria-describedby="share-link-help" readOnly value={link} onFocus={e => e.currentTarget.select()} /></label>
       <p className="input-help" id="share-link-help">Kopiere den Link und schicke ihn zum Beispiel per WhatsApp oder E-Mail. Die Empfänger brauchen kein Konto.</p>
-      <div className="share-actions"><button className="button primary" onClick={() => act(async () => { await navigator.clipboard.writeText(link); setStatus('Link kopiert. Du kannst ihn jetzt in einer Nachricht einfügen.') })} disabled={busy}><Copy size={16} /> Link kopieren</button>{!!navigator.share && <button className="button secondary" disabled={busy} onClick={() => act(async () => { try { await navigator.share({ title: list.title, url: link }) } catch (e) { if (!(e instanceof DOMException && e.name === 'AbortError')) throw e } })}><Share2 size={16} /> Über andere App teilen</button>}</div>
+      <div className="share-actions"><button className="button primary" onClick={() => act(async () => { await navigator.clipboard.writeText(link); setStatus('Link kopiert. Schicke deinen Wunschzettel jetzt in einer Nachricht weiter.') })} disabled={busy}><Copy size={16} /> Link kopieren</button>{!!navigator.share && <button className="button secondary" disabled={busy} onClick={() => act(async () => { try { await navigator.share({ title: list.title, text: 'Damit dein Geschenk den Nagel auf den Kopf trifft: meine Wunschliste bei Wunschnagel.', url: link }) } catch (e) { if (!(e instanceof DOMException && e.name === 'AbortError')) throw e } })}><Share2 size={16} /> Über andere App teilen</button>}</div>
       <div className="hint"><PrivacyIcon value={list.visibility} size={18} /><span>Andere können deine Wünsche und Hinweise ansehen. Sie können nichts bearbeiten und keine Geschenke reservieren.</span></div>
-      {list.visibility === 'link' && <details className="optional-fields share-advanced"><summary>Freigabelink verwalten <ChevronDown size={16} /></summary><div className="rotate-link"><p>Wenn ein alter Link nicht mehr funktionieren soll, kannst du ihn hier ersetzen. Nur der neue Link öffnet dann deine Liste.</p><button className="text-button" disabled={busy} onClick={() => setConfirmRotate(!confirmRotate)}><RotateCcw size={14} /> Link ersetzen</button>{confirmRotate && <div><p>Alle bisherigen Empfänger brauchen danach den neuen Link.</p><button className="button secondary" disabled={busy} onClick={() => act(async () => { await onRotate(); setConfirmRotate(false); setStatus('Neuer Link erstellt. Kopiere ihn und schicke ihn an die gewünschten Personen.') })}>Alten Link deaktivieren und neuen erstellen</button></div>}</div></details>}
+      {list.visibility === 'link' && <details className="optional-fields share-advanced"><summary>Freigabelink verwalten <ChevronDown size={16} /></summary><div className="rotate-link"><p>Wenn ein alter Link nicht mehr funktionieren soll, kannst du ihn hier ersetzen. Nur der neue Link öffnet dann deine Liste.</p><button className="text-button" disabled={busy} onClick={() => setConfirmRotate(!confirmRotate)}><RotateCcw size={14} /> Link ersetzen</button>{confirmRotate && <div><p>Alle bisherigen Empfänger brauchen danach den neuen Link.</p><button className="button secondary" disabled={busy} onClick={() => act(async () => { await onRotate(); setConfirmRotate(false); setStatus('Nagelneuer Link erstellt. Kopiere ihn und schicke ihn an die gewünschten Personen.') })}>Alten Link deaktivieren und neuen erstellen</button></div>}</div></details>}
     </>}
     {status && <p className="preview-hint" role="status">{status}</p>}
   </Dialog>

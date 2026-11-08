@@ -46,7 +46,7 @@ test('the wish form explains missing requirements and shows the image before sav
   await expect(save).toBeEnabled()
   await expect(dialog.getByRole('img', { name: 'Bildvorschau zum Wunsch' })).toBeVisible()
   await expect(dialog.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Mein eigener Titel')
-  await expect(dialog.getByRole('textbox', { name: 'Notizen & Hinweise' })).toHaveAccessibleDescription('Diese Hinweise helfen beim Schenken und werden mit der Liste geteilt.')
+  await expect(dialog.getByRole('textbox', { name: 'Notizen & Hinweise' })).toHaveAccessibleDescription('Diese Hinweise helfen beim Schenken und werden mit der Liste geteilt. Damit das Geschenk den Nagel auf den Kopf trifft.')
   await expect(save).toBeInViewport()
   const bounds = await save.boundingBox()
   const panel = await dialog.boundingBox()
