@@ -1,4 +1,4 @@
-project_id = "wunschliste"
+project_id = "wunschnagel"
 
 [functions.link-preview]
 # Authentication is checked in the handler with auth.getUser(jwt), supporting

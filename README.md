@@ -88,7 +88,7 @@ Alternative bei störenden Pausen: Cloudflare Workers Free + D1. Das wäre ein a
 Im [Supabase-Leitfaden für Google](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) sind die aktuellen Einrichtungsschritte beschrieben. Du legst dafür einen OAuth-Web-Client in einem Google-Cloud-Projekt an und trägst dessen Client-ID und Client-Secret **nur beim Google-Provider im Supabase-Dashboard** ein. Für diesen OAuth-Client braucht die App keine kostenpflichtige Google-API.
 
 - Die autorisierte Redirect-Adresse bei Google ist die Supabase-Callback-Adresse aus dem Provider-Dashboard, gewöhnlich `https://DEIN_PROJEKT.supabase.co/auth/v1/callback`.
-- Die Supabase **Site URL** ist `https://pdohmen91.github.io/Wishling/`.
+- Die Supabase **Site URL** ist `https://pdohmen91.github.io/Wunschnagel/`.
 - Unter Supabase **Redirect URLs** erlaubst du genau diese Veröffentlichungsadresse sowie zur Entwicklung `http://127.0.0.1:5173/`.
 - Im Google-OAuth-Testmodus müssen Freunde und Familie als Testnutzer zugelassen sein. Für weitere Nutzer musst du den passenden Veröffentlichungsstatus und Googles Anforderungen berücksichtigen. Eine eigene Datenschutzerklärung für die tatsächlich eingesetzten Dienste solltest du vor einer breiteren Veröffentlichung ergänzen.
 
@@ -114,7 +114,7 @@ Ausgehende Anfragen sind auf HTTPS, bekannte Hosts, öffentliche DNS-Adressen, d
 
 ## Über GitHub veröffentlichen
 
-1. Der Code liegt im öffentlichen Repository [pdohmen91/Wishling](https://github.com/pdohmen91/Wishling) auf dem Branch `main`. `.env`, persönliche Daten und Backend-Secrets gehören nicht ins Repository. Die gemeinsam nutzbaren Wunschlisten liegen nach Einrichtung ausschließlich in Supabase.
+1. Der Code liegt im öffentlichen Repository [pdohmen91/Wunschnagel](https://github.com/pdohmen91/Wunschnagel) auf dem Branch `main`. `.env`, persönliche Daten und Backend-Secrets gehören nicht ins Repository. Die gemeinsam nutzbaren Wunschlisten liegen nach Einrichtung ausschließlich in Supabase.
 2. Unter **Settings → Pages → Build and deployment** ist **GitHub Actions** als Veröffentlichungsquelle eingerichtet.
 3. Unter **Settings → Secrets and variables → Actions → Variables** legst du diese beiden Repository-Variablen an:
    - `VITE_SUPABASE_URL`
@@ -125,7 +125,7 @@ Ausgehende Anfragen sind auf HTTPS, bekannte Hosts, öffentliche DNS-Adressen, d
 
 Der Workflow setzt den Unterpfad automatisch auf den Repository-Namen. Für ein User-Repository namens `DEIN_NAME.github.io` oder eine eigene Domain ändere `VITE_BASE_PATH` im Workflow auf `/`. Lokal steht der Wert in `.env`. Die Linkrouten verwenden den URL-Hash und brauchen deshalb keine Server-Umschreibregeln oder `404.html`-Tricks auf GitHub Pages.
 
-**Veröffentlichungsadresse:** [pdohmen91.github.io/Wishling](https://pdohmen91.github.io/Wishling/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Solange die Backend-Variablen fehlen, läuft die veröffentlichte App als lokale Vorschau pro Browser. Supabase, Google-Anmeldung und die Online-Shop-Vorschau müssen noch eingerichtet werden.
+**Veröffentlichungsadresse:** [pdohmen91.github.io/Wunschnagel](https://pdohmen91.github.io/Wunschnagel/). Der Pages-Workflow veröffentlicht Änderungen an `main` automatisch. Solange die Backend-Variablen fehlen, läuft die veröffentlichte App als lokale Vorschau pro Browser. Supabase, Google-Anmeldung und die Online-Shop-Vorschau müssen noch eingerichtet werden.
 
 ## Was „privat“ und „geteilt“ bedeuten
 

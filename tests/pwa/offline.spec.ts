@@ -7,7 +7,7 @@ test('production build works under GitHub Pages subpath and opens offline after 
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!
     return { url: link.href, body: await fetch(link.href).then(response => response.json()) }
   })
-  expect(manifest.url).toContain('/Wishling/manifest.webmanifest')
+  expect(manifest.url).toContain('/Wunschnagel/manifest.webmanifest')
   expect(manifest.body.name).toBe('Wunschnagel')
   expect(manifest.body.short_name).toBe('Wunschnagel')
   expect(manifest.body.display).toBe('standalone')
@@ -23,8 +23,9 @@ test('production build works under GitHub Pages subpath and opens offline after 
   expect(response).toBe(true)
   const cachedUrls = await page.evaluate(async () => {
     const keys = await caches.keys()
-    return (await Promise.all(keys.filter(key => key.startsWith('herzenswuensche-')).map(async key => (await (await caches.open(key)).keys()).map(request => request.url)))).flat()
+    return (await Promise.all(keys.filter(key => key.startsWith('wunschnagel-')).map(async key => (await (await caches.open(key)).keys()).map(request => request.url)))).flat()
   })
   expect(cachedUrls.every(url => new URL(url).origin === 'http://127.0.0.1:4182')).toBe(true)
+  expect(cachedUrls.every(url => new URL(url).pathname.startsWith('/Wunschnagel/'))).toBe(true)
   expect(cachedUrls.some(url => url.includes('/assets/') && url.endsWith('.js'))).toBe(true)
 })

@@ -10,8 +10,8 @@ Dieser Test steuert Safari über XCTest und prüft eine tatsächliche iOS-Bildsc
 xcrun simctl openurl <SIMULATOR-ID> http://127.0.0.1:5173/
 xcodebuild test -project tests/safari-ios/MobileQA.xcodeproj -scheme MobileQA \
   -destination 'platform=iOS Simulator,id=<SIMULATOR-ID>' \
-  -derivedDataPath /private/tmp/wunschliste-ios-derived \
-  -resultBundlePath /private/tmp/wunschliste-ios-results.xcresult \
+  -derivedDataPath /private/tmp/wunschnagel-ios-derived \
+  -resultBundlePath /private/tmp/wunschnagel-ios-results.xcresult \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 ```
 

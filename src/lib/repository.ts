@@ -17,6 +17,7 @@ export interface Repository {
 
 const now = () => new Date().toISOString()
 const id = () => crypto.randomUUID()
+// Keep the historical key so saved demo lists survive the app/repository rename.
 const STORAGE = 'herzenswuensche-demo-v1'
 
 type DemoData = { lists: Wishlist[]; items: Wish[] }

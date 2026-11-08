@@ -6,11 +6,11 @@ import type { Wish, Wishlist } from '../src/domain.ts'
 const list = { id: '12345678-1234-4234-8234-123456789abc', share_token: 'a'.repeat(64), visibility: 'link' } as Wishlist
 
 test('private lists cannot produce share links', () => {
-  assert.throws(() => shareUrl({ ...list, visibility: 'private' }, 'https://example.org/wunschliste/'))
+  assert.throws(() => shareUrl({ ...list, visibility: 'private' }, 'https://example.org/Wunschnagel/'))
 })
 test('share links preserve GitHub Pages base path and strip previous query/hash', () => {
-  const url = shareUrl(list, 'https://example.org/wunschliste/?old=value#old')
-  assert.equal(url, `https://example.org/wunschliste/#/s/${list.share_token}`)
+  const url = shareUrl(list, 'https://example.org/Wunschnagel/?old=value#old')
+  assert.equal(url, `https://example.org/Wunschnagel/#/s/${list.share_token}`)
   assert.deepEqual(readShareRoute(new URL(url).hash), { kind: 'token', value: list.share_token })
   assert.equal(shareUrl({ ...list, visibility: 'public' }, 'https://example.org/'), `https://example.org/#/p/${list.id}`)
   assert.equal(readShareRoute('#access_token=not-a-list'), null)

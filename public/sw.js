@@ -1,5 +1,5 @@
 // Cache only the application shell. API responses and shop images never enter this cache.
-const CACHE = 'herzenswuensche-shell-v1'
+const CACHE = 'wunschnagel-shell-v1'
 // The build fills this with the emitted JS/CSS files, available on first install.
 const BUILD_ASSETS = []
 const scope = new URL(self.registration.scope)
@@ -9,7 +9,8 @@ self.addEventListener('install', event => {
   self.skipWaiting()
 })
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('herzenswuensche-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()))
+  // Remove obsolete shells from both the current and the previous app name.
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => (key.startsWith('wunschnagel-') || key.startsWith('herzenswuensche-')) && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()))
 })
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url)
