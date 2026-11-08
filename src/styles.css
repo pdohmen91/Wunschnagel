@@ -456,6 +456,17 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
 .list-picker-options small { display: block; color: var(--muted); font-size: 12px; }
 .list-picker-options > button > svg { flex-shrink: 0; }
 .list-create { width: 100%; margin-top: 16px; }
+.list-install { width: 100%; margin-bottom: 14px; background: #f8e5d3; border-color: #b7794d; }
+.list-install > svg:last-child { margin-left: auto; }
+.app-install-prompt { display: flex; align-items: center; gap: 4px; padding-inline: max(12px, var(--safe-left)) max(8px, var(--safe-right)); border-bottom: 1px solid #d3b497; background: #f8e5d3; color: var(--ink); }
+.install-prompt-action { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; min-height: 44px; padding: 6px 0; text-align: left; font-size: 13px; font-weight: 600; }
+.install-prompt-action > svg { flex-shrink: 0; }
+.install-prompt-action > small { margin-left: auto; font-size: 11px; font-weight: 400; }
+.install-prompt-action > svg:last-child { margin-left: auto; }
+.app-install-prompt .icon-button:hover { background: #eed4bb; }
+@container app-viewport (max-width: 620px) {
+  .install-prompt-action > small { display: none; }
+}
 .list-picker-footer { display: flex; flex-wrap: wrap; gap: 0 18px; padding-top: 14px; margin-top: 20px; border-top: 1px solid var(--line); }
 .info-list-name { color: var(--ink); font: 500 24px/1.35 var(--serif); overflow-wrap: anywhere; }
 .collection-tools-trigger { border: 1px solid #bcaab5; border-radius: 3px; color: var(--ink); background: var(--surface); }
@@ -466,6 +477,7 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
 .mobile-action-bar .button { min-height: 48px; padding-inline: 10px; font-size: 14px; white-space: nowrap; }
 
 @container app-viewport (max-width: 960px) {
+  .app-shell { grid-template-rows: auto 1fr; }
   .welcome { margin-top: 12px; }
   .welcome-icon { display: none; }
   .welcome h1 { font-size: 30px; }

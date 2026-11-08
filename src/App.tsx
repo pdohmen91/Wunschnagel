@@ -11,6 +11,7 @@ import type { Repository } from './lib/repository'
 import { useLinkPreview } from './lib/useLinkPreview'
 import { animate, closeDetails, dialogOpener, dismissDialog, useCardMotion, useHeightMotion } from './lib/motion'
 import { useCompactLayout } from './lib/useCompactLayout'
+import { useInstallPrompt } from './lib/useInstallPrompt'
 
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
@@ -18,6 +19,7 @@ const PrivacyIcon = ({ value, size = 14 }: { value: Visibility; size?: number })
 
 export default function App() {
   const compact = useCompactLayout()
+  const installation = useInstallPrompt()
   const iosWebApp = 'standalone' in navigator && navigator.standalone === true
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(!supabase)
@@ -207,13 +209,17 @@ export default function App() {
         <span>{route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
         <div>
           {compact && !route && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
-          {compact && !route && !demo && !user && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
+          {compact && !route && !demo && !user && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
           {compact && route && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Meine Listen</a>}
           {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
           {user && !demo && <button className="icon-button mobile-account" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={19} /></button>}
           {demo && supabase && <button className="icon-button mobile-account" aria-label="Zur Anmeldung" onClick={() => setDemo(false)}><LogIn size={19} /></button>}
         </div>
       </header>
+      {compact && installation.visible && <div className="app-install-prompt" role="region" aria-label="Wunschnagel als App nutzen">
+        <button className="install-prompt-action" onClick={() => setModal('install')} aria-label="App installieren" aria-haspopup="dialog"><ArrowDownToLine size={17} /><span>App installieren</span><small>Direkt vom Startbildschirm öffnen</small><ArrowRight size={15} /></button>
+        <button className="icon-button" aria-label="Installationshinweis schließen" onClick={installation.dismiss}><X size={16} /></button>
+      </div>}
       {demo && (compact ? <button className="compact-demo" onClick={() => setModal('preview')}><Info size={14} /><span>Vorschau · nur auf diesem Gerät</span><ChevronDown size={14} /></button> : <div className="demo-banner"><Info size={15} /><p><strong>Lokale Vorschau.</strong> Nur in diesem Browser gespeichert. Noch nicht teilbar.</p></div>)}
       {!online && <div className="offline-banner"><WifiOff size={16} /> Du bist offline. Gemeinsame Listen benötigen eine Internetverbindung.</div>}
       <div className="page-content">
@@ -279,9 +285,10 @@ export default function App() {
 
     {modal === 'lists' && <Dialog title="Meine Wunschlisten" onClose={closeModal}>
       <p className="dialog-intro">Alle deine Wunschzettel an einem Platz. Wähle eine Liste oder lege eine neue an.</p>
+      {!installation.installed && <button className="button secondary list-install" onClick={async () => { await closeModal(); setModal('install') }}><ArrowDownToLine size={17} /> App installieren <ArrowRight size={15} /></button>}
       <div className="list-picker-options">{lists.map(list => <button key={list.id} className={selectedId === list.id ? 'selected' : ''} onClick={async () => { await closeModal(); setSelectedId(list.id); setQuery(''); setFilter('all') }}><span aria-hidden="true">{list.emoji}</span><span>{list.title}<small>{visibilityLabels[list.visibility]}</small></span>{selectedId === list.id && <Check size={18} aria-label="Ausgewählt" />}</button>)}</div>
       {canEdit && <button className="button primary list-create" onClick={async () => { await closeModal(); setModal('list') }}><Plus size={17} /> Neue Wunschliste</button>}
-      <div className="list-picker-footer"><button className="text-button" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={17} /> So funktioniert’s</button><button className="text-button" onClick={async () => { await closeModal(); setModal('install') }}><ArrowDownToLine size={17} /> App installieren</button></div>
+      <div className="list-picker-footer"><button className="text-button" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={17} /> So funktioniert’s</button></div>
     </Dialog>}
     {modal === 'info' && selected && <Dialog title="Über diese Liste" onClose={closeModal}>
       <p className="info-list-name">{selected.emoji} {selected.title}</p>

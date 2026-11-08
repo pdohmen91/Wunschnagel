@@ -7,7 +7,8 @@ Stand: 8. November 2026.
 - Die untere Aktionsleiste zeigt die einzeiligen Aktionen „Teilen“ und „+ Wunsch“. Beide bleiben nach dem Scrollen erreichbar. Auf großen Bildschirmen stehen die ausgeschriebenen Aktionen weiterhin am Listenkopf.
 - Oben öffnet „Listen“ die vollständigen Listennamen und „Neue Wunschliste“. Die abgeschnittene Auswahl entfällt. Beschreibung, Sichtbarkeit und Kurzanleitung stehen unter „Details & Hilfe“; der Stift daneben öffnet die Listenbearbeitung.
 - Die Übersicht zeigt Titel, Statusfilter und Wünsche. Suche und Sortierung öffnen einen eigenen Dialog mit breiten Feldern, Abbrechen und explizitem Übernehmen. Zusätzliche Erklärungen verdrängen die Wünsche nicht mehr.
-- Auf Handys stehen Produktbild und Text nebeneinander. Die erste Beispielkarte ist bei 390 Pixel Breite 166 statt zuvor 361 CSS-Pixel hoch. Zwei vollständige Wünsche passen bei 390 × 844 Pixeln über die untere Leiste; dieser Platzgewinn wird im Browsertest geprüft. Die ungefilterte Übersicht beginnt bei 250 statt zuvor 310 CSS-Pixeln, einschließlich des zusätzlichen Demo-Hinweises. Die angemeldete Ansicht benötigt diese Hinweiszeile nicht.
+- Auf Handys stehen Produktbild und Text nebeneinander. Die erste Beispielkarte ist bei 390 Pixel Breite 166 statt zuvor 361 CSS-Pixel hoch. Zwei vollständige Wünsche passen bei 390 × 844 Pixeln über die untere Leiste; dieser Platzgewinn wird im Browsertest geprüft. Ohne Installationshinweis beginnt die ungefilterte Übersicht bei 250 statt zuvor 310 CSS-Pixeln, einschließlich des zusätzlichen Demo-Hinweises. Die angemeldete Ansicht benötigt die Demo-Zeile nicht.
+- Im Browser steht „App installieren“ als deutlich beschriftete Leiste unter dem App-Namen. Sie ist schließbar und entfällt in der installierten App. Oben im Listen-Dialog bleibt eine weitere Installationsschaltfläche erreichbar. Die Leiste wird sowohl bei Google-Anmeldung als auch in eigenen oder geteilten Listen angezeigt.
 - Überschriften, Abstände, Desktop-Bilder und Formulare sind kleiner. Texteingaben behalten 16 Pixel Schrift, Hauptaktionen 48 Pixel Höhe und weitere interaktive Elemente mindestens 44 Pixel. Lange Wunschtitel umbrechen vollständig, Hinweise lassen sich ausklappen. Das Bearbeitungsmenü sitzt unter dem Vorschaubild und öffnet sich nach oben. Fehlende Preise und Notizen erzeugen auf Handys keine zusätzlichen Platzhalterzeilen.
 - Die Aktionsleiste berücksichtigt Notch und Home-Indikator. Am Seitenende bleibt genug Platz, um die letzte Karte und ihren Shop-Link darüber zu lesen und zu bedienen. Rückmeldungen erscheinen oberhalb der Leiste.
 - Formulare richten sich nach der sichtbaren Höhe über der Tastatur. Bei geöffneter Tastatur werden die lange Einleitung und zusätzliche Footer-Hinweise ausgeblendet. Die Eingaben scrollen, während Speichern und Abbrechen erreichbar bleiben.
@@ -15,7 +16,7 @@ Stand: 8. November 2026.
 
 ## Browserprüfungen
 
-113 Browserprüfungen bestanden; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Dazu kommen 38 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des Laufs.
+Die vollständige Prüfung des kompakteren Designs bestand 113 Browserfälle; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Die anschließende Installationsänderung bestand 32 gezielte Browserprüfungen für Auffindbarkeit, Schließen, installierten Zustand, mobile Bedienung und Fensterbreiten. Dazu kommen 38 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des vollständigen Laufs.
 
 | Bereich | Prüfung |
 | --- | --- |

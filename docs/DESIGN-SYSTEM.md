@@ -102,6 +102,8 @@ Auf kleinen Bildschirmen öffnet „Details & Hilfe“ die Beschreibung und den 
 
 ## Handy als Hauptgerät
 
+Im mobilen Browser steht „App installieren“ als beschriftete Leiste direkt unter der Marke, sowohl vor der Anmeldung als auch bei eigenen und geteilten Listen. Die Leiste lässt sich für die aktuelle Browser-Sitzung schließen und entfällt in der installierten App. Die Installation bleibt oben im Listen-Dialog als breite Schaltfläche erreichbar. So bleibt die Aktion auffindbar, ohne die dauerhaft genutzte App-Ansicht zu vergrößern.
+
 Bis 960 Pixel App-Breite stehen „+ Wunsch“ und „Teilen“ einzeilig in einer festen unteren Aktionsleiste. Sie wird außerhalb des Größencontainers gerendert und berücksichtigt denselben tatsächlich sichtbaren Bereich wie Dialoge und Rückmeldungen. Unterhalb der Inhalte und über Systemrändern bleibt ein ausreichender Abstand. Der Listenkopf ist auf schmalen Geräten kompakter; dekorative Indizes treten zugunsten der Wünsche zurück.
 
 Die sichtbare Höhe und der vertikale Versatz des Visual Viewports begrenzen offene Formulare bei einer Bildschirmtastatur. Direkte Aktionen bleiben sichtbar, während ergänzende Einleitungstexte vorübergehend entfallen. Außerhalb eines Dialogs wird die untere Leiste bei verdecktem unteren Bildschirmbereich ausgeblendet. Zoom wird dabei ausdrücklich von einer verkleinerten Eingabefläche unterschieden.
