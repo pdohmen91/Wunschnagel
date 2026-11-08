@@ -87,6 +87,8 @@ Das Projekt [wunschnagel](https://supabase.com/dashboard/project/gjlvrtzsrecgmqd
 
 ### Google-Anmeldung
 
+Auf dem iPhone speichern Safari und die installierte Web-App ihre Anmeldung getrennt. Nach der Installation einmal über das App-Symbol anmelden; mit demselben Google-Konto sind dieselben Listen erreichbar. Die Sitzung bleibt über das Schließen und erneute Öffnen erhalten, vom Betreiber am 8. November 2026 bestätigt. Die Installationshilfe und die Anmeldeseite der installierten iOS-App erklären diesen Schritt. Siehe [WebKit: Login cookies und getrennter Web-App-Speicher](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/#login-cookies).
+
 Im [Supabase-Leitfaden für Google](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) sind die aktuellen Einrichtungsschritte beschrieben. Du legst dafür einen OAuth-Web-Client in einem Google-Cloud-Projekt an und trägst dessen Client-ID und Client-Secret **nur beim Google-Provider im Supabase-Dashboard** ein. Für diesen OAuth-Client braucht die App keine kostenpflichtige Google-API.
 
 - Die autorisierte Redirect-Adresse bei Google ist die Supabase-Callback-Adresse aus dem Provider-Dashboard, `https://gjlvrtzsrecgmqdghhgj.supabase.co/auth/v1/callback`.
