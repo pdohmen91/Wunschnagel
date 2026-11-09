@@ -2,6 +2,8 @@
 
 `automatic-price.mjs` verwendet dieselben Verbindungsvariablen wie unten und prüft zusätzlich die Preisermittlung der produktiven Edge Function an zwei unabhängig öffentlich recherchierten Produkten von Fivi und Apple. Ein isoliertes Konto testet im mobilen WebKit die sichtbare Preisvorschau, das Speichern, den Schutz selbst eingegebener Preise, die ausdrückliche Übernahme eines neuen Shop-Preises und den Preis für Lesegäste. Die Preisvorschau wird mit axe geprüft. Auch dieses Skript löscht seine Testdaten anschließend vollständig.
 
+Für eine andere unabhängig geprüfte Preisreferenz können `WUNSCHNAGEL_QA_PRODUCT_URL` und `WUNSCHNAGEL_QA_EXPECTED_PRICE` gesetzt werden. Dann entfällt der direkte Abruf der Shopify-Preisreferenz; ein fehlgeschlagener Referenzabruf wird nicht automatisch wiederholt.
+
 `collaboration.mjs` prüft die tatsächlichen Supabase-Zugriffsregeln und die mobile Oberfläche mit drei kurzlebigen, ausdrücklich als QA erkennbaren Konten. Vorhandene Konten und Listen werden nicht gelesen. Die Konten werden per Admin-API ohne Versand von E-Mails erstellt; nach dem Test werden sie samt eigenen Listen, Wünschen, Einladungen und Mitgliedschaften in `finally` gelöscht.
 
 Benötigt werden eine angemeldete Supabase-CLI mit Zugriff auf das explizit gewählte Projekt, Playwright-Browser und eine lokale JSON-Datei mit ausschließlich öffentlichen Verbindungsdaten (`url`, `publishable_key`). Den Admin-Schlüssel liest das Skript nur in den Arbeitsspeicher; er wird weder gespeichert noch in den Browser übertragen.

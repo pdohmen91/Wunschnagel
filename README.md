@@ -105,11 +105,11 @@ Im [Supabase-Leitfaden für Google](https://supabase.com/docs/guides/auth/social
 
 E-Mail-Login ist bewusst nicht enthalten: Supabases eingebauter Mailversand ist für Tests eingeschränkt und verschickt ohne eigenes SMTP nicht allgemein an Familie und Freunde. Google-Anmeldung vermeidet hier einen zusätzlichen Mailanbieter. Siehe [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
+### Shop-Vorschauen bereitstellen
+
 Preise werden aus aktiven strukturierten Produktangeboten, `product:price`-/`og:price`-Metadaten und eindeutigem Microdata-Markup gelesen. Ausgewählte Varianten werden anhand von URL und SKU zugeordnet; unterschiedliche Angebotspreise und unklare Preisspannen werden nicht als einzelner Preis übernommen. Ein Euro-Preis erscheint direkt in der Vorschau und wird beim Speichern übernommen. Fehlt er, bleibt das Preisfeld leer. Gespeicherte und selbst geänderte Preise bleiben auch beim Nachladen erhalten; ein Shop-Preis kann ausdrücklich übernommen werden. Beim Linkwechsel wird nur ein noch nicht selbst geänderter Importpreis verworfen. Es gibt keine laufende Preisüberwachung und keine Währungsumrechnung. Ein bestehender Wunsch ohne Preis kann beim Bearbeiten nachgeladen werden.
 
 Bei Fivi werden Beträge der Shopify Ajax API aus Cent umgerechnet. Die angezeigte Währung wird über den dokumentierten anonymen `GET /{locale}/cart.js`-Endpunkt geprüft; es werden keine Warenkorbänderungen vorgenommen und keine Browser-Cookies übertragen. Ohne bestätigte EUR-Währung bleiben Titel und Bild verwendbar, der Preis bleibt leer. Produktdaten und Währungsabfrage teilen sich dieselben Zeit-, Größen- und Sicherheitsgrenzen. Quellen: [Shopify Product API](https://shopify.dev/docs/api/ajax/reference/product), [Google Produktangebote und aktive Preise](https://developers.google.com/search/docs/appearance/structured-data/product-snippet).
-
-### Shop-Vorschauen bereitstellen
 
 Mit installierter [Supabase CLI 3](https://supabase.com/docs/guides/local-development/cli/getting-started):
 
@@ -126,7 +126,7 @@ Die Funktion liest Open Graph, Twitter Cards, strukturierte `Product`-/`ProductG
 
 Die Funktion führt kein Shop-JavaScript aus, verwendet keine Cookies und umgeht keinen Bot-Schutz. Sperren, Anfragelimits, fehlende Seiten, Zeitüberschreitungen und noch nicht unterstützte Shops werden getrennt gemeldet. Eine Prüfseite wie „Just a moment“ wird nicht als Wunschtitel übernommen. Nicht jeder Shop stellt lesbare Daten bereit; dann bleiben Titel und Bild-Link manuell eintragbar. Bilddateien werden nicht kopiert, sondern von der hinterlegten Bildadresse geladen. Shopbilder können deshalb später nicht mehr erreichbar sein; die App zeigt dann einen Platzhalter. Vorschauen erfordern öffentliche HTTPS-Adressen.
 
-Bei gespeicherten Wünschen ohne Bild startet das Öffnen von „Bearbeiten“ erneut den Shop-Abruf. Ein vorhandener eigener Titel bleibt erhalten. Mit „Wunsch speichern“ wird das nachgeladene Bild übernommen. Wenn der Shop nur einen Titel liefert, weist das Formular ausdrücklich auf das fehlende Bild hin. Vollständige erfolgreiche Vorschauen werden pro angemeldeter Datenquelle bis zu fünf Minuten im Arbeitsspeicher des Browsers zwischengespeichert, maximal 40 Einträge. „Shop-Vorschau neu laden“ umgeht diesen Cache. Fehler und unvollständige Vorschauen werden nicht zwischengespeichert.
+Bei gespeicherten Wünschen ohne Bild oder Preis startet das Öffnen von „Bearbeiten“ erneut den Shop-Abruf. Ein vorhandener eigener Titel bleibt erhalten. Mit „Wunsch speichern“ wird das nachgeladene Bild übernommen. Wenn der Shop nur einen Titel liefert, weist das Formular ausdrücklich auf das fehlende Bild hin. Vollständige erfolgreiche Vorschauen werden pro angemeldeter Datenquelle bis zu fünf Minuten im Arbeitsspeicher des Browsers zwischengespeichert, maximal 40 Einträge. „Shop-Vorschau neu laden“ umgeht diesen Cache. Fehler und unvollständige Vorschauen werden nicht zwischengespeichert.
 
 Am 9. November 2026 wurden nach ausdrücklicher Zustimmung des Betreibers vier gespeicherte Links ohne Bild über die produktive Edge Function geprüft. Bambu Lab, Fivi und Dyson lieferten Titel und erreichbare Bilder. Der eBay-Link wurde trotz erlaubtem Zielhost vom Shop blockiert und entsprechend gemeldet. Öffentliche Amazon- und Apple-Testprodukte lieferten weiterhin Titel und Bilder. Vorhandene Wünsche wurden dabei nicht verändert; die isolierten Testkonten wurden entfernt.
 

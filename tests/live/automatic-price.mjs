@@ -14,7 +14,7 @@ const keys = JSON.parse(execFileSync(process.env.WUNSCHNAGEL_QA_SUPABASE || 'sup
 const options = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 const admin = createClient(url, keys.find(k => k.type === 'secret').api_key, options), api = createClient(url, key, options)
 const base = process.env.WUNSCHNAGEL_QA_BASE || 'https://pdohmen91.github.io/Wunschnagel/'
-const productUrl = 'https://fivi.gg/products/officemesser-luca-fivi'
+const productUrl = process.env.WUNSCHNAGEL_QA_PRODUCT_URL || 'https://fivi.gg/products/officemesser-luca-fivi'
 let userId, browser, phase = 'Setup'
 async function checked(request) { const { data, error } = await request; if (error) throw new Error(error.message); return data }
 try {
@@ -23,14 +23,19 @@ try {
   userId = created.user.id
   const signed = await checked(api.auth.signInWithPassword({ email, password }))
   phase = 'Independent public price baseline'
-  const source = await (await fetch(productUrl + '.js', { signal: AbortSignal.timeout(8000) })).json()
-  const expectedPrice = source.price / 100
+  let expectedPrice = Number(process.env.WUNSCHNAGEL_QA_EXPECTED_PRICE)
+  if (!process.env.WUNSCHNAGEL_QA_EXPECTED_PRICE) {
+    const response = await fetch(productUrl + '.js', { signal: AbortSignal.timeout(8000) })
+    if (!response.ok) throw new Error(`Öffentliche Preisreferenz nicht verfügbar (HTTP ${response.status}); kein automatischer Wiederholungsversuch.`)
+    const source = await response.json()
+    expectedPrice = source.price / 100
+  }
   assert.ok(Number.isFinite(expectedPrice) && expectedPrice > 0)
   phase = 'Production edge function extracts prices'
   const preview = await checked(api.functions.invoke('link-preview', { body: { url: productUrl } }))
   assert.equal(preview.price, expectedPrice)
   assert.ok(preview.title && preview.image_url)
-  const apple = await checked(api.functions.invoke('link-preview', { body: { url: 'https://www.apple.com/de/shop/buy-airtag/airtag?product=MFE94ZM%2FA' } }))
+  const apple = new URL(productUrl).hostname === 'www.apple.com' ? preview : await checked(api.functions.invoke('link-preview', { body: { url: 'https://www.apple.com/de/shop/buy-airtag/airtag?product=MFE94ZM%2FA' } }))
   assert.ok(typeof apple.price === 'number' && apple.price > 0)
   const list = await checked(api.from('wishlists').insert({ owner_id: userId, title: '[QA] Automatischer Preis', emoji: '🔎', visibility: 'link' }).select().single())
   phase = 'Mobile app imports price without opening optional fields'
@@ -72,7 +77,7 @@ try {
   await guest.goto(base + '#/s/' + list.share_token)
   await expect(guest.getByRole('article').locator('.price')).toContainText(money.format(expectedPrice))
   await expect(guest.locator('.card-menu')).toHaveCount(0)
-  console.log(JSON.stringify({ liveFiviPriceMatchesShop: true, appleSkuPriceImported: true, mobilePreviewShowsPrice: true, savedPriceSurvivesReload: true, manualPricePreserved: true, explicitPriceAdoptionWorks: true, sharedGuestsSeePrice: true, accessibilityPassed: true }))
+  console.log(JSON.stringify({ testedHost: new URL(productUrl).hostname, shopPriceMatchesBaseline: true, appleSkuPriceImported: true, mobilePreviewShowsPrice: true, savedPriceSurvivesReload: true, manualPricePreserved: true, explicitPriceAdoptionWorks: true, sharedGuestsSeePrice: true, accessibilityPassed: true }))
 } catch (e) {
   console.error(JSON.stringify({ phase, message: String(e.message).split('\n')[0].replace(/(access_token|refresh_token)=[^&\s]+/g, '$1=[redacted]').replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted-jwt]') }))
   process.exitCode = 1
