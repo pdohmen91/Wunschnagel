@@ -32,11 +32,12 @@ const STORAGE = 'herzenswuensche-demo-v1'
 
 type DemoData = { lists: Wishlist[]; items: Wish[] }
 function seed(): DemoData {
-  const list = (title: string, emoji: string, description: string, visibility: Wishlist['visibility']): Wishlist => ({ id: id(), owner_id: 'demo', title, emoji, description, visibility, share_token: id() + id().replaceAll('-', ''), created_at: now() })
+  const createdAt = now()
+  const list = (title: string, emoji: string, description: string, visibility: Wishlist['visibility']): Wishlist => ({ id: id(), owner_id: 'demo', title, emoji, description, visibility, share_token: id() + id().replaceAll('-', ''), created_at: createdAt })
   const birthday = list('Kleine & große Wünsche', '🌿', 'Ein paar Dinge, über die ich mich freuen würde. Das schönste Geschenk ist aber gemeinsame Zeit.', 'link')
   const christmas = list('Für Weihnachten', '🎄', 'Für gemütliche Tage und kleine Überraschungen.', 'private')
   const home = list('Unser Zuhause', '🏡', 'Schöne Dinge für unseren Lieblingsort.', 'public')
-  const item = (title: string, url: string, notes: string, price: number, image_url: string, search_term: string): Wish => ({ id: id(), wishlist_id: birthday.id, title, url, notes, price, image_url, offer_source: 'idealo', search_term, search_url: '', fulfilled: false, created_at: now() })
+  const item = (title: string, url: string, notes: string, price: number, image_url: string, search_term: string): Wish => ({ id: id(), wishlist_id: birthday.id, title, url, notes, price, image_url, offer_source: 'idealo', search_term, search_url: '', fulfilled: false, created_at: createdAt })
   return { lists: [birthday, christmas, home], items: [
     item('Ein guter Kaffee am Morgen', 'https://www.bialetti.com/', 'Eine kleine Espressokanne für zwei. Am liebsten der Klassiker in Silber.', 39.90, './illustrations/coffee.svg', 'Bialetti Moka Express 2 Tassen'),
     item('Mehr Zeit für gute Geschichten', 'https://www.thalia.de/', 'Ein Buch, das du selbst gern gelesen hast. Eine persönliche Empfehlung wäre toll!', 22, './illustrations/books.svg', 'Buch'),

@@ -20,6 +20,7 @@ import { CollaborationPanel, Invitation } from './lib/Collaboration'
 import { useSavedLists } from './lib/useSavedLists'
 import { SavedListsPanel } from './lib/SavedListsPanel'
 
+const defaultSort: WishSort = 'newest'
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
 const PrivacyIcon = ({ value, size = 14 }: { value: Visibility; size?: number }) => value === 'private' ? <LockKeyhole size={size} /> : value === 'public' ? <Globe2 size={size} /> : <Link2 size={size} />
@@ -46,7 +47,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all')
-  const [sort, setSort] = useState<WishSort>('added')
+  const [sort, setSort] = useState<WishSort>(defaultSort)
   const [modal, setModal] = useState<'list' | 'edit-list' | 'item' | 'share' | 'install' | 'help' | 'lists' | 'info' | 'tools' | 'preview' | 'gift' | null>(null)
   const [editItem, setEditItem] = useState<Wish | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'item' | 'list'; id: string; title: string } | null>(null)
@@ -392,10 +393,10 @@ export default function App() {
                   <button aria-pressed={filter === 'open'} className={filter === 'open' ? 'selected' : ''} onClick={() => setFilter('open')}>Offen</button>
                   <button aria-pressed={filter === 'done'} className={filter === 'done' ? 'selected' : ''} onClick={() => setFilter('done')}>Erfüllt</button>
                 </div>
-                {compact ? <button className={`collection-tools-trigger icon-button ${query || sort !== 'added' ? 'is-active' : ''}`} aria-label="Suchen und sortieren" aria-haspopup="dialog" onClick={() => setModal('tools')}><Search size={20} /></button> : <div className="toolbar-controls">
+                {compact ? <button className={`collection-tools-trigger icon-button ${query || sort !== defaultSort ? 'is-active' : ''}`} aria-label="Suchen und sortieren" aria-haspopup="dialog" onClick={() => setModal('tools')}><Search size={20} /></button> : <div className="toolbar-controls">
                   <label className="search"><Search size={16} /><input aria-label="Wünsche durchsuchen" placeholder="Wünsche suchen" value={query} onChange={e => setQuery(e.target.value)} />{query && <button className="icon-button" aria-label="Suche zurücksetzen" onClick={() => setQuery('')}><X size={14} /></button>}</label>
                   <label className="sort-control"><span>Sortieren</span><select aria-label="Wünsche sortieren" value={sort} onChange={e => setSort(e.target.value as WishSort)}>
-                    <option value="added">Reihenfolge der Liste</option><option value="newest">Neueste zuerst</option><option value="name">Name A–Z</option><option value="price-asc">Preis aufsteigend</option><option value="price-desc">Preis absteigend</option>
+                    <option value="newest">Neueste zuerst</option><option value="added">Reihenfolge der Liste</option><option value="name">Name A–Z</option><option value="price-asc">Preis aufsteigend</option><option value="price-desc">Preis absteigend</option>
                   </select></label>
                 </div>}
               </div>}
@@ -648,8 +649,8 @@ function CollectionToolsDialog({ query, sort, onClose, onApply }: { query: strin
     <form onSubmit={event => { event.preventDefault(); void onApply(draftQuery, draftSort) }}>
       <FormFields><fieldset>
         <label className="field">Wünsche durchsuchen<input autoFocus aria-label="Wünsche durchsuchen" value={draftQuery} onChange={event => setDraftQuery(event.target.value)} placeholder="Name, Shop oder Hinweis" inputMode="search" enterKeyHint="search" autoCapitalize="none" autoCorrect="off" /></label>
-        <label className="field">Sortierung<span className="select-wrapper"><select aria-label="Wünsche sortieren" value={draftSort} onChange={event => setDraftSort(event.target.value as WishSort)}><option value="added">Reihenfolge der Liste</option><option value="newest">Neueste zuerst</option><option value="name">Name A–Z</option><option value="price-asc">Preis aufsteigend</option><option value="price-desc">Preis absteigend</option></select><ChevronDown size={16} /></span></label>
-        <button type="button" className="text-button" onClick={() => { setDraftQuery(''); setDraftSort('added') }}><RotateCcw size={15} /> Suche und Sortierung zurücksetzen</button>
+        <label className="field">Sortierung<span className="select-wrapper"><select aria-label="Wünsche sortieren" value={draftSort} onChange={event => setDraftSort(event.target.value as WishSort)}><option value="newest">Neueste zuerst</option><option value="added">Reihenfolge der Liste</option><option value="name">Name A–Z</option><option value="price-asc">Preis aufsteigend</option><option value="price-desc">Preis absteigend</option></select><ChevronDown size={16} /></span></label>
+        <button type="button" className="text-button" onClick={() => { setDraftQuery(''); setDraftSort(defaultSort) }}><RotateCcw size={15} /> Suche und Sortierung zurücksetzen</button>
       </fieldset></FormFields>
       <div className="dialog-actions"><button type="button" className="button secondary" onClick={onClose}>Abbrechen</button><button className="button primary"><Search size={16} /> Ergebnisse anzeigen</button></div>
     </form>
