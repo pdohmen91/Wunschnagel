@@ -126,12 +126,14 @@ Die Darstellung ändert keine gespeicherten Angaben oder Freigaberechte.
 
 - Geburtstag: leicht rosiges Papier, warme Rosé-Akzente und ein gestrichelter
   Geschenkanhänger am Titel.
-- Weihnachten: cremefarbenes Papier, Tannengrün und gedämpftes Gold; eine kleine
-  goldene Kante am Anhänger.
+- Weihnachten: cremefarbenes Papier, ein dunkelgrüner Listenkopf wie eine
+  Weihnachtskarte, Tannengrün und gedämpftes Gold. Gezeichnete Zweige und kleine
+  Kugeln rahmen den Kopf; Sterne und ein Tannenzweig liegen im Papierhintergrund.
 - Das allgemeine Standardsymbol wird passend zu Torte oder Tanne. Ein bewusst
   gewähltes anderes Listensymbol bleibt erhalten.
-- Typografie, Kartengrößen, Touchflächen und Reihenfolge bleiben dieselben. Es
-  kommen keine zusätzlichen Banner, Animationen oder dekorativen Flächen hinzu.
+- Typografie, Kartengrößen, Touchflächen und Reihenfolge bleiben dieselben.
+  Die Weihnachtsgrafiken liegen außerhalb des Layoutflusses und beanspruchen
+  keine zusätzliche Höhe. Es kommen keine weiteren Hinweistexte hinzu.
 - Überschrift, Kartenflächen, Filter, Angebotsbuttons und Kaufdialoge verwenden
   dieselben Anlass-Tokens. Die dunkle Wunschnagel-Navigation bleibt erkennbar.
 - Die Tokens werden beim Wechsel auf eine neutrale/private Liste wieder entfernt.
@@ -142,3 +144,28 @@ Visuell geprüft in Chrome und mobilem WebKit, einschließlich 320 Pixel Breite,
 Kontrastprüfung und des thematisch passenden Kaufdialogs. Im Zuge der mobilen
 Prüfung wurde die Gast-Kaufaktion über die volle Kartenbreite gesetzt; der
 „Bereits gekauft“-Hinweis bleibt innerhalb des kleinen Produktbildes.
+
+
+## Weihnachtsillustration: Tannenzweige, Kugeln und warmes Licht
+
+`src/lib/ChristmasDecor.tsx` zeichnet eigene SVG-Grafiken direkt in der App.
+Die Zweige, goldenen und ziegelroten Kugeln, Papiersterne und kleinen Lichter
+benötigen keine Downloads, Bilddienste oder zusätzliche Bibliotheken. Sie werden
+nur bei der erkannten Weihnachtsvariante eingeblendet. Die Navigation erhält
+passend zum Listenkopf ein dunkles Tannengrün und eine feine Lichterkette.
+
+Die Illustrationsebenen haben keine Zeigerereignisse, keine Fokusziele und sind
+für Screenreader verborgen. Der Listenkopf hat eine deckende dunkelgrüne
+Unterlage mit heller Beschriftung; Informations- und Bearbeitungsaktionen behalten
+lesbare Fokus- und Hoverzustände. Die Papierelemente hinter Karten, Filtern und
+Fußzeile bleiben leicht. Die Dekoration darf keine neuen Positionierungsbezüge
+für die mobile Kopfleiste herstellen.
+
+Die Lichter blenden einmal für höchstens anderthalb Sekunden sanft ein. Es gibt
+keinen dauernden Schneefall oder fortlaufendes Blinken. Reduzierte Bewegung
+schaltet die Einblendung aus. Native Dialoge übernehmen eine kleine goldene
+Oberkante; Formularinhalte und Produktbilder erhalten keine überlagernde Grafik.
+
+Die Prüfung umfasst Desktop, mobiles WebKit bei 390 und 320 Pixel Breite,
+Kontrast, den Weihnachts-Kaufdialog, die Position der mobilen Kopfleistenaktionen,
+reduzierte Bewegung und das Entfernen der Grafiken bei neutralen/privaten Listen.

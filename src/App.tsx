@@ -9,6 +9,7 @@ import { authCallbackWarning, supabase } from './lib/client'
 import { cloudRepository, demoRepository } from './lib/repository'
 import type { Repository } from './lib/repository'
 import { ensureGiftReceipt, forgetGiftReceipt, giftReceipt } from './lib/giftReceipts'
+import { ChristmasAtmosphere, ChristmasHeaderArtwork, ChristmasLights } from './lib/ChristmasDecor'
 import { listOccasion } from './lib/listOccasion'
 import { useLinkPreview } from './lib/useLinkPreview'
 import { animate, closeDetails, dialogOpener, dismissDialog, useCardMotion, useHeightMotion } from './lib/motion'
@@ -279,6 +280,7 @@ export default function App() {
         <span className="brand-icon"><WishMark /></span>
         <span className="brand-wordmark"><strong>Wunschnagel</strong><small>Deine Wünsche. Festgehalten.</small></span>
       </a>
+      {occasion === 'christmas' && <ChristmasLights />}
       <div className="sidebar-body">
         <div className="nav-title"><span>{invite ? 'Einladung' : route ? 'Geteilte Liste' : 'Meine Listen'}</span>{!route && !invite && <span className="count">{lists.length}</span>}</div>
         {!route && !invite && <nav className="list-nav" aria-label="Wunschlisten">
@@ -320,6 +322,7 @@ export default function App() {
       {demo && !invite && (compact ? <button className="compact-demo" onClick={() => setModal('preview')}><Info size={14} /><span>Vorschau · nur auf diesem Gerät</span><ChevronDown size={14} /></button> : <div className="demo-banner"><Info size={15} /><p><strong>Lokale Vorschau.</strong> Nur in diesem Browser gespeichert. Noch nicht teilbar.</p></div>)}
       {!online && <div className="offline-banner"><WifiOff size={16} /> Du bist offline. Gemeinsame Listen benötigen eine Internetverbindung.</div>}
       <div className="page-content">
+        {occasion === 'christmas' && <ChristmasAtmosphere />}
         {!authReady ? <Loading /> : invite ? <Invitation token={invite} repo={repo} signedIn={!!user} onLogin={login} onAccept={async id => {
           try { sessionStorage.removeItem('wunschnagel-pending-invite') } catch { /* Optional after acceptance. */ }
           setSelectedId(id); setQuery(''); setFilter('all'); setDemo(false)
@@ -338,6 +341,7 @@ export default function App() {
           {selected ? <div className="list-view" key={selected.id}>
             <div className="breadcrumb"><span>{route ? 'Mit dir geteilt' : 'Meine Listen'}</span><span>/</span><strong>{selected.title}</strong></div>
             <section className="list-heading">
+              {occasion === 'christmas' && <ChristmasHeaderArtwork />}
               <div>
                 <div className="list-eyebrow"><span>{occasion === 'birthday' ? 'Geburtstagswünsche' : occasion === 'christmas' ? 'Weihnachtswünsche' : route ? 'Mit dir geteilt' : 'Deine Wunschliste'}</span>{!route && <span>{String(lists.findIndex(list => list.id === selected.id) + 1).padStart(2, '0')} / {String(lists.length).padStart(2, '0')}</span>}</div>
                 <div className="list-title-row"><span className="list-cover" aria-hidden="true">{selected.emoji === '🌿' && occasion ? occasion === 'birthday' ? <Cake size={23} strokeWidth={1.5} /> : <TreePine size={23} strokeWidth={1.5} /> : selected.emoji}</span><h1>{selected.title}</h1></div>
