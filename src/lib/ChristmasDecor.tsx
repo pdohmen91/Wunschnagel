@@ -1,4 +1,4 @@
-/** Decorative vector artwork: no downloads, focus targets or layout footprint. */
+/** Decorative vector artwork: no downloads or focus targets. */
 function PineSprig({ transform, color = '#6d8a6d' }: { transform: string; color?: string }) {
   const needles = [[76, 27], [66, 45], [59, 65], [55, 85], [54, 106], [57, 127]]
   return <g transform={transform} fill="none" stroke={color} strokeLinecap="round">
@@ -33,15 +33,21 @@ export function ChristmasAtmosphere() {
 }
 
 export function ChristmasLights() {
-  return <svg className="christmas-nav-lights" aria-hidden="true" viewBox="0 0 1200 60" preserveAspectRatio="none" focusable="false">
-      <path d="M-10 4Q600 65 1210 4" fill="none" stroke="#bba36e" strokeWidth="1.2" />
-      {[45, 150, 255, 360, 465, 570, 675, 780, 885, 990, 1095, 1200].map((x, i) => {
-        const y = 5 + 28 * (1 - Math.pow((x - 600) / 610, 2))
-        return <g key={x} className="christmas-light" style={{ animationDelay: `${i * 55}ms` }}>
-          <path d={`M${x} ${y}v7`} stroke="#bba36e" strokeWidth="1.2" />
-          <circle cx={x} cy={y + 11} r="8" fill="#dbb15f" opacity=".14" />
-          <ellipse cx={x} cy={y + 11} rx="2.5" ry="4" fill="#f0cf80" />
-        </g>
-      })}
+  return <div className="christmas-nav-lights" aria-hidden="true">
+    <svg className="christmas-light-wire" viewBox="0 0 100 20" preserveAspectRatio="none" focusable="false">
+      <path d="M-5 2Q50 20 105 2" fill="none" stroke="#cfb476" strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
     </svg>
+    {Array.from({ length: 10 }, (_, index) => {
+      const position = 5 + index * 10
+      const wireY = 2 + 9 * (1 - Math.pow((position - 50) / 55, 2))
+      return <span key={position} className="christmas-light" style={{ left: `${position}%`, top: wireY, animationDelay: `${index * 55}ms` }}>
+        <svg viewBox="0 0 24 28" width="24" height="28" focusable="false">
+          <path d="M12 0v6" stroke="#cfb476" strokeWidth="1.5" />
+          <rect x="8.5" y="5" width="7" height="4" rx="1" fill="#c09550" />
+          <ellipse className="christmas-light-bulb" cx="12" cy="15.5" rx="4.5" ry="6.5" fill="#ffe5a0" />
+          <ellipse cx="10.7" cy="14.5" rx="1.1" ry="3.2" fill="#fffdf0" opacity=".95" />
+        </svg>
+      </span>
+    })}
+  </div>
 }

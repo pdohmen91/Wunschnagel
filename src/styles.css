@@ -630,7 +630,10 @@ html[data-occasion] .image-placeholder span { color: inherit; }
 html[data-occasion=christmas] .sidebar { background: #203e33; border-color: #203e33; }
 html[data-occasion=christmas] .page-content { position: relative; isolation: isolate; }
 .christmas-atmosphere { position: absolute; inset: 0; overflow: hidden; pointer-events: none; user-select: none; z-index: -1; }
-.christmas-nav-lights { position: absolute; z-index: -1; top: 66px; left: 0; width: 100%; height: 16px; pointer-events: none; user-select: none; }
+.christmas-nav-lights { position: relative; z-index: 0; flex-shrink: 0; width: 100%; height: 40px; margin-top: -8px; pointer-events: none; user-select: none; }
+.christmas-light-wire { position: absolute; top: 0; left: 0; width: 100%; height: 20px; }
+.christmas-nav-lights .christmas-light { position: absolute; display: block; width: 24px; height: 28px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 58%, #ffdb8585 0, #ffcd5833 38%, #ffcd5800 72%); }
+.christmas-light > svg { display: block; }
 .christmas-paper-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
 .christmas-paper-bough { position: absolute; bottom: 4px; left: -32px; width: clamp(170px, 26vw, 290px); height: auto; opacity: .18; }
 html[data-occasion=christmas] .list-heading { --christmas-art-height: 190px; position: relative; isolation: isolate; align-items: end; padding: calc(var(--christmas-art-height) + 18px) 20px 20px; gap: 14px; margin-bottom: 20px; border-bottom-color: transparent; border-radius: 5px 5px 20px 5px; }
@@ -652,7 +655,7 @@ html[data-occasion=christmas] .wish-card { border-color: #c3cebd; box-shadow: 3p
 @container app-viewport (max-width: 620px) {
   html[data-occasion=christmas] .list-heading { --christmas-art-height: 132px; padding: calc(var(--christmas-art-height) + 14px) 14px 16px; gap: 10px; margin-bottom: 18px; }
   html[data-occasion=christmas] .list-heading h1 { font-size: 24px; line-height: 1.18; letter-spacing: -.45px; }
-  .christmas-nav-lights { top: auto; bottom: 0; height: 14px; }
+  .christmas-nav-lights { margin-top: 0; }
   .christmas-paper-bough { left: -44px; width: 185px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -662,7 +665,7 @@ html[data-occasion=christmas] .wish-card { border-color: #c3cebd; box-shadow: 3p
 html[data-occasion=christmas] .mobile-list-trigger, html[data-occasion=christmas] .sidebar .new-list { border-color: #86946b; }
 html[data-occasion=christmas] .dialog { border-top-color: #d5b474; }
 @container app-viewport (min-width: 621px) and (max-width: 960px) {
-  .christmas-nav-lights { top: auto; bottom: 0; height: 14px; }
+  .christmas-nav-lights { margin-top: 0; }
 }
 
 /* Account bookmarks: a small action on shared lists, a clear home in Listen. */
