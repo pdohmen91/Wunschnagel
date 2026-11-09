@@ -587,3 +587,5 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
   .list-empty p { font-size: 14px; line-height: 1.6; }
   .empty-icon { width: 44px; height: 48px; }
 }
+
+.member-email { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }

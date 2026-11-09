@@ -1,3 +1,4 @@
+import { signInQa, openQaSession } from './qa-auth.mjs'
 // Opt-in integration test against an explicitly configured backend. Creates
 // isolated QA accounts only; never queries existing users or personal lists.
 import assert from 'node:assert/strict'
@@ -23,13 +24,11 @@ async function account(name) {
   const created = await checked(admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: name } }))
   userIds.push(created.user.id)
   const client = createClient(url, key, options)
-  const signed = await checked(client.auth.signInWithPassword({ email, password }))
+  const signed = await signInQa(client, admin, email)
   return { id: created.user.id, client, session: signed.session }
 }
-async function signIn(page, session) {
-  const fragment = new URLSearchParams({ access_token: session.access_token, refresh_token: session.refresh_token, expires_in: '3600', token_type: 'bearer' })
-  await page.goto(base + '#' + fragment)
-}
+async function signIn(page, session) { await openQaSession(page, base, url, session) }
+
 const mobile = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' }
 try {
   const owner = await account('QA Besitzer'), editor = await account('QA Mitbearbeiter'), outsider = await account('QA Außenstehend')
@@ -58,7 +57,7 @@ try {
   await expect(memberPage.getByRole('heading', { name: /Gemeinsame Wünsche/ })).toBeVisible()
   await expect(memberPage.getByRole('article')).toHaveCount(0)
   assert.deepEqual((await new AxeBuilder({ page: memberPage }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id), [])
-  assert.equal((await checked(anon.from('wishlists').select('id').eq('id', list.id))).length, 0)
+  assert.ok((await anon.from('wishlists').select('id').eq('id', list.id)).error)
   assert.equal((await checked(outsider.client.from('wishlists').select('id').eq('id', list.id))).length, 0)
   assert.equal(await checked(anon.rpc('get_shared_wishlist', { token: list.share_token })), null)
   await memberPage.screenshot({ path: 'test-results/collaboration-invitation-mobile.png' })
@@ -67,7 +66,13 @@ try {
   await memberPage.waitForURL(target => target.pathname.endsWith('/authorize'))
   // The real Google consent was confirmed by the operator separately. Complete
   // this controlled handoff with the isolated user's legitimate Supabase session.
-  await signIn(memberPage, editor.session)
+  await memberPage.route(`${url}/auth/v1/token?grant_type=pkce`, async route => {
+    const body = route.request().postDataJSON()
+    assert.equal(body.auth_code, 'qa-controlled-code')
+    assert.ok(body.code_verifier?.length >= 43)
+    await route.fulfill({ json: editor.session, headers: { 'Access-Control-Allow-Origin': '*' } })
+  })
+  await memberPage.goto(base + '?code=qa-controlled-code')
   await expect(memberPage).toHaveURL(/#\/invite\/[a-f0-9]{64}$/)
   await expect(memberPage.getByRole('button', { name: 'Einladung annehmen', exact: true })).toBeVisible()
   assert.equal((await checked(editor.client.rpc('get_my_wishlists'))).length, 0)

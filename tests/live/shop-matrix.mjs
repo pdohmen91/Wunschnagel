@@ -1,3 +1,4 @@
+import { signInQa } from './qa-auth.mjs'
 // Public product fixtures only. Does not query existing users/lists, send mail,
 // retry blocked shops, or bypass the function's normal per-user request budget.
 import assert from 'node:assert/strict'
@@ -20,7 +21,7 @@ try {
   const email = `wunschnagel-shops-qa-${randomBytes(8).toString('hex')}@example.invalid`, password = randomBytes(32).toString('base64url')
   const created = await checked(admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: 'QA Shopprüfung' } }))
   userId = created.user.id
-  await checked(api.auth.signInWithPassword({ email, password }))
+  await signInQa(api, admin, email)
   for (const sample of samples.filter(sample => !chosen || chosen.includes(sample.shop))) {
     const start = Date.now()
     const { data, error } = await api.functions.invoke('link-preview', { body: { url: sample.url } })

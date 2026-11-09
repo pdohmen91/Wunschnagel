@@ -125,12 +125,10 @@ export function cloudRepository(userId: string): Repository {
         if (!data) throw new Error('Diese Liste ist privat, wurde gelöscht oder der Link wurde erneuert.')
         return data as SharedList
       }
-      const { data: list, error } = await db.from('wishlists').select('*').eq('id', value).eq('visibility', 'public').maybeSingle()
+      const { data, error } = await db.rpc('get_public_wishlist', { list_id: value })
       if (error) throw error
-      if (!list) throw new Error('Diese Liste ist nicht öffentlich oder wurde gelöscht.')
-      const { data: items, error: itemError } = await db.from('wishes').select('*').eq('wishlist_id', list.id).order('created_at')
-      if (itemError) throw itemError
-      return { list: list as Wishlist, items: items as Wish[] }
+      if (!data) throw new Error('Diese Liste ist nicht öffentlich oder wurde gelöscht.')
+      return data as SharedList
     },
     collaboration: async listId => { const { data, error } = await db.rpc('get_collaboration', { list_id: listId }); if (error) throw error; return data as Collaboration },
     createInvite: async listId => { const { error } = await db.rpc('create_wishlist_invite', { list_id: listId }); if (error) throw error },

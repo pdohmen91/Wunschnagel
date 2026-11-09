@@ -28,7 +28,7 @@ export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visi
 export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string; price?: number | null }
 export type SharedList = { list: Wishlist; items: Wish[] }
-export type Collaboration = { invite: { token: string; expires_at: string } | null; members: { user_id: string; display_name: string; joined_at: string }[] }
+export type Collaboration = { invite: { token: string; expires_at: string } | null; members: { user_id: string; display_name: string; email?: string | null; joined_at: string }[] }
 export type ListInvitation = { title: string; emoji: string; expires_at: string; already_joined: boolean }
 export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'
 

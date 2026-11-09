@@ -1,4 +1,5 @@
 import { euroPrice } from './prices.ts'
+import { rawTextBlocks, withoutRawText } from './markup.ts'
 
 // Read a JSON argument embedded in server-rendered HTML. Never evaluate shop
 // JavaScript. Bracket/string tracking prevents cutting at braces inside strings.
@@ -28,10 +29,10 @@ function zalandoPrice(html: string, url: URL): number | null {
   const sku = url.pathname.match(/([a-z0-9]{6,}-[a-z0-9]+)\.html$/i)?.[1].toUpperCase()
   if (!sku) return null
   const fragments: { trackingCurrentAmount?: number; original?: { amount?: number; currency?: string; formatted?: string }; promotional?: { amount?: number; currency?: string; formatted?: string } }[] = []
-  for (const script of html.matchAll(/<script\b[^>]{0,8000}>([\s\S]*?)<\/script\s*>/gi)) {
-    const marker = /runtime\[['"]hydratePartial['"]\]\s*\(\s*/.exec(script[1])
+  for (const script of rawTextBlocks(html, ['script'])) {
+    const marker = /runtime\[['"]hydratePartial['"]\]\s*\(\s*/.exec(script.content)
     if (!marker) continue
-    const data = jsonArgument(script[1], marker.index + marker[0].length) as { cache?: Record<string, { data?: { product?: { sku?: string; id?: string; displayPrice?: { trackingCurrentAmount?: number; original?: { amount?: number; currency?: string }; promotional?: { amount?: number; currency?: string } } } } }> } | null
+    const data = jsonArgument(script.content, marker.index + marker[0].length) as { cache?: Record<string, { data?: { product?: { sku?: string; id?: string; displayPrice?: { trackingCurrentAmount?: number; original?: { amount?: number; currency?: string }; promotional?: { amount?: number; currency?: string } } } } }> } | null
     if (!data?.cache || typeof data.cache !== 'object') continue
     for (const entry of Object.values(data.cache).slice(0, 2000)) {
       const product = entry?.data?.product
@@ -58,7 +59,7 @@ function zalandoPrice(html: string, url: URL): number | null {
 export function storefrontPrice(html: string, base: string, plainText: (value: string) => string): number | null {
   const url = new URL(base)
   if (['zalando.de', 'www.zalando.de'].includes(url.hostname)) return zalandoPrice(html, url)
-  const markup = html.replace(/<(?:script|style)\b[^>]*>[\s\S]*?<\/(?:script|style)\s*>/gi, '')
+  const markup = withoutRawText(html)
   if (['amazon.de', 'www.amazon.de'].includes(url.hostname)) {
     for (const id of ['apex-pricetopay-accessibility-label', 'priceblock_dealprice', 'priceblock_ourprice', 'price_inside_buybox']) {
       const match = markup.match(new RegExp(`<[^>]{0,2000}\\bid=["']${id}["'][^>]*>([^<]{1,300})<`, 'i'))

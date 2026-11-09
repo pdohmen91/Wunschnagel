@@ -1,6 +1,7 @@
 import { PreviewError } from './errors.ts'
 import { euroPrice, productMatch, structuredPrice } from './prices.ts'
 import { storefrontPrice } from './storefrontPrices.ts'
+import { rawTextBlocks, withoutRawText } from './markup.ts'
 
 /** Only public HTTPS destinations are allowed, including on each redirect. */
 export const DEFAULT_SHOP_HOSTS = [
@@ -66,7 +67,7 @@ function decode(value: string): string {
 
 function attributes(tag: string): Map<string, string> {
   const result = new Map<string, string>()
-  for (const attr of tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) result.set(attr[1].toLowerCase(), decode(attr[2] ?? attr[3] ?? attr[4] ?? ''))
+  for (const attr of tag.matchAll(/(?:^|\s)([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) result.set(attr[1].toLowerCase(), decode(attr[2] ?? attr[3] ?? attr[4] ?? ''))
   return result
 }
 
@@ -93,9 +94,9 @@ function structuredProducts(html: string, base: string) {
     if (types.some(type => typeof type === 'string' && /(?:^|[/#])Product(?:Group)?$/.test(type))) products.push(node)
     for (const entry of Object.values(node)) visit(entry, depth + 1)
   }
-  for (const match of html.matchAll(/<script\b([^>]{0,8000})>([\s\S]*?)<\/script\s*>/gi)) {
-    if (attributes(match[1]).get('type')?.toLowerCase() !== 'application/ld+json') continue
-    try { visit(JSON.parse(match[2]), 0) } catch { /* Ignore malformed or incomplete structured data. */ }
+  for (const block of rawTextBlocks(html, ['script'])) {
+    if (attributes(block.attributes).get('type')?.toLowerCase() !== 'application/ld+json') continue
+    try { visit(JSON.parse(block.content), 0) } catch { /* Ignore malformed or incomplete structured data. */ }
   }
   return { products, references }
 }
@@ -119,10 +120,10 @@ function structuredImage(value: unknown, base: string, references: Map<string, R
   return ''
 }
 
-function plainText(value: string): string { return decode(value.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim() }
+function plainText(value: string): string { return decode(value.replace(/<[^<>]*>/g, ' ')).replace(/\s+/g, ' ').trim() }
 
 export function rejectChallengePage(html: string): void {
-  const title = plainText(html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || '')
+  const title = plainText(rawTextBlocks(html, ['title']).next().value?.content.slice(0, 2000) || '')
   if (/^(?:just a moment|access denied|robot check|client challenge|attention required|pardon our interruption|zugriff verweigert|captcha)\b/i.test(title) || /<form\b[^>]*action\s*=\s*["'][^"']*validateCaptcha/i.test(html)) {
     throw new PreviewError('shop_blocked', 'Dieser Shop verlangt eine Prüfung im Browser und blockiert den automatischen Abruf. Titel und Bild kannst du selbst ergänzen.')
   }
@@ -131,8 +132,8 @@ export function rejectChallengePage(html: string): void {
 function microdataPrice(html: string): number | null {
   const prices: string[] = [], currencies: string[] = []
   // Scripts can contain HTML templates unrelated to the displayed product.
-  const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
-  for (const match of markup.matchAll(/<([a-z][\w:-]*)\b[^>]{0,8000}>/gi)) {
+  const markup = withoutRawText(html)
+  for (const match of markup.matchAll(/<([a-z][\w:-]*)\b[^<>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
     const props = attrs.get('itemprop')?.toLowerCase().split(/\s+/) || []
     if (!props.includes('price') && !props.includes('pricecurrency')) continue
@@ -147,7 +148,7 @@ function microdataPrice(html: string): number | null {
 
 export function metadata(html: string, base: string): { title: string; image_url: string; description: string; price: number | null } {
   const tags = new Map<string, string>()
-  for (const match of html.matchAll(/<meta\s+[^>]{0,8000}>/gi)) {
+  for (const match of html.matchAll(/<meta\s+[^<>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
     const key = (attrs.get('property') || attrs.get('name') || (attrs.get('itemprop')?.split(/\s+/).includes('image') ? 'image' : ''))?.toLowerCase()
     if (key && attrs.get('content') && !tags.has(key)) tags.set(key, attrs.get('content')!)
@@ -161,12 +162,12 @@ export function metadata(html: string, base: string): { title: string; image_url
   // Prefer the product whose URL belongs to the opened page over recommendations.
   products.sort((a, b) => productMatch(b.url ?? b['@id'], base) - productMatch(a.url ?? a['@id'], base))
   if (!image) for (const product of products) { image = structuredImage(product.image, base, references); if (image) break }
-  if (!image) for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
+  if (!image) for (const match of html.matchAll(/<link\b[^<>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
     if (attrs.get('rel')?.toLowerCase().split(/\s+/).includes('image_src')) image = imageUrl(attrs.get('href'), base)
     if (image) break
   }
-  if (!image) for (const match of html.matchAll(/<img\b[^>]{0,16000}>/gi)) {
+  if (!image) for (const match of html.matchAll(/<img\b[^<>]{0,16000}>/gi)) {
     const attrs = attributes(match[0])
     // Use identified product images, never arbitrary logos, banners or tracking pixels.
     const amazonProduct = ['landingImage', 'imgBlkFront'].includes(attrs.get('id') || '') && /(^|\.)amazon\.[a-z.]+$/.test(new URL(base).hostname)
@@ -178,7 +179,7 @@ export function metadata(html: string, base: string): { title: string; image_url
   const productTitle = products.find(product => typeof product.name === 'string')?.name as string | undefined
   const productDescription = products.find(product => typeof product.description === 'string')?.description as string | undefined
   let canonical: string | undefined
-  for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
+  for (const match of html.matchAll(/<link\b[^<>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
     if (attrs.get('rel')?.toLowerCase().split(/\s+/).includes('canonical')) {
       try { const url = new URL(attrs.get('href') || '', base); if (url.origin === new URL(base).origin) canonical = url.href } catch { /* Ignore malformed canonical URLs. */ }
@@ -191,7 +192,7 @@ export function metadata(html: string, base: string): { title: string; image_url
     ?? microdataPrice(html)
     ?? storefrontPrice(html, base, plainText)
   return {
-    title: plainText(tags.get('og:title') || tags.get('twitter:title') || productTitle || html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || html.match(/<h1\b[^>]*>([\s\S]{0,8000}?)<\/h1>/i)?.[1] || '').slice(0, 200),
+    title: plainText(tags.get('og:title') || tags.get('twitter:title') || productTitle || rawTextBlocks(html, ['title']).next().value?.content.slice(0, 2000) || rawTextBlocks(html, ['h1']).next().value?.content.slice(0, 8000) || '').slice(0, 200),
     image_url: image,
     description: plainText(tags.get('og:description') || tags.get('description') || productDescription || '').slice(0, 1000),
     price,

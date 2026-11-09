@@ -1,3 +1,4 @@
+import { signInQa, openQaSession } from './qa-auth.mjs'
 // Opt-in online check. Uses public, independently researched product links and
 // a disposable QA account; never reads or changes existing users' wishes.
 import assert from 'node:assert/strict'
@@ -21,7 +22,7 @@ try {
   const email = `wunschnagel-price-qa-${randomBytes(8).toString('hex')}@example.invalid`, password = randomBytes(32).toString('base64url')
   const created = await checked(admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: 'QA Preisimport' } }))
   userId = created.user.id
-  const signed = await checked(api.auth.signInWithPassword({ email, password }))
+  const signed = await signInQa(api, admin, email)
   phase = 'Independent public price baseline'
   let expectedPrice = Number(process.env.WUNSCHNAGEL_QA_EXPECTED_PRICE)
   if (!process.env.WUNSCHNAGEL_QA_EXPECTED_PRICE) {
@@ -42,8 +43,7 @@ try {
   browser = await webkit.launch()
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' })
   const page = await context.newPage()
-  const fragment = new URLSearchParams({ access_token: signed.session.access_token, refresh_token: signed.session.refresh_token, expires_in: '3600', token_type: 'bearer' })
-  await page.goto(base + '#' + fragment)
+  await openQaSession(page, base, url, signed.session)
   await expect(page.getByRole('heading', { name: list.title, exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Wunsch hinzufügen', exact: true }).click()
   await page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true }).fill(productUrl)

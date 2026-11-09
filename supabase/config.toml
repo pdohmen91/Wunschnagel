@@ -3,6 +3,15 @@ project_id = "wunschnagel"
 [auth]
 site_url = "https://pdohmen91.github.io/Wunschnagel/"
 additional_redirect_urls = ["https://pdohmen91.github.io/Wunschnagel/", "http://127.0.0.1:5173/"]
+jwt_expiry = 900
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+
+[auth.email]
+# This app uses Google only; close unused public password/OTP signup routes.
+enabled = false
 
 [functions.link-preview]
 # Authentication is checked in the handler with auth.getUser(jwt), supporting

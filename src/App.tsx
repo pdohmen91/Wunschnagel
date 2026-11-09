@@ -5,7 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort } from './domain'
-import { supabase } from './lib/client'
+import { authCallbackWarning, supabase } from './lib/client'
 import { cloudRepository, demoRepository } from './lib/repository'
 import type { Repository } from './lib/repository'
 import { useLinkPreview } from './lib/useLinkPreview'
@@ -42,7 +42,7 @@ export default function App() {
   const [editItem, setEditItem] = useState<Wish | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'item' | 'list'; id: string; title: string } | null>(null)
   const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState(authCallbackWarning)
   const [online, setOnline] = useState(navigator.onLine)
   const requestId = useRef(0)
   const activeList = useRef(selectedId)
@@ -73,6 +73,12 @@ export default function App() {
     supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return
       if (sessionError) setError(message(sessionError))
+      const callbackUrl = new URL(window.location.href)
+      if (callbackUrl.searchParams.has('code')) {
+        callbackUrl.searchParams.delete('code')
+        window.history.replaceState(window.history.state, '', callbackUrl.href)
+        if (!data.session) setNotice('Die Anmeldung konnte nicht zugeordnet werden. Starte „Mit Google anmelden“ erneut im selben Browser bzw. direkt in der installierten App.')
+      }
       setUser(data.session?.user || null)
       setAuthReady(true)
     }).catch(e => { if (active) { setError(message(e)); setAuthReady(true) } })
