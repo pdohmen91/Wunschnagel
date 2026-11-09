@@ -76,7 +76,7 @@ export function storefrontPrice(html: string, base: string, plainText: (value: s
     const primary = /<span\b[^>]{0,2000}\bclass=["'][^"']*\b(?:pipcom|pip)-price-module__current-price\b[^"']*["'][^>]*>/i.exec(markup)
     if (primary) {
       const text = markup.slice(primary.index + primary[0].length, primary.index + primary[0].length + 1600).match(/<span\b[^>]*class=["'][^"']*\b(?:pipcom|pip)-price__sr-text\b[^"']*["'][^>]*>([^<]{1,300})<\/span>/i)?.[1]
-      return euroPrice(text ? plainText(text).replace(/^(?:Preis|Price)\s*/i, '') : null, undefined)
+      return euroPrice(text ? plainText(text).replace(/^(?:Preis|Price|Prijs)\s*/i, '') : null, undefined)
     }
   }
   return null

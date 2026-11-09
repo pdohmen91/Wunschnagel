@@ -21,6 +21,18 @@ test('IKEA extracts the current accessible price without using the old or per-un
   assert.equal(metadata(html, 'https://www.amazon.de/dp/EXAMPLE').price, null)
 })
 
+test('IKEA Netherlands reads the current euro price with the localized Prijs label', () => {
+  // Observed NYMÅNE NL markup: currency precedes the amount and the previous
+  // price is a separate addon. Recommendations and per-unit prices are excluded.
+  const base = 'https://www.ikea.com/nl/nl/p/nymane-staande-lamp-met-3-spots-antraciet-80477734/'
+  const html = '<span class="pipcom-price__sr-text">Prijs € 3.99/st.</span><span class="pipcom-price pipcom-price-module__current-price"><span aria-hidden="true"><span class="pipcom-price__currency">€</span><span class="pipcom-price__integer">49</span><span class="pipcom-price__decimal">.99</span></span><span class="pipcom-price__sr-text">Prijs € 49.99</span></span><div class="pipcom-price-module__addon">Vorige prijs: €59.99</div>'
+  assert.equal(metadata(html, base).price, 49.99)
+  assert.equal(metadata(html.replace('Prijs € 49.99', 'Prijs EUR 49,99'), base).price, 49.99)
+  assert.equal(metadata(html.replace('Prijs € 49.99', 'Prijs USD 49.99'), base).price, null)
+  assert.equal(metadata(html.replace('Prijs € 49.99', 'Prijs 49.99'), base).price, null)
+  assert.equal(metadata(html.replace('Prijs € 49.99', 'Prijs € 49.99/st.'), base).price, null)
+})
+
 test('Zalando combines only the exact product SKU fragments and chooses the sale price', () => {
   const sku = 'AD111A37W-A11', url = 'https://www.zalando.de/adidas-originals-samba-og-ad111a37w-a11.html'
   const fixture = (currency = 'EUR', tracked = 116.95) => '<script>runtime["hydratePartial"](' + JSON.stringify({ cache: {

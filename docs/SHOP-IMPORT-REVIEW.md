@@ -29,6 +29,28 @@ Die Tabelle beschreibt konkrete Stichproben, keine Garantie für jede Produktsei
 | [Fivi](https://fivi.gg/products/officemesser-luca-fivi) | Ja | Geladen | 25,00 € | Vollständig |
 | [Dyson](https://www.dyson.de/staubsauger/kabellos/v8-cyclone/motorbar-schwarz) | Ja | Geladen | 249,00 € | Vollständig |
 
+## Ergänzende Prüfung: IKEA Niederlande
+
+Am 9. November 2026 wurde der im Screenshot erkennbare öffentliche Link
+[NYMÅNE, antraciet – IKEA NL](https://www.ikea.com/nl/nl/p/nymane-staande-lamp-met-3-spots-antraciet-80477734/)
+gezielt geprüft. Der Titel und das Bild waren bereits auslesbar, der Preis fehlte:
+Das aktuelle Preismodul enthielt `Prijs € 49.99`. Die bisherige Bereinigung
+verstand nur `Preis` und `Price`; der niederländische Text verhinderte deshalb
+die Erkennung eines ansonsten eindeutigen Euro-Betrags.
+
+Der Parser versteht jetzt zusätzlich `Prijs`. Er verwendet weiter nur das
+markierte Haupt-Preismodul. Der danebenstehende frühere Preis `€59.99`,
+Empfehlungen, Stückpreise, unbekannte Währungen und nicht beschriftete Beträge
+werden nicht als aktueller Gesamtpreis übernommen.
+
+Nach Bereitstellung der Edge Function lieferten sowohl **IKEA NL NYMÅNE** als auch
+**IKEA DE BILLY** über die produktive Vorschau einen Preis von **49,99 €** sowie
+Titel und ein erfolgreich in WebKit geladenes Bild. Das sind Momentaufnahmen
+für diese zwei konkreten Produktseiten. Bestehende Nutzerwünsche wurden nicht
+verändert; die QA-Konten wurden bereinigt. 83 automatisierte Tests einschließlich
+niederländischer Beschriftung, EUR-Voranstellung, abweichender Währung und
+Stückpreis-Ablehnung sowie der Produktionsbuild sind bestanden.
+
 ## Zusätzliche Prüfung: Tesla
 
 Am 9. November 2026 wurde zusätzlich `shop.tesla.com` als exakter Shop-Host freigegeben. Geprüft wurde der öffentliche Link [Wall Connector](https://shop.tesla.com/de_de/product/wall-connector), den der Betreiber zum Test genannt hat. Sowohl der lokale Import als auch die produktive Edge Function erhielten HTTP 403. Die Online-Funktion meldet nach der Freigabe deshalb korrekt `shop_blocked` anstelle von `unsupported_shop`; Titel, Bild und Preis konnten nicht automatisch geladen werden. Es wurden weder Bot-Schutzmaßnahmen umgangen noch Nutzerkonten oder bestehende Wünsche geändert. Das isolierte Testkonto wurde gelöscht. Die Freigabe ist keine Zusage eines erfolgreichen Tesla-Imports.
