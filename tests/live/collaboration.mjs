@@ -37,7 +37,8 @@ try {
   await checked(owner.client.from('wishes').insert({ wishlist_id: list.id, title: '[QA] Ein Wunsch', url: 'https://example.com/qa', notes: 'Nur isolierte Testdaten' }))
   const engine = process.env.WUNSCHNAGEL_QA_BROWSER === 'chrome' ? chromium : webkit
   browser = await engine.launch(engine === chromium ? { channel: 'chrome' } : {})
-  const ownerPage = await browser.newPage(mobile), memberPage = await browser.newPage(mobile), guestPage = await browser.newPage(mobile)
+  const ownerContext = await browser.newContext(mobile), memberContext = await browser.newContext(mobile), guestContext = await browser.newContext(mobile)
+  const ownerPage = await ownerContext.newPage(), memberPage = await memberContext.newPage(), guestPage = await guestContext.newPage()
   phase = 'Owner creates invitation through mobile UI'
   await signIn(ownerPage, owner.session)
   await expect(ownerPage.getByRole('heading', { name: list.title, exact: true })).toBeVisible()
