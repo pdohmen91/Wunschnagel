@@ -1,9 +1,19 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { offerSearch, parsePrice, readShareRoute, shareUrl, sortWishes, webUrl } from '../src/domain.ts'
+import { inviteUrl, offerSearch, parsePrice, readInviteRoute, readShareRoute, shareUrl, sortWishes, webUrl } from '../src/domain.ts'
 import type { Wish, Wishlist } from '../src/domain.ts'
 
 const list = { id: '12345678-1234-4234-8234-123456789abc', share_token: 'a'.repeat(64), visibility: 'link' } as Wishlist
+
+test('invitation links are separate from read-only routes and preserve the Pages base path', () => {
+  const token = 'b'.repeat(64)
+  const link = inviteUrl(token, 'https://pdohmen91.github.io/Wunschnagel/?tracking=1#/p/old')
+  assert.equal(link, `https://pdohmen91.github.io/Wunschnagel/#/invite/${token}`)
+  assert.equal(readInviteRoute(new URL(link).hash), token)
+  assert.equal(readShareRoute(new URL(link).hash), null)
+  for (const hash of ['#/invite/short', '#/invite/' + 'x'.repeat(64), '#/invite/' + token + '/extra', '#access_token=secret', '#/s/' + token]) assert.equal(readInviteRoute(hash), null)
+  assert.throws(() => inviteUrl('javascript:alert(1)', 'https://example.com/'))
+})
 
 test('offer searches use exact keywords, safe encoding and useful legacy defaults', () => {
   const legacy = offerSearch({ title: 'Bialetti Moka Express' })

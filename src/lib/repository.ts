@@ -1,6 +1,6 @@
 import { supabase } from './client'
 import { PreviewCache, previewRequestError } from './previewCache'
-import type { ListInput, Wishlist, Wish, WishInput, Preview, SharedList } from '../domain'
+import type { Collaboration, ListInvitation, ListInput, Wishlist, Wish, WishInput, Preview, SharedList } from '../domain'
 
 export interface Repository {
   lists(): Promise<Wishlist[]>
@@ -14,6 +14,13 @@ export interface Repository {
   fulfillItem(id: string, fulfilled: boolean): Promise<void>
   preview(url: string, signal?: AbortSignal, refresh?: boolean): Promise<Preview>
   shared(kind: 'token' | 'public', value: string): Promise<SharedList>
+  collaboration(listId: string): Promise<Collaboration>
+  createInvite(listId: string): Promise<void>
+  revokeInvite(listId: string): Promise<void>
+  invitation(token: string): Promise<ListInvitation>
+  acceptInvite(token: string): Promise<string>
+  removeMember(listId: string, memberId: string): Promise<void>
+  leaveList(listId: string): Promise<void>
 }
 
 const now = () => new Date().toISOString()
@@ -74,6 +81,13 @@ export function demoRepository(): Repository {
       return data as Preview
     },
     shared: async () => { throw new Error('Diese Demo speichert nur auf deinem Gerät. Geräteübergreifendes Teilen ist nach der Supabase-Einrichtung verfügbar.') },
+    collaboration: async () => { throw new Error('Gemeinsames Bearbeiten ist in der lokalen Vorschau nicht möglich.') },
+    createInvite: async () => { throw new Error('Bitte melde dich zuerst an.') },
+    revokeInvite: async () => { throw new Error('Bitte melde dich zuerst an.') },
+    invitation: async () => { throw new Error('Einladungen benötigen die Online-Version.') },
+    acceptInvite: async () => { throw new Error('Bitte melde dich zuerst an.') },
+    removeMember: async () => { throw new Error('Bitte melde dich zuerst an.') },
+    leaveList: async () => { throw new Error('Bitte melde dich zuerst an.') },
   }
 }
 
@@ -81,18 +95,18 @@ export function cloudRepository(userId: string): Repository {
   const db = supabase!
   const previews = new PreviewCache()
   return {
-    lists: async () => { const { data, error } = await db.from('wishlists').select('*').eq('owner_id', userId).order('created_at'); if (error) throw error; return data as Wishlist[] },
+    lists: async () => { const { data, error } = await db.rpc('get_my_wishlists'); if (error) throw error; return data as Wishlist[] },
     items: async listId => { const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
     createList: async input => { const { data, error } = await db.from('wishlists').insert({ ...input, owner_id: userId }).select().single(); if (error) throw error; return data as Wishlist },
     updateList: async (listId, input) => { const { error } = await db.from('wishlists').update(input).eq('id', listId).eq('owner_id', userId); if (error) throw error },
     deleteList: async listId => { const { error } = await db.from('wishlists').delete().eq('id', listId).eq('owner_id', userId); if (error) throw error },
     rotateLink: async listId => { const { data, error } = await db.rpc('rotate_share_token', { list_id: listId }); if (error) throw error; return data as string },
     saveItem: async (listId, input, itemId) => {
-      const result = itemId ? await db.from('wishes').update(input).eq('id', itemId).eq('wishlist_id', listId) : await db.from('wishes').insert({ ...input, wishlist_id: listId })
+      const result = itemId ? await db.from('wishes').update(input).eq('id', itemId).eq('wishlist_id', listId).select('id').single() : await db.from('wishes').insert({ ...input, wishlist_id: listId })
       if (result.error) throw result.error
     },
-    deleteItem: async itemId => { const { error } = await db.from('wishes').delete().eq('id', itemId); if (error) throw error },
-    fulfillItem: async (itemId, fulfilled) => { const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId); if (error) throw error },
+    deleteItem: async itemId => { const { error } = await db.from('wishes').delete().eq('id', itemId).select('id').single(); if (error) throw error },
+    fulfillItem: async (itemId, fulfilled) => { const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId).select('id').single(); if (error) throw error },
     preview: async (url, signal, refresh = false) => {
       signal?.throwIfAborted()
       if (refresh) previews.invalidate(url)
@@ -118,5 +132,17 @@ export function cloudRepository(userId: string): Repository {
       if (itemError) throw itemError
       return { list: list as Wishlist, items: items as Wish[] }
     },
+    collaboration: async listId => { const { data, error } = await db.rpc('get_collaboration', { list_id: listId }); if (error) throw error; return data as Collaboration },
+    createInvite: async listId => { const { error } = await db.rpc('create_wishlist_invite', { list_id: listId }); if (error) throw error },
+    revokeInvite: async listId => { const { error } = await db.rpc('revoke_wishlist_invite', { list_id: listId }); if (error) throw error },
+    invitation: async token => {
+      const { data, error } = await db.rpc('get_wishlist_invite', { invite_token: token })
+      if (error) throw error
+      if (!data) throw new Error('Diese Einladung ist abgelaufen oder wurde deaktiviert. Bitte frage nach einem neuen Link.')
+      return data as ListInvitation
+    },
+    acceptInvite: async token => { const { data, error } = await db.rpc('accept_wishlist_invite', { invite_token: token }); if (error) throw error; return data as string },
+    removeMember: async (listId, memberId) => { const { error } = await db.rpc('remove_wishlist_member', { list_id: listId, member_id: memberId }); if (error) throw error },
+    leaveList: async listId => { const { error } = await db.rpc('leave_wishlist', { list_id: listId }); if (error) throw error },
   }
 }

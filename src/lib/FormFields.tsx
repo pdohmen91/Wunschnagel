@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-export function FormFields({ children }: { children: ReactNode }) {
+export function FormFields({ children, scrollLabel = 'Weitere Felder · nach unten scrollen' }: { children: ReactNode; scrollLabel?: string }) {
   const areaRef = useRef<HTMLDivElement>(null)
   const fieldsRef = useRef<HTMLDivElement>(null)
   const [scroll, setScroll] = useState({ above: false, below: false })
@@ -31,6 +31,6 @@ export function FormFields({ children }: { children: ReactNode }) {
     <div className="form-scroll-frame" data-scroll-above={scroll.above} data-scroll-below={scroll.below}>
       <div className="form-fields" ref={fieldsRef}>{children}</div>
     </div>
-    <p className="form-scroll-cue" hidden={!scroll.below}><ChevronDown size={16} aria-hidden="true" /><span>Weitere Felder · nach unten scrollen</span></p>
+    <p className="form-scroll-cue" hidden={!scroll.below}><ChevronDown size={16} aria-hidden="true" /><span>{scrollLabel}</span></p>
   </div>
 }

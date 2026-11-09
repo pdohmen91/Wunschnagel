@@ -27,6 +27,7 @@ before(async () => {
     grant usage on schema public, auth, extensions to anon, authenticated;
     create table auth.users (id uuid primary key);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
     insert into auth.users(id) values ('${alice}'), ('${bob}');
   `)
   await db.exec(await readFile(new URL('../supabase/migrations/202611070001_initial.sql', import.meta.url), 'utf8'))
@@ -40,6 +41,7 @@ before(async () => {
   bobListId = (await db.query<{ id: string }>("insert into public.wishlists(owner_id,title) values ($1,'Bob') returning id", [bob])).rows[0].id
   await db.exec('reset role')
   await db.exec(await readFile(new URL('../supabase/migrations/202611090001_offer_search.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611090002_collaboration.sql', import.meta.url), 'utf8'))
 })
 after(async () => { await db.close() })
 
@@ -134,4 +136,89 @@ test('deleting a list also deletes its items', async () => {
   await role(alice)
   await db.query('delete from public.wishlists where id=$1', [privateId])
   assert.equal((await db.query('select id from public.wishes where id=$1', [itemId])).rows.length, 0)
+})
+
+test('invitation acceptance grants wish editing while list administration stays with the owner', async () => {
+  await role(alice)
+  const list = (await db.query<{ id: string; share_token: string }>("insert into public.wishlists(owner_id,title) values ($1,'Together') returning id,share_token", [alice])).rows[0]
+  await db.query('select public.create_wishlist_invite($1)', [list.id])
+  const state = (await db.query<{ data: { invite: { token: string }; members: unknown[] } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data
+  const invite = state.invite.token
+  assert.match(invite, /^[a-f0-9]{64}$/)
+  assert.notEqual(invite, list.share_token)
+  await role()
+  const preview = (await db.query<{ data: Record<string, unknown> }>('select public.get_wishlist_invite($1) as data', [invite])).rows[0].data
+  assert.deepEqual(Object.keys(preview).sort(), ['already_joined', 'emoji', 'expires_at', 'title'])
+  assert.equal(preview.already_joined, false)
+  await assert.rejects(db.query('select public.accept_wishlist_invite($1)', [invite]), /permission denied/)
+  await assert.rejects(db.query('select * from public.wishlist_invites'), /permission denied/)
+  await role(bob)
+  assert.equal((await db.query('select id from public.wishlists where id=$1', [list.id])).rows.length, 0)
+  const beforeLists = (await db.query<{ id: string }>('select id from public.get_my_wishlists()')).rows
+  assert.deepEqual(beforeLists.map(l => l.id), [bobListId]) // Excludes Alice's readable public list.
+  await assert.rejects(db.query('select public.get_collaboration($1)', [list.id]), /Nur der Besitzer/)
+  await assert.rejects(db.query('select public.create_wishlist_invite($1)', [list.id]), /Nur der Besitzer/)
+  await assert.rejects(db.query('select public.accept_wishlist_invite($1)', ['f'.repeat(64)]), /abgelaufen/)
+  await db.exec(`select set_config('request.jwt.claims', '{"user_metadata":{"full_name":"Bob Beispiel"}}', false)`)
+  assert.equal((await db.query<{ id: string }>('select public.accept_wishlist_invite($1) as id', [invite])).rows[0].id, list.id)
+  await db.query('select public.accept_wishlist_invite($1)', [invite]) // Idempotent.
+  assert.equal((await db.query('select id from public.get_my_wishlists() where id=$1', [list.id])).rows.length, 1)
+  const wish = (await db.query<{ id: string }>("insert into public.wishes(wishlist_id,title,url) values ($1,'Shared wish','https://example.com/item') returning id", [list.id])).rows[0]
+  assert.equal((await db.query("update public.wishes set title='Edited together',fulfilled=true where id=$1 returning id", [wish.id])).rows.length, 1)
+  await assert.rejects(db.query('update public.wishes set wishlist_id=$1 where id=$2', [linkId, wish.id]), /row-level security/)
+  assert.equal((await db.query("update public.wishlists set visibility='public',title='Hijacked' where id=$1 returning id", [list.id])).rows.length, 0)
+  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 0)
+  for (const fn of ['create_wishlist_invite', 'revoke_wishlist_invite', 'get_collaboration', 'rotate_share_token']) {
+    await assert.rejects(db.query(`select public.${fn}($1)`, [list.id]), /Nur der Besitzer|List unavailable/)
+  }
+  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [list.id, alice]), /Nur der Besitzer/)
+  await assert.rejects(db.query('insert into public.wishlist_members(wishlist_id,user_id) values ($1,$2)', [linkId, bob]), /permission denied/)
+  await role(alice)
+  const members = (await db.query<{ data: { members: { display_name: string }[] } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data.members
+  assert.equal(members.length, 1)
+  assert.equal(members[0].display_name, 'Bob Beispiel')
+  assert.equal((await db.query<{ title: string }>('select title from public.wishes where id=$1', [wish.id])).rows[0].title, 'Edited together')
+  await db.query('select public.revoke_wishlist_invite($1)', [list.id])
+  await role(bob)
+  assert.equal((await db.query('select id from public.wishes where id=$1', [wish.id])).rows.length, 1) // Revocation only blocks future joins.
+  await assert.rejects(db.query('select public.accept_wishlist_invite($1)', [invite]), /abgelaufen/)
+  await db.query('delete from public.wishes where id=$1', [wish.id])
+  await role(alice)
+  await db.query('select public.create_wishlist_invite($1)', [list.id])
+  const renewed = (await db.query<{ data: { invite: { token: string } } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data.invite.token
+  await db.query('select public.remove_wishlist_member($1,$2)', [list.id, bob])
+  await role(bob)
+  assert.equal((await db.query('select id from public.get_my_wishlists() where id=$1', [list.id])).rows.length, 0)
+  assert.equal((await db.query('select id from public.wishlists where id=$1', [list.id])).rows.length, 0)
+  await assert.rejects(db.query("insert into public.wishes(wishlist_id,title,url) values ($1,'No access','https://example.com')", [list.id]), /row-level security/)
+  await assert.rejects(db.query('select public.accept_wishlist_invite($1)', [renewed]), /abgelaufen/)
+  await role(alice)
+  await db.query('delete from public.wishlists where id=$1', [list.id])
+})
+
+test('expired invitations grant no access, leaving preserves content, deletion cascades membership', async () => {
+  await role(alice)
+  const listId = (await db.query<{ id: string }>("insert into public.wishlists(owner_id,title) values ($1,'Temporary') returning id", [alice])).rows[0].id
+  await db.query('select public.create_wishlist_invite($1)', [listId])
+  let invite = (await db.query<{ data: { invite: { token: string } } }>('select public.get_collaboration($1) as data', [listId])).rows[0].data.invite.token
+  await db.exec('reset role')
+  await db.query("update public.wishlist_invites set expires_at=now()-interval '1 second' where wishlist_id=$1", [listId])
+  await role(bob)
+  assert.equal((await db.query<{ data: unknown }>('select public.get_wishlist_invite($1) as data', [invite])).rows[0].data, null)
+  await assert.rejects(db.query('select public.accept_wishlist_invite($1)', [invite]), /abgelaufen/)
+  await role(alice)
+  await db.query('select public.create_wishlist_invite($1)', [listId])
+  invite = (await db.query<{ data: { invite: { token: string } } }>('select public.get_collaboration($1) as data', [listId])).rows[0].data.invite.token
+  await role(bob)
+  await db.query('select public.accept_wishlist_invite($1)', [invite])
+  await db.query("insert into public.wishes(wishlist_id,title,url) values ($1,'Keep me','https://example.com')", [listId])
+  await db.query('select public.leave_wishlist($1)', [listId])
+  assert.equal((await db.query('select id from public.wishlists where id=$1', [listId])).rows.length, 0)
+  await db.query('select public.accept_wishlist_invite($1)', [invite])
+  await role(alice)
+  assert.equal((await db.query('select id from public.wishes where wishlist_id=$1', [listId])).rows.length, 1)
+  await db.query('delete from public.wishlists where id=$1', [listId])
+  await db.exec('reset role')
+  assert.equal((await db.query('select * from public.wishlist_members where wishlist_id=$1', [listId])).rows.length, 0)
+  assert.equal((await db.query('select * from public.wishlist_invites where wishlist_id=$1', [listId])).rows.length, 0)
 })

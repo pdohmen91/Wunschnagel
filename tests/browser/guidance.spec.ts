@@ -65,7 +65,7 @@ test('the wish form explains missing requirements and shows the image before sav
 test('visibility choices explain their audience and demo sharing cannot suggest a working link', async ({ page }) => {
   await openNewList(page)
   const visibility = page.getByRole('combobox', { name: 'Wer darf deine Liste sehen?' })
-  await expect(visibility).toHaveAccessibleDescription(/Nur du.*später/)
+  await expect(visibility).toHaveAccessibleDescription(/Nur du.*eingeladene Mitbearbeiter/)
   await visibility.selectOption('link')
   await expect(visibility).toHaveAccessibleDescription(/ohne Anmeldung.*weitergibt/)
   await visibility.selectOption('public')

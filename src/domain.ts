@@ -28,6 +28,8 @@ export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visi
 export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string }
 export type SharedList = { list: Wishlist; items: Wish[] }
+export type Collaboration = { invite: { token: string; expires_at: string } | null; members: { user_id: string; display_name: string; joined_at: string }[] }
+export type ListInvitation = { title: string; emoji: string; expires_at: string; already_joined: boolean }
 export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'
 
 export const offerSources: Record<OfferSource, string> = {
@@ -74,9 +76,9 @@ export function sortWishes(items: readonly Wish[], order: WishSort): Wish[] {
   })
 }
 
-export const visibilityLabels: Record<Visibility, string> = { private: 'Nur für mich', link: 'Mit Link', public: 'Öffentlich' }
+export const visibilityLabels: Record<Visibility, string> = { private: 'Privat', link: 'Mit Link', public: 'Öffentlich' }
 export const visibilityDescriptions: Record<Visibility, string> = {
-  private: 'Nur du kannst diese Liste sehen. Über „Liste teilen“ kannst du sie später freigeben.',
+  private: 'Nur du und ausdrücklich eingeladene Mitbearbeiter können diese Liste sehen.',
   link: 'Alle mit dem Link können die Liste ohne Anmeldung ansehen. Das gilt auch, wenn jemand den Link weitergibt.',
   public: 'Diese Liste ist öffentlich. Auch Personen außerhalb deiner Freunde und Familie dürfen sie ansehen.',
 }
@@ -132,4 +134,16 @@ export function shareUrl(list: Wishlist, location: string): string {
 export function readShareRoute(hash: string): { kind: 'token' | 'public'; value: string } | null {
   const match = hash.match(/^#\/(s|p)\/([a-zA-Z0-9-]{20,80})$/)
   return match ? { kind: match[1] === 's' ? 'token' : 'public', value: match[2] } : null
+}
+
+export function readInviteRoute(hash: string): string | null {
+  return hash.match(/^#\/invite\/([a-f0-9]{64})$/)?.[1] || null
+}
+
+export function inviteUrl(token: string, location: string): string {
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Ungültige Einladung.')
+  const url = new URL(location)
+  url.search = ''
+  url.hash = `/invite/${token}`
+  return url.href
 }

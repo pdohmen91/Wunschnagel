@@ -7,13 +7,14 @@ Eine installierbare Wunschlisten-Web-App für Freunde und Familie. React und Typ
 ## Was bereits funktioniert
 
 - Mehrere Wunschlisten pro Person, jeweils mit Name, Beschreibung und Symbol.
-- Sichtbarkeit **Nur für mich**, **Mit Link** oder **Öffentlich**.
+- Sichtbarkeit **Privat**, **Mit Link** oder **Öffentlich**.
 - Wünsche mit Shop-Link, Titel, Notizen, optionalem Preis und Vorschaubild.
 - Direkter Angebotsbutton pro Wunsch: Preisvergleich über idealo, Gebrauchtangebote bei eBay, Kleinanzeigen oder ein eigener Suchlink. Ein genauer Suchbegriff kann unabhängig vom Wunschtitel festgelegt werden. Der Button ist auch in geteilten Listen verfügbar.
 - Listen und Wünsche erstellen, bearbeiten und löschen; Wünsche als erfüllt markieren.
 - Suche, Filter für offene und erfüllte Wünsche sowie Sortierung nach Preis, Name und Datum.
 - Gut lesbare Texte, große Bedienflächen, mobile Listenauswahl und vollständig aufklappbare Hinweise.
 - Ansicht geteilter Listen ohne Anmeldung und ohne Bearbeitungsrechte.
+- Gemeinsames Bearbeiten über einen separaten Einladungslink: Google-Anmeldung und ausdrückliches Annehmen; Mitglieder können Wünsche hinzufügen, bearbeiten, löschen und abhaken. Besitzer verwalten Einladungen und Mitglieder, Mitbearbeiter können die Liste verlassen.
 - Geheimen Link kopieren, über das System teilen und widerrufen/erneuern.
 - Google-Anmeldung nach Einrichtung des Providers.
 - Automatisches Laden von Titel und Bild nach dem Einfügen eines Shop-Links, mit manueller Nachbearbeitung und Schutz eigener Eingaben. Lokal übernimmt der Entwicklungsserver den Abruf; online die Supabase Edge Function.
@@ -136,7 +137,7 @@ Ausgehende Anfragen sind auf HTTPS, bekannte Hosts, öffentliche DNS-Adressen un
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
 4. Starte den Workflow **Build and deploy GitHub Pages** über den Actions-Tab oder pushe auf `main`.
 5. Ergänze die veröffentlichte Adresse in den Supabase-Auth-Einstellungen wie oben beschrieben.
-6. Prüfe mit zwei unterschiedlichen Google-Konten und einem privaten Browserfenster: privates Lesen verweigert, geheimer Link lesbar, öffentlich lesbar, Bearbeiten nur durch Besitzer, alter Link nach Erneuern gesperrt.
+6. Prüfe mit zwei unterschiedlichen Google-Konten und einem privaten Browserfenster: privates Lesen verweigert, geheimer Link lesbar, öffentlich lesbar, Bearbeiten nur durch Besitzer und beigetretene Mitbearbeiter, alter Link nach Erneuern gesperrt. Prüfe beim Einladungslink außerdem die Rückkehr nach der Anmeldung, ausdrückliche Annahme, Ablauf, Widerruf und Entfernen eines Mitglieds.
 
 Der Workflow setzt den Unterpfad automatisch auf den Repository-Namen. Für ein User-Repository namens `DEIN_NAME.github.io` oder eine eigene Domain ändere `VITE_BASE_PATH` im Workflow auf `/`. Lokal steht der Wert in `.env`. Die Linkrouten verwenden den URL-Hash und brauchen deshalb keine Server-Umschreibregeln oder `404.html`-Tricks auf GitHub Pages.
 
@@ -144,9 +145,13 @@ Der Workflow setzt den Unterpfad automatisch auf den Repository-Namen. Für ein 
 
 ## Was „privat“ und „geteilt“ bedeuten
 
-- **Nur für mich:** Nur das angemeldete Besitzerkonto kann Liste und Wünsche lesen und bearbeiten. Gäste und andere Nutzer sehen auch bei Kenntnis der Listen-ID nichts.
-- **Mit Link:** Besitzer dürfen bearbeiten. Alle mit dem zufälligen geheimen Link dürfen über einen eingeschränkten Datenbankaufruf lesen, ohne Anmeldung. Das ist keine Einladung an einzelne Konten: Weitergegebene Links funktionieren ebenfalls.
-- **Öffentlich:** Alle dürfen lesen, auch über die öffentliche Daten-API. Die Liste kann von Dritten weiterverbreitet werden. Nur der Besitzer darf schreiben. Es gibt noch kein öffentliches Listenverzeichnis in der Oberfläche.
+- **Privat:** Nur das Besitzerkonto und ausdrücklich beigetretene Mitbearbeiter können die Liste und ihre Wünsche lesen. Gäste und andere Nutzer sehen auch bei Kenntnis der Listen-ID nichts.
+- **Mit Link:** Besitzer und eingeladene Mitbearbeiter dürfen Wünsche bearbeiten. Alle mit dem zufälligen geheimen Link dürfen über einen eingeschränkten Datenbankaufruf lesen, ohne Anmeldung. Das ist keine Einladung an einzelne Konten: Weitergegebene Links funktionieren ebenfalls.
+- **Öffentlich:** Alle dürfen lesen, auch über die öffentliche Daten-API. Die Liste kann von Dritten weiterverbreitet werden. Nur der Besitzer und eingeladene Mitbearbeiter dürfen Wünsche bearbeiten. Es gibt noch kein öffentliches Listenverzeichnis in der Oberfläche.
+
+Unter **Teilen → Gemeinsam bearbeiten** erstellt der Besitzer einen separaten, sieben Tage gültigen Einladungslink. Nach Anmeldung und Annahme erscheint die Liste unter den eigenen Listen. Die Mitgliedschaft bleibt bis zum Entfernen, Verlassen oder Löschen der Liste bestehen. Einladungen enthalten einen zufälligen 256-Bit-Token im URL-Fragment; vor Annahme werden nur Listenname, Symbol und Ablaufdatum angezeigt. Weitergabe des Links erlaubt weiteren angemeldeten Personen den Beitritt. Das Deaktivieren eines Einladungslinks beendet bestehende Mitgliedschaften nicht. Beim Entfernen einer Person wird auch die aktuelle Einladung deaktiviert, damit die Person nicht einfach erneut beitritt. Mitglieder können weder Listen-Einstellungen noch Freigaben ändern oder die ganze Liste löschen. Ihre Namen aus dem Anmeldeprofil sind nur für den Besitzer in der Mitgliederverwaltung sichtbar. Ansichtslinks gewähren weiterhin ausschließlich Lesezugriff.
+
+Während die App sichtbar und kein Dialog geöffnet ist, werden eigene und gemeinsame Listen alle zehn Sekunden sowie beim erneuten Fokussieren aktualisiert. Geöffnete Formulare werden dabei nicht überschrieben. Bei gleichzeitigen Änderungen desselben Wunsches gilt die zuletzt gespeicherte Fassung.
 
 Der Zugriff wird mit PostgreSQL Row Level Security durchgesetzt. Unveröffentlichte Listen sind nicht durch normale Gäste-Abfragen auflistbar. Ein Wechsel der Sichtbarkeit und das Erneuern eines geheimen Links ändern dessen Token. Beim privaten Schalten ist ein alter Link sofort ungültig und wird auch beim späteren Freigeben nicht wieder gültig. Bereits angesehene oder von Empfängern kopierte Inhalte lassen sich dadurch nicht zurückholen.
 
@@ -189,4 +194,4 @@ tests/browser/                     Echte Browserabläufe auf zwei Bildschirmgrö
 .github/workflows/pages.yml        Build und Veröffentlichung
 ```
 
-Die echte Datenbank wurde mit zwei isolierten Testkonten auf private/öffentliche Zugriffe, Lesen über geheime Links, Schreibschutz und Link-Widerruf geprüft. Ein zusätzlicher Browserlauf auf der veröffentlichten App prüfte die mobile Anmeldeseite, die Weiterleitung zu Google, Sitzungsübernahme, das Erstellen von Listen und Wünschen, automatische Shop-Titel und Bilder sowie geteilte Listen und den Widerruf des Zugriffs in einem zweiten Browser ohne Gastkonto. Die Edge Function verlangt eine Anmeldung. Die kurzlebigen Testkonten und Testdaten wurden anschließend entfernt. Der Betreiber hat die vollständige Google-Anmeldung und das Erstellen einer Liste mit seinem eigenen Konto am 8. November 2026 bestätigt. Reservierungen durch Schenkende, Einladungen für bestimmte Konten, Push-Mitteilungen, Bild-Uploads und gemeinsame Bearbeitung sind nicht Teil dieser ersten Version.
+Die echte Datenbank wurde mit zwei isolierten Testkonten auf private/öffentliche Zugriffe, Lesen über geheime Links, Schreibschutz und Link-Widerruf geprüft. Ein zusätzlicher Browserlauf auf der veröffentlichten App prüfte die mobile Anmeldeseite, die Weiterleitung zu Google, Sitzungsübernahme, das Erstellen von Listen und Wünschen, automatische Shop-Titel und Bilder sowie geteilte Listen und den Widerruf des Zugriffs in einem zweiten Browser ohne Gastkonto. Die Edge Function verlangt eine Anmeldung. Die kurzlebigen Testkonten und Testdaten wurden anschließend entfernt. Der Betreiber hat die vollständige Google-Anmeldung und das Erstellen einer Liste mit seinem eigenen Konto am 8. November 2026 bestätigt. Reservierungen durch Schenkende, Einladungen an vorab festgelegte E-Mail-Adressen, Push-Mitteilungen und Bild-Uploads sind nicht Teil dieser Version. Gemeinsames Bearbeiten erfolgt über Einladungslinks.
