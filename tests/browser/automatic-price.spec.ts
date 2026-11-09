@@ -51,6 +51,8 @@ test('changing links discards only an untouched imported price, including a zero
   await expect(price).toHaveValue('')
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Kein eindeutiger Euro-Preis')
   await expect(page.locator('.shop-price-preview')).toHaveCount(0)
+  await expect(price).toHaveAttribute('placeholder', 'Kein Preis')
+  await expect(price).toHaveAccessibleDescription('Kein Euro-Preis gefunden. Du kannst einen Preis eintragen oder das Feld leer lassen.')
 })
 
 test('saved prices stay unchanged when refreshing and a missing price can be loaded later', async ({ page }) => {

@@ -650,9 +650,9 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         <details className="optional-fields" open={item !== null}>
           <summary>Preis &amp; Bild-Link ergänzen <span>optional</span><ChevronDown size={16} /></summary>
           <div className="extra-wish-fields"><p className="input-help">Ein erkannter Euro-Preis wird automatisch übernommen. Du kannst ihn ändern oder entfernen und eine andere Bildadresse eintragen. Beide Felder dürfen leer bleiben.</p><div className="form-row">
-            <label className="field price-field">Preis in € <span>optional</span><input inputMode="decimal" maxLength={12} value={price} onChange={e => { customPrice.current = true; setPrice(e.target.value) }} placeholder="29,90" /></label>
+            <label className="field price-field">Preis in € <span>optional</span><input inputMode="decimal" maxLength={12} aria-describedby={!price.trim() ? 'wish-price-help' : undefined} value={price} onChange={e => { customPrice.current = true; setPrice(e.target.value) }} placeholder="Kein Preis" /></label>
             <label className="field">Bild-Link <span>optional</span><input type="url" autoCapitalize="none" autoCorrect="off" maxLength={2000} value={image} onChange={e => { customImage.current = true; setImage(e.target.value) }} placeholder="https://shop.de/bild.jpg" /></label>
-          </div><button type="button" className="text-button preview-retry" onClick={preview.reload} disabled={!preview.url || previewBusy}>{previewBusy ? <LoaderCircle className="spin" size={15} /> : <RotateCcw size={15} />} Shop-Vorschau neu laden</button></div>
+          </div>{!price.trim() && <p className="input-help" id="wish-price-help">{previewBusy ? 'Der Preis wird noch gesucht …' : preview.status === 'done' && shopPrice === null ? 'Kein Euro-Preis gefunden. Du kannst einen Preis eintragen oder das Feld leer lassen.' : 'Kein Preis angegeben. Du kannst einen Preis eintragen oder das Feld leer lassen.'}</p>}<button type="button" className="text-button preview-retry" onClick={preview.reload} disabled={!preview.url || previewBusy}>{previewBusy ? <LoaderCircle className="spin" size={15} /> : <RotateCcw size={15} />} Shop-Vorschau neu laden</button></div>
         </details>
         {error && <p className="form-error" role="alert">{error}</p>}
       </fieldset></FormFields>
