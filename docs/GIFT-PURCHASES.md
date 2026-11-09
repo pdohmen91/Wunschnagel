@@ -68,11 +68,16 @@ der ersten Kaufmarkierung in der Datenbank.
   Besitzerprojektion, Kontrast/Zugänglichkeit und sichtbare Aktionen bei 390×650.
 - Die bestehende Browser-Gesamtsuite wurde auf Regressionen geprüft; die vier
   Hilfetext-Prüfungen wurden an die neue Erklärung angepasst und erneut bestanden.
+  Insgesamt bestehen 195 Browser-Prüfungen; 12 gerätespezifische Bestandsfälle
+  sind planmäßig übersprungen. Der abschließende GitHub-Pages-Lauf
+  **42622341489** ist erfolgreich; die neue Oberfläche und Migration 005 sind live.
 - Isolierte Produktions-API-Prüfung: 31 Prüfungen bestanden, einschließlich zwei
   gleichzeitiger anonymer Markierungen. Keine echten Nutzerwünsche wurden gelesen
   oder verändert. Die QA-Konten und alle zugehörigen Daten sind bereinigt.
-- Die vollständige mobile Live-Prüfung ist über `tests/live/gift-purchases.mjs`
-  reproduzierbar. Sie verwendet zwei unabhängige Gast-Browserkontexte und einen
+- Die vollständige mobile Live-Prüfung hat **47 Prüfungen bestanden**,
+  einschließlich Erzeugen des Hinweises, Markieren/Rücknahme über die UI,
+  Sichtbarkeit im unabhängigen Gast-Browser, unveränderter Besitzeransicht und
+  Zugänglichkeit. Sie ist über `tests/live/gift-purchases.mjs` reproduzierbar. Sie verwendet zwei unabhängige Gast-Browserkontexte und einen
   angemeldeten QA-Besitzer, niemals bestehende persönliche Listen.
 
 Quellen für die verwendeten Datenbankmechanismen:
