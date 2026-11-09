@@ -180,3 +180,7 @@ Die Ansichtsprüfung umfasst Desktop, mobiles WebKit bei 390 und 320 Pixeln,
 vollständig geladene Grafik in ganzer Kopfbreite, genügend Motivhöhe, geschützte
 Textfläche, Kontrast, Kaufdialog, reduzierte Bewegung sowie das Zurücksetzen auf
 neutralen/privaten Listen.
+
+## Einfache Hervorhebung
+
+Ein Wunsch kann als „Herzenswunsch“ markiert werden. Es gibt nur an/aus, keine Stufen und keine zusätzliche Sortierung. Ein warmer Rahmen, eine helle Goldfläche und ein lesbares Herz-Label unterscheiden ihn auch ohne Farberkennung. Das Bearbeitungsformular bietet eine Checkbox; das Kartenmenü eine direkte Umschaltung. Gäste sehen die Markierung, ändern sie aber nicht. Die frühere Fußleiste mit Statuszählung und Gesamtsumme entfällt vollständig.

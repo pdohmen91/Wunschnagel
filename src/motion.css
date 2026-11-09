@@ -37,7 +37,6 @@
 .list-heading { animation: paper-in 400ms var(--motion-ease); }
 .list-cover { transform-origin: 50% 0; animation: tag-nod 520ms var(--motion-ease); }
 .items-toolbar { animation: paper-in 400ms var(--motion-ease) 55ms backwards; }
-.list-footer > span { animation: count-in 300ms var(--motion-ease); }
 .wish-card { transition: border-color var(--motion-quick), box-shadow var(--motion-normal), translate var(--motion-normal) var(--motion-ease), background-color var(--motion-normal); }
 .wish-image-link { overflow: hidden; }
 .wish-image-link > img { transition: scale 500ms var(--motion-ease), opacity var(--motion-layout); }

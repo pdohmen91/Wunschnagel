@@ -4,14 +4,14 @@ import type { Page } from '@playwright/test'
 
 const backend = 'https://security-test.supabase.co', token = 'c'.repeat(64)
 const listId = '00000000-0000-4000-8000-000000000001', itemId = '00000000-0000-4000-8000-000000000002'
-type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean; offerSource?: 'ebay' }
+type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean; offerSource?: 'ebay'; highlighted?: boolean }
 async function mock(page: Page, state: State) {
   await page.route(backend + '/**', async route => {
     const request = route.request(), path = new URL(request.url()).pathname
     const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS' }
     if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
     if (path.endsWith('/get_shared_wishlist')) {
-      await route.fulfill({ headers, json: { list: { id: listId, title: 'Geschenke für Alex', description: '', emoji: '🎁', visibility: 'link', created_at: new Date().toISOString() }, can_purchase: state.canPurchase, items: [{ id: itemId, wishlist_id: listId, title: 'Eine besondere Espressokanne', notes: 'Bitte das kleine Modell.', offer_source: state.offerSource || 'none', url: 'https://shop.example/product', image_url: '', price: 39.9, fulfilled: false, created_at: new Date().toISOString(), ...(state.canPurchase ? { purchased: state.purchased } : {}) }] } }); return
+      await route.fulfill({ headers, json: { list: { id: listId, title: 'Geschenke für Alex', description: '', emoji: '🎁', visibility: 'link', created_at: new Date().toISOString() }, can_purchase: state.canPurchase, items: [{ id: itemId, wishlist_id: listId, title: 'Eine besondere Espressokanne', notes: 'Bitte das kleine Modell.', offer_source: state.offerSource || 'none', highlighted: !!state.highlighted, url: 'https://shop.example/product', image_url: '', price: 39.9, fulfilled: false, created_at: new Date().toISOString(), ...(state.canPurchase ? { purchased: state.purchased } : {}) }] } }); return
     }
     if (path.endsWith('/purchase_wish')) {
       state.writes++
@@ -108,4 +108,17 @@ test('failed marking stays unbought and can be retried', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Erneut prüfen', exact: true }).click()
   await dialog.getByRole('button', { name: 'Als gekauft markieren', exact: true }).click()
   await expect(dialog.getByRole('status')).toContainText('Festgenagelt')
+})
+
+
+test('guests see a highlight without gaining edit controls', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mock(page, { purchased: false, canPurchase: true, receipt: null, writes: 0, highlighted: true })
+  const card = page.getByRole('article')
+  await expect(card).toHaveClass(/is-highlighted/)
+  await expect(card.locator('.wish-highlight-label')).toHaveText('Herzenswunsch')
+  await expect(card.locator('.card-menu')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Hervorheben$|Hervorhebung entfernen/ })).toHaveCount(0)
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id)).toEqual([])
+  await page.screenshot({ path: info.outputPath('shared-herzenswunsch.png') })
 })

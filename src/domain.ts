@@ -19,6 +19,7 @@ export type Wish = {
   image_url: string
   price: number | null
   fulfilled: boolean
+  highlighted?: boolean
   /** Only included in guest share responses, never ordinary owner reads. */
   purchased?: boolean
   created_at: string
@@ -27,7 +28,7 @@ export type Wish = {
   search_url?: string
 }
 export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visibility'>
-export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'offer_source' | 'search_term' | 'search_url'>
+export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'highlighted' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string; price?: number | null }
 export type ShareRoute = { kind: 'token' | 'public'; value: string }
 export type SharedList = { list: Wishlist; items: Wish[]; can_purchase?: boolean }

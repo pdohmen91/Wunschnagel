@@ -11,6 +11,7 @@ Eine installierbare Wunschlisten-Web-App für Freunde und Familie. React und Typ
 - Wünsche mit Shop-Link, Titel, Notizen, optionalem Preis und Vorschaubild.
 - Standardmäßig nur der Shop-Link auf Wunschkarten. Optional lassen sich gezielt Gebrauchtangebote bei eBay, Kleinanzeigen oder ein eigener Suchlink ergänzen. Automatische Preisvergleich-Buttons sind entfernt. Ein genauer Suchbegriff kann unabhängig vom Wunschtitel festgelegt werden; ausdrücklich konfigurierte Suchlinks sind auch in geteilten Listen verfügbar.
 - Listen und Wünsche erstellen, bearbeiten und löschen; Wünsche als erfüllt markieren.
+- Einzelne Wünsche als **Herzenswunsch** hervorheben: ein Schalter im Formular oder eine Aktion im Kartenmenü. Rahmen und Label sind auch in geteilten Listen sichtbar; die gewählte Sortierung bleibt erhalten.
 - Suche, Filter für offene und erfüllte Wünsche sowie Sortierung nach Preis, Name und Datum.
 - Gut lesbare Texte, große Bedienflächen, mobile Listenauswahl und vollständig aufklappbare Hinweise.
 - Ansicht geteilter Listen ohne Anmeldung und ohne Bearbeitungsrechte.

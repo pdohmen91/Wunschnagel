@@ -1,0 +1,48 @@
+import { expect, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+})
+
+test('one highlight toggle persists without reordering; the editor can remove it and the old footer is gone', async ({ page }, info) => {
+  await expect(page.getByRole('article')).toHaveCount(3)
+  const titles = await page.locator('.wish-body h2').allTextContents()
+  const card = page.getByRole('article').first()
+  await card.locator('summary').click()
+  await card.getByRole('button', { name: 'Hervorheben', exact: true }).click()
+  await expect(card).toHaveClass(/is-highlighted/)
+  await expect(card.locator('.wish-highlight-label')).toHaveText('Herzenswunsch')
+  expect(await page.locator('.wish-body h2').allTextContents()).toEqual(titles)
+  await expect(page.locator('.list-footer')).toHaveCount(0)
+  await expect(page.getByText('Offene Wünsche: ca.', { exact: false })).toHaveCount(0)
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id)).toEqual([])
+  await page.screenshot({ path: info.outputPath('herzenswunsch.png') })
+  await page.reload()
+  await expect(card).toHaveClass(/is-highlighted/)
+  await card.locator('summary').click()
+  await card.getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+  const choice = page.getByRole('checkbox', { name: 'Als Herzenswunsch hervorheben', exact: true })
+  await expect(choice).toBeChecked()
+  await choice.uncheck()
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(card).not.toHaveClass(/is-highlighted/)
+  await expect(card.locator('.wish-highlight-label')).toHaveCount(0)
+})
+
+test('a new wish can be highlighted with a single checkbox', async ({ page }) => {
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: 'Ein besonderer Wunsch', image_url: '', description: '' } }))
+  await page.getByRole('button', { name: 'Wunsch hinzufügen', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true }).fill('https://example.com/gift')
+  await page.getByRole('textbox', { name: 'Dein Wunsch', exact: true }).fill('Ein besonderer Wunsch')
+  await page.getByRole('checkbox', { name: 'Als Herzenswunsch hervorheben', exact: true }).check()
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const card = page.getByRole('article').filter({ hasText: 'Ein besonderer Wunsch' })
+  await expect(card).toHaveClass(/is-highlighted/)
+  await page.reload()
+  await expect(card).toHaveClass(/is-highlighted/)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})

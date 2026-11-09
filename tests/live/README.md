@@ -28,3 +28,7 @@ Geprüft werden Erstellen einer Einladung, minimaler Gastzugriff vor dem Beitrit
 `tests/live/saved-lists.mjs` prüft mit zwei eigens angelegten und anschließend gelöschten QA-Konten die echten Merker-RPCs, private Kontotrennung, widerrufene Links, unveränderte Bearbeitungsrechte, gesperrtes Merken und Erstellen ohne Anmeldung, angemeldetes Erstellen und Synchronisierung zwischen unabhängigen mobilen WebKit-Kontexten. E-Mail-Versand und bestehende Nutzerdaten werden nicht verwendet.
 
 Gleiche Umgebungsvariablen wie beim Geschenkstatus-Test: `WUNSCHNAGEL_QA_CONFIG`, `WUNSCHNAGEL_QA_SUPABASE`, optional `WUNSCHNAGEL_QA_BASE`; mit `WUNSCHNAGEL_QA_API_ONLY=1` ausschließlich API-Prüfung.
+
+## Hervorgehobene Wünsche
+
+`highlights.mjs` verwendet dieselben QA-Umgebungsvariablen. Es prüft ausschließlich mit neuen, anschließend gelöschten QA-Konten und Listen die Speicherung, Rollenrechte, sicheren geteilten Projektionen und den unveränderten Schutz der Kaufmarkierungen. Der mobile WebKit-Lauf prüft Umschalten, Bearbeiten, Neuanlegen und Persistenz sowie die entfernte Fußleiste. Shop-Vorschauen werden im Browser abgefangen; keine E-Mails oder Shopabrufe. `WUNSCHNAGEL_QA_API_ONLY=1` führt nur die Backend-Prüfungen aus.

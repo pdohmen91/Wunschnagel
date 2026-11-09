@@ -12,6 +12,7 @@ export interface Repository {
   saveItem(listId: string, input: WishInput, id?: string): Promise<void>
   deleteItem(id: string): Promise<void>
   fulfillItem(id: string, fulfilled: boolean): Promise<void>
+  highlightItem(id: string, highlighted: boolean): Promise<void>
   preview(url: string, signal?: AbortSignal, refresh?: boolean): Promise<Preview>
   shared(kind: 'token' | 'public', value: string): Promise<SharedList>
   purchase(listId: string, itemId: string, route: ShareRoute, receipt: string): Promise<'purchased' | 'already_purchased'>
@@ -79,6 +80,7 @@ export function demoRepository(): Repository {
     },
     deleteItem: async itemId => { data.items = data.items.filter(item => item.id !== itemId); persist() },
     fulfillItem: async (itemId, fulfilled) => { data.items.find(item => item.id === itemId)!.fulfilled = fulfilled; persist() },
+    highlightItem: async (itemId, highlighted) => { Object.assign(data.items.find(item => item.id === itemId)!, { highlighted }); persist() },
     preview: async (url, signal) => {
       if (!import.meta.env.DEV) throw new Error('Automatische Shop-Vorschauen benötigen die Online-Einrichtung. Bitte gib den Titel manuell ein.')
       const response = await fetch(`${import.meta.env.BASE_URL}__api/link-preview`, {
@@ -124,6 +126,7 @@ export function cloudRepository(userId: string): Repository {
     },
     deleteItem: async itemId => { signedIn(); const { error } = await db.from('wishes').delete().eq('id', itemId).select('id').single(); if (error) throw error },
     fulfillItem: async (itemId, fulfilled) => { signedIn(); const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId).select('id').single(); if (error) throw error },
+    highlightItem: async (itemId, highlighted) => { signedIn(); const { error } = await db.from('wishes').update({ highlighted }).eq('id', itemId).select('id').single(); if (error) throw error },
     preview: async (url, signal, refresh = false) => { signedIn();
       signal?.throwIfAborted()
       if (refresh) previews.invalidate(url)

@@ -82,7 +82,6 @@ h1, h2, h3, p { margin: 0; }
 .list-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 12px; }
 .privacy-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #cfc0cb; border-radius: 3px; background: #ece3e9; color: #574151; font-size: 12px; }
 .privacy-pill.public { background: #eee9d7; color: #60512b; border-color: #d2c7a8; }
-.meta-dot { color: var(--muted); }
 .edit-list { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 5px; border-radius: 4px; color: var(--muted); font-size: 12px; }
 .edit-list:hover { background: var(--soft); }
 .heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; min-width: 0; padding-top: 0; }
@@ -149,8 +148,6 @@ h1, h2, h3, p { margin: 0; }
 .fulfilled-badge { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid #796173; border-radius: 2px; background: var(--ink); color: var(--paper); font-size: 12px; }
 .fulfilled .wish-image-link > img { opacity: .65; }
 .fulfilled h2 { color: var(--muted); text-decoration: line-through; }
-.list-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 28px; padding: 20px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.7; }
-.list-footer > span { display: flex; align-items: center; gap: 8px; }
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 55px 15px; color: var(--muted); text-align: center; }
 .empty-state h3 { color: var(--ink); font-size: 22px; font-weight: 600; line-height: 1.4; }
 .empty-state p { font-size: 15px; line-height: 1.8; }
@@ -253,7 +250,6 @@ h1, h2, h3, p { margin: 0; }
 .filter-feedback p { min-width: 0; overflow-wrap: anywhere; }
 .filter-feedback .text-button { font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .card-menu summary { display: flex; align-items: center; justify-content: center; gap: 6px; width: auto; min-width: 44px; padding: 0 10px; font-size: 12px; font-weight: 550; }
-.menu-help { max-width: 230px; padding: 9px 9px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
 .input-help { margin-top: 7px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
 .form-destination { padding: 9px 12px; margin: 4px 0 0; border-left: 2px solid #b89aa9; background: var(--paper); color: var(--muted); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
 .form-destination strong { color: var(--ink); font-weight: 550; }
@@ -367,7 +363,6 @@ h1, h2, h3, p { margin: 0; }
   .shop-link { font-size: 15px; }
   .list-empty { min-height: 300px; padding: 38px 20px; }
   .list-empty h2 { font-size: 28px; }
-  .list-footer { font-size: 12px; }
   .dialog { padding: 16px; width: calc(var(--app-visible-width, 100vw) - 24px); max-height: calc(var(--app-visible-height, 100dvh) - 24px - var(--safe-top) - var(--safe-bottom)); }
   .dialog-heading h2 { font-size: 24px; }
   .dialog-intro { font-size: 14px; }
@@ -650,7 +645,7 @@ html[data-occasion=christmas] .list-cover { color: #fff0c9; background: #a62934;
 html[data-occasion=christmas] .list-heading .edit-list, html[data-occasion=christmas] .list-heading .list-info-trigger { color: #fff3d9; }
 html[data-occasion=christmas] .list-heading .edit-list:hover, html[data-occasion=christmas] .list-heading .list-info-trigger:hover { background: #3a5a46; color: #fff8e9; }
 html[data-occasion=christmas] .list-heading button:focus-visible { outline-color: #f0cf84; }
-html[data-occasion=christmas] .items-toolbar, html[data-occasion=christmas] .list-footer { background: var(--paper); }
+html[data-occasion=christmas] .items-toolbar { background: var(--paper); }
 html[data-occasion=christmas] .wish-card { border-color: #c3cebd; box-shadow: 3px 3px 0 #dce1d1; }
 .christmas-light { animation: christmas-warm-in 900ms ease-out both; }
 @keyframes christmas-warm-in { from { opacity: .25; } to { opacity: 1; } }
@@ -697,3 +692,15 @@ html[data-occasion=christmas] .save-shared-list { background: #244b39; color: #f
 html[data-occasion=christmas] .save-shared-list[aria-pressed=true] { background: #f1d8a3; color: #183a2c; border-color: #f1d8a3; }
 .library-section h3 .count { color: var(--ink); border-color: var(--line); background: var(--soft); }
 .saved-list-open strong { hyphens: auto; }
+
+/* A single on/off highlight, expressed with color and a readable label. */
+.app-shell .wish-card.is-highlighted { border-color: #b77938; background: #fff8e8; box-shadow: inset 4px 0 0 #b77938, 3px 3px 0 #e3bc825c; }
+.wish-card.is-highlighted .wish-body { background: #fff8e8; }
+.wish-highlight-label { display: inline-flex; align-items: center; align-self: flex-start; gap: 5px; max-width: 100%; margin-bottom: 4px; padding: 3px 7px; border: 1px solid #d5a963; border-radius: 3px; background: #f8e4bb; color: #6c4215; font-size: 11px; font-weight: 650; line-height: 1.4; }
+.wish-highlight-label svg { flex-shrink: 0; }
+.highlight-choice { display: flex; align-items: center; gap: 10px; min-height: 64px; margin: 16px 0; padding: 10px 12px; border: 1px solid #c8b598; border-radius: 3px; background: #fbf3e3; color: var(--ink); cursor: pointer; }
+.highlight-choice input[type=checkbox] { width: 20px; height: 20px; min-height: 20px; flex-shrink: 0; padding: 0; margin: 0; accent-color: #965b28; }
+.highlight-choice span { flex: 1; min-width: 0; }
+.highlight-choice strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.highlight-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.highlight-choice > svg { flex-shrink: 0; color: #965b28; }

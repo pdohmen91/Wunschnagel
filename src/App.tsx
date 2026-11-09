@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Bookmark, BookmarkCheck, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Heart, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort, ShareRoute } from './domain'
 import { authCallbackWarning, supabase } from './lib/client'
@@ -293,8 +293,6 @@ export default function App() {
   }
 
   const shownItems = sortWishes(items.filter(item => (filter === 'all' || (filter === 'done' ? item.fulfilled : !item.fulfilled)) && `${item.title} ${item.notes} ${hostname(item.url)}`.toLocaleLowerCase('de').includes(query.toLocaleLowerCase('de'))), sort)
-  const openItems = items.filter(item => !item.fulfilled)
-  const total = openItems.reduce((sum, item) => sum + (item.price || 0), 0)
   const name = user?.user_metadata?.full_name?.split(' ')[0] || 'Du'
 
   const listActions = canEdit && selected ? <>
@@ -402,10 +400,9 @@ export default function App() {
               </div>}
               {items.length > 0 && <p className="screen-reader-only" id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
               {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
-              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
+              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} onHighlight={() => run(async () => { await repo.highlightItem(item.id, !item.highlighted); await refreshItems(selected.id); setNotice(item.highlighted ? 'Markierung entfernt.' : 'Als Herzenswunsch hervorgehoben.') })} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
               {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
             </>}
-            {items.length > 0 && <footer className="list-footer"><span key={`${openItems.length}:${items.length}`}>{openItems.length} offen <span className="meta-dot">·</span> {items.length - openItems.length} erfüllt</span>{total > 0 && <span>Offene Wünsche: ca. {money.format(total)}</span>}</footer>}
           </div> : !loading && !error ? <section className="empty-state first-list"><span className="empty-icon"><WishMark /></span><h1>Deine erste Wunschliste</h1><p>Ein Nagel, ein Zettel, deine Wünsche. Erstelle eine Liste für einen Anlass oder sammle deine Ideen für später.</p>{canEdit && <button className="button primary" onClick={() => setModal('list')}><Plus size={18} /> Wunschliste erstellen</button>}</section> : loading ? <Loading /> : null}
         </>}
       </div>
@@ -477,7 +474,7 @@ function WishMark() {
   return <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 10h19l7 8v19H8z" stroke="currentColor" strokeWidth="2" /><path d="M27 10v8h7M8 32h26" stroke="currentColor" strokeWidth="2" /><path d="M21 29s-7-4.2-7-8a3.5 3.5 0 0 1 7-1 3.5 3.5 0 0 1 7 1c0 3.8-7 8-7 8Z" fill="currentColor" /><path d="M20 3v12m-4-12h8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
 }
 
-function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void }) {
+function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill, onHighlight }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void; onHighlight: () => void }) {
   const offers = offerSearch(item)
   const hasNotes = !!item.notes?.trim()
   function followGift(event: MouseEvent<HTMLAnchorElement>, url: string, label: string) {
@@ -510,7 +507,7 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     measure()
     return () => observer.disconnect()
   }, [item.notes, expanded])
-  return <article data-wish-id={item.id} className={`wish-card ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
+  return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
       <span className="wish-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
       <a className="wish-image-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Zum Shop: ${item.title}`} onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>
@@ -521,6 +518,7 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
       {canPurchase && item.purchased && !item.fulfilled && <span className="gift-badge"><CheckCheck size={14} /> Bereits gekauft</span>}
     </div>
     <div className="wish-body">
+      {item.highlighted && <span className="wish-highlight-label"><Heart size={12} fill="currentColor" aria-hidden="true" /> Herzenswunsch</span>}
       <span className="shop-name"><span className="shop-dot" />{hostname(item.url)}<ArrowUpRight size={12} /></span>
       <h2>{item.title}</h2>
       {hasNotes && <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${expanded ? 'expanded' : ''}`}>{item.notes}</p>}
@@ -537,8 +535,8 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     {canEdit && <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
       <summary aria-label={`Optionen für ${item.title}`}><Pencil size={13} /><span>Bearbeiten</span></summary>
       <div onClick={e => { const details = e.currentTarget.closest('details'); if (details) void closeDetails(details) }}>
-        <p className="menu-help">{item.fulfilled ? 'Wünschst du es dir wieder? Wähle „Wieder offen“.' : 'Schon bekommen? Wähle „Als erfüllt markieren“.'}</p>
         <button onClick={onEdit}><Pencil size={14} /> Bearbeiten</button>
+        <button disabled={busy} onClick={onHighlight}><Heart size={14} />{item.highlighted ? 'Hervorhebung entfernen' : 'Hervorheben'}</button>
         <button disabled={busy} onClick={onFulfill}><CheckCheck size={14} />{item.fulfilled ? 'Wieder offen' : 'Als erfüllt markieren'}</button>
         <button className="danger-text" disabled={busy} onClick={onDelete}><Trash2 size={14} /> Löschen</button>
       </div>
@@ -707,6 +705,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   const [url, setUrl] = useState(item?.url || '')
   const [title, setTitle] = useState(item?.title || '')
   const [notes, setNotes] = useState(item?.notes || '')
+  const [highlighted, setHighlighted] = useState(item?.highlighted || false)
   const [image, setImage] = useState(item?.image_url.startsWith('./') ? '' : item?.image_url || '')
   const [price, setPrice] = useState(item?.price?.toString().replace('.', ',') || '')
   const [offerSource, setOfferSource] = useState<OfferSource>(item?.offer_source && item.offer_source !== 'idealo' ? item.offer_source : 'none')
@@ -746,7 +745,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
       await onSave({
         title: title.trim(), url: webUrl(url), notes: notes.trim(),
         image_url: image ? webUrl(image, false) : item?.image_url.startsWith('./') ? item.image_url : '',
-        price: parsePrice(price),
+        price: parsePrice(price), highlighted,
         offer_source: offerSource,
         search_term: searchTerm.trim(),
         search_url: offerSource === 'custom' ? webUrl(searchUrl) : '',
@@ -782,6 +781,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         {preview.data?.image_url && customImage.current && image !== preview.data.image_url && <button type="button" className="text-button preview-retry" onClick={() => { setImage(preview.data!.image_url); customImage.current = true }}>Shop-Bild übernehmen <ArrowDownToLine size={14} /></button>}
         {preview.status === 'error' && <button type="button" className="text-button preview-retry" onClick={preview.reload}><RotateCcw size={15} /> Erneut versuchen</button>}
         {imageFailed && <p className="input-help">Das Bild ist nicht erreichbar. Du kannst den Wunsch trotzdem speichern.</p>}
+        <label className="highlight-choice"><input type="checkbox" checked={highlighted} onChange={event => setHighlighted(event.target.checked)} aria-label="Als Herzenswunsch hervorheben" aria-describedby="highlight-help" /><span><strong>Als Herzenswunsch hervorheben</strong><small id="highlight-help">Auch in geteilten Listen sichtbar.</small></span><Heart size={18} aria-hidden="true" /></label>
         <label className="field">Notizen &amp; Hinweise <span>optional</span>
           <textarea rows={3} aria-describedby="wish-notes-help" maxLength={3000} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Zum Beispiel Größe, Farbe oder was dir daran gefällt …" />
         </label>
