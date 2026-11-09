@@ -478,6 +478,7 @@ function WishMark() {
 
 function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void }) {
   const offers = offerSearch(item)
+  const hasNotes = !!item.notes?.trim()
   function followGift(event: MouseEvent<HTMLAnchorElement>, url: string, label: string) {
     if (!canPurchase) return
     event.preventDefault()
@@ -521,8 +522,8 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     <div className="wish-body">
       <span className="shop-name"><span className="shop-dot" />{hostname(item.url)}<ArrowUpRight size={12} /></span>
       <h2>{item.title}</h2>
-      <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${!item.notes ? 'empty-notes' : ''} ${expanded ? 'expanded' : ''}`}>{item.notes || 'Keine zusätzlichen Hinweise.'}</p>
-      {(notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
+      {hasNotes && <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${expanded ? 'expanded' : ''}`}>{item.notes}</p>}
+      {hasNotes && (notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
       <div className="wish-bottom">
         <span className={`price ${item.price === null ? 'empty-price' : ''}`}>{item.price !== null ? money.format(item.price) : 'Kein Preis angegeben'}{item.price !== null && <small>ca.</small>}</span>
         <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>
@@ -707,10 +708,11 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   const [notes, setNotes] = useState(item?.notes || '')
   const [image, setImage] = useState(item?.image_url.startsWith('./') ? '' : item?.image_url || '')
   const [price, setPrice] = useState(item?.price?.toString().replace('.', ',') || '')
-  const [offerSource, setOfferSource] = useState<OfferSource>(item?.offer_source || 'idealo')
+  const [offerSource, setOfferSource] = useState<OfferSource>(item?.offer_source && item.offer_source !== 'idealo' ? item.offer_source : 'none')
   const [searchTerm, setSearchTerm] = useState(item?.search_term || '')
   const [searchUrl, setSearchUrl] = useState(item?.search_url || '')
   const offers = offerSearch({ title, offer_source: offerSource, search_term: searchTerm, search_url: searchUrl })
+  const offersValid = offerSource === 'none' || !!offers.url
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const customTitle = useRef(Boolean(item?.title))
@@ -786,11 +788,11 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
 
         <section className="offer-search-settings" aria-label="Angebote finden">
           <label className="field">Angebote finden<span className="select-wrapper"><select aria-label="Angebote suchen bei" aria-describedby="offer-source-help" value={offerSource} onChange={event => setOfferSource(event.target.value as OfferSource)}>{Object.entries(offerSources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><ChevronDown size={16} /></span></label>
-          <p className="input-help" id="offer-source-help">Der zusätzliche Button auf deinem Wunsch öffnet direkt eine Angebotsliste oder einen Preisvergleich. Das funktioniert auch für Gäste deiner geteilten Liste.</p>
-          {offerSource === 'custom' ? <label className="field">Such- oder Preisvergleichslink<input required type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" value={searchUrl} maxLength={2000} onChange={event => setSearchUrl(event.target.value)} placeholder="https://…" /></label> : <>
+          <p className="input-help" id="offer-source-help">Optional kannst du gezielt Gebrauchtangebote oder eine eigene Suche verlinken. Mit „Nur Shop-Link“ erscheint kein zusätzlicher Button.</p>
+          {offerSource !== 'none' && (offerSource === 'custom' ? <label className="field">Such- oder Preisvergleichslink<input required type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" value={searchUrl} maxLength={2000} onChange={event => setSearchUrl(event.target.value)} placeholder="https://…" /></label> : <>
             <label className="field">Suchbegriff <span>optional</span><input value={searchTerm} maxLength={200} onChange={event => setSearchTerm(event.target.value)} placeholder={title.trim() || 'Marke und genaue Modellnummer'} aria-describedby="offer-term-help" /></label>
             <p className="input-help" id="offer-term-help">Ohne eigenen Suchbegriff verwenden wir den Titel. Mit Modellnummer, Ausgabe oder Setnummer finden andere leichter das Richtige.</p>
-          </>}
+          </>)}
           {offers.url && <a className="text-button offer-test-link" href={offers.url} target="_blank" rel="noopener noreferrer">Suchergebnisse testen <ArrowUpRight size={14} /></a>}
         </section>
 
@@ -804,9 +806,9 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         {error && <p className="form-error" role="alert">{error}</p>}
       </fieldset></FormFields>
       <div className="dialog-actions">
-        <p className="save-guidance" id="wish-save-help">{!preview.url ? 'Füge zuerst einen gültigen Shop-Link ein.' : !title.trim() ? previewBusy ? 'Titel wird geladen. Du kannst ihn auch selbst eintragen.' : 'Trage einen Titel für deinen Wunsch ein.' : !offers.url ? 'Füge einen gültigen Such- oder Preisvergleichslink ein.' : 'Shop-Link und Titel sind ausgefüllt. Du kannst jetzt speichern.'}</p>
+        <p className="save-guidance" id="wish-save-help">{!preview.url ? 'Füge zuerst einen gültigen Shop-Link ein.' : !title.trim() ? previewBusy ? 'Titel wird geladen. Du kannst ihn auch selbst eintragen.' : 'Trage einen Titel für deinen Wunsch ein.' : !offersValid ? 'Füge einen gültigen Suchlink ein.' : 'Shop-Link und Titel sind ausgefüllt. Du kannst jetzt speichern.'}</p>
         <button type="button" className="button secondary" disabled={busy} onClick={onClose}>Abbrechen</button>
-        <button className="button primary" aria-describedby="wish-save-help" disabled={busy || !title.trim() || !preview.url || !offers.url}>{busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />} Wunsch speichern</button>
+        <button className="button primary" aria-describedby="wish-save-help" disabled={busy || !title.trim() || !preview.url || !offersValid}>{busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />} Wunsch speichern</button>
       </div>
     </form>
   </Dialog>

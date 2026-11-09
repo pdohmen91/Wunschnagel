@@ -5,15 +5,20 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
-test('wish cards provide a direct price comparison using the exact product keywords', async ({ page }) => {
+test('cards have no automatic comparison and saving empty notes removes the placeholder', async ({ page }) => {
   const wish = page.getByRole('article').first()
-  const comparison = wish.getByRole('link', { name: /Preisvergleich bei idealo/ })
-  await expect(comparison).toBeVisible()
-  const target = new URL((await comparison.getAttribute('href'))!)
-  expect(target.hostname).toBe('www.idealo.de')
-  expect(target.searchParams.get('q')).toBe('Bialetti Moka Express 2 Tassen')
-  await expect(comparison).toHaveAttribute('target', '_blank')
-  await expect(comparison).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(wish.getByRole('link', { name: /Preisvergleich bei idealo/ })).toHaveCount(0)
+  await expect(wish.getByRole('link', { name: 'Zum Shop', exact: true })).toBeVisible()
+  await wish.locator('summary').click()
+  await wish.getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Angebote suchen bei' })).toHaveValue('none')
+  await page.getByRole('textbox', { name: /Notizen & Hinweise/ }).fill('')
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(wish.locator('.wish-notes, .notes-toggle, .offer-search-link')).toHaveCount(0)
+  await page.reload()
+  await expect(wish.locator('.wish-notes, .notes-toggle, .offer-search-link')).toHaveCount(0)
+  await expect(page.getByText('Keine zusätzlichen Hinweise.', { exact: true })).toHaveCount(0)
 })
 
 test('a wish can point to used search results with an independent model name', async ({ page }, info) => {

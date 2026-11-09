@@ -15,13 +15,11 @@ test('invitation links are separate from read-only routes and preserve the Pages
   assert.throws(() => inviteUrl('javascript:alert(1)', 'https://example.com/'))
 })
 
-test('offer searches use exact keywords, safe encoding and useful legacy defaults', () => {
-  const legacy = offerSearch({ title: 'Bialetti Moka Express' })
-  assert.equal(new URL(legacy.url).hostname, 'www.idealo.de')
-  assert.equal(new URL(legacy.url).searchParams.get('q'), 'Bialetti Moka Express')
-  const exact = offerSearch({ title: 'Mein Geschenk', search_term: '  Marke X & Größe + 2  ', offer_source: 'idealo' })
-  assert.equal(new URL(exact.url).searchParams.get('q'), 'Marke X & Größe + 2')
-  assert.equal(offerSearch({ title: ' ' }).url, '')
+test('automatic price comparisons stay disabled for new wishes and legacy idealo settings', () => {
+  for (const offer_source of [undefined, 'none', 'idealo'] as const) assert.equal(offerSearch({ title: 'Bialetti Moka Express', offer_source }).url, '')
+  const exact = offerSearch({ title: 'Mein Geschenk', search_term: '  Marke X & Größe + 2  ', offer_source: 'ebay' })
+  assert.equal(new URL(exact.url).searchParams.get('_nkw'), 'Marke X & Größe + 2')
+  assert.equal(offerSearch({ title: ' ', offer_source: 'ebay' }).url, '')
 })
 
 test('used and classified links open result lists rather than individual offers', () => {

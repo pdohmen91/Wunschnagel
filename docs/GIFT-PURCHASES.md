@@ -5,7 +5,7 @@ markieren. Das gilt für geheime Leselinks und öffentliche Listen.
 
 ## Bedienung
 
-- Produktbild, „Zum Shop“ und Angebots-/Preisvergleichslink öffnen zuerst einen
+- Produktbild, „Zum Shop“ und ausdrücklich hinterlegter Angebotslink öffnen zuerst einen
   kurzen Dialog mit der Erinnerung, nach dem tatsächlichen Kauf zu markieren.
   Erst der Link im Dialog öffnet den externen Shop in einem neuen Tab.
 - Das bloße Öffnen markiert nichts. „Als gekauft markieren“ ist eine bewusste,

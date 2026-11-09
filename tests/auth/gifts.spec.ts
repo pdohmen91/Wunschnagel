@@ -4,14 +4,14 @@ import type { Page } from '@playwright/test'
 
 const backend = 'https://security-test.supabase.co', token = 'c'.repeat(64)
 const listId = '00000000-0000-4000-8000-000000000001', itemId = '00000000-0000-4000-8000-000000000002'
-type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean }
+type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean; offerSource?: 'ebay' }
 async function mock(page: Page, state: State) {
   await page.route(backend + '/**', async route => {
     const request = route.request(), path = new URL(request.url()).pathname
     const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS' }
     if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
     if (path.endsWith('/get_shared_wishlist')) {
-      await route.fulfill({ headers, json: { list: { id: listId, title: 'Geschenke für Alex', description: '', emoji: '🎁', visibility: 'link', created_at: new Date().toISOString() }, can_purchase: state.canPurchase, items: [{ id: itemId, wishlist_id: listId, title: 'Eine besondere Espressokanne', notes: 'Bitte das kleine Modell.', url: 'https://shop.example/product', image_url: '', price: 39.9, fulfilled: false, created_at: new Date().toISOString(), ...(state.canPurchase ? { purchased: state.purchased } : {}) }] } }); return
+      await route.fulfill({ headers, json: { list: { id: listId, title: 'Geschenke für Alex', description: '', emoji: '🎁', visibility: 'link', created_at: new Date().toISOString() }, can_purchase: state.canPurchase, items: [{ id: itemId, wishlist_id: listId, title: 'Eine besondere Espressokanne', notes: 'Bitte das kleine Modell.', offer_source: state.offerSource || 'none', url: 'https://shop.example/product', image_url: '', price: 39.9, fulfilled: false, created_at: new Date().toISOString(), ...(state.canPurchase ? { purchased: state.purchased } : {}) }] } }); return
     }
     if (path.endsWith('/purchase_wish')) {
       state.writes++
@@ -58,15 +58,15 @@ test('shop opening first explains the purchase action and only continues after t
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Kaufmarkierung aufgehoben')
 })
 
-test('product image and price comparison also use the small interstitial and fit on mobile', async ({ page }, info) => {
+test('product image and explicit used-offer search also use the small interstitial and fit on mobile', async ({ page }, info) => {
   if (info.project.name === 'auth-webkit') await page.setViewportSize({ width: 390, height: 650 })
-  await mock(page, { purchased: false, canPurchase: true, receipt: null, writes: 0 })
+  await mock(page, { purchased: false, canPurchase: true, receipt: null, writes: 0, offerSource: 'ebay' })
   await page.getByRole('link', { name: 'Zum Shop: Eine besondere Espressokanne', exact: true }).click()
   await expect(page.getByRole('dialog').getByRole('link', { name: 'Zum Shop', exact: true })).toHaveAttribute('href', 'https://shop.example/product')
   await page.getByRole('button', { name: 'Zurück zur Liste', exact: true }).click()
   await page.locator('.offer-search-link').click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('link', { name: 'Preisvergleich', exact: true })).toHaveAttribute('href', /https:\/\/www.idealo.de\//)
+  await expect(dialog.getByRole('link', { name: 'Gebraucht suchen', exact: true })).toHaveAttribute('href', /https:\/\/www.ebay.de\//)
   const box = await dialog.boundingBox()
   expect(box!.x).toBeGreaterThanOrEqual(0)
   expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width)

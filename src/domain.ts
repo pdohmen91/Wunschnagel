@@ -1,5 +1,5 @@
 export type Visibility = 'private' | 'link' | 'public'
-export type OfferSource = 'idealo' | 'ebay' | 'kleinanzeigen' | 'custom'
+export type OfferSource = 'none' | 'idealo' | 'ebay' | 'kleinanzeigen' | 'custom'
 export type Wishlist = {
   id: string
   owner_id: string
@@ -35,11 +35,11 @@ export type Collaboration = { invite: { token: string; expires_at: string } | nu
 export type ListInvitation = { title: string; emoji: string; expires_at: string; already_joined: boolean }
 export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'
 
-export const offerSources: Record<OfferSource, string> = {
-  idealo: 'Preisvergleich · idealo',
+export const offerSources: Record<Exclude<OfferSource, 'idealo'>, string> = {
+  none: 'Nur Shop-Link',
   ebay: 'Gebrauchtangebote · eBay',
   kleinanzeigen: 'Kleinanzeigen',
-  custom: 'Eigener Such- oder Preisvergleichslink',
+  custom: 'Eigener Suchlink',
 }
 
 export function offerSearch(wish: Pick<Wish, 'title' | 'offer_source' | 'search_term' | 'search_url'>): { url: string; label: string; provider: string; term: string } {
@@ -62,9 +62,8 @@ export function offerSearch(wish: Pick<Wish, 'title' | 'offer_source' | 'search_
     url.searchParams.set('keywords', term)
     return { url: url.href, label: 'Angebote finden', provider: 'Kleinanzeigen', term }
   }
-  const url = new URL('https://www.idealo.de/preisvergleich/MainSearchProductCategory.html')
-  url.searchParams.set('q', term)
-  return { url: url.href, label: 'Preisvergleich', provider: 'idealo', term }
+  // No automatic comparison for missing sources or the retired idealo default.
+  return { url: '', label: 'Angebote finden', provider: '', term }
 }
 
 export function sortWishes(items: readonly Wish[], order: WishSort): Wish[] {
