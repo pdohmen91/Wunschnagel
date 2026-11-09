@@ -9,9 +9,9 @@ Git-Historie sowie der Build-/Deployment-Workflow. Primärquellen stehen unten.
 Das ist eine nachvollziehbare Prüfung mit Angriffstests, keine unabhängige
 Penetrationstest-Zertifizierung und keine Zusicherung vollständiger Sicherheit.
 
-Der Rollout erfolgt gestuft. Lokale Prüfungen und Auth-Live-Vorprüfung sind
-bestanden. Die abschließenden Live-Zugriffstests nach Entzug der alten Rechte
-werden im Nachtrag dokumentiert. **Offen bleibt die echte Google-Rückkehr in
+Der gestufte Rollout ist abgeschlossen. Lokale Prüfungen, die Auth-Live-
+Vorprüfung und 62 Produktions-Zugriffstests nach Entzug der alten Rechte sind
+bestanden. **Offen bleibt die echte Google-Rückkehr in
 die installierte iPhone-App**; ein kontrollierter WebKit-Test ersetzt diese nicht.
 
 Bestehende persönliche Wünsche wurden für diese Prüfung nicht gelesen oder
@@ -32,6 +32,7 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 | Niedrig / zusätzliche Schutzschicht | Keine CSP und kein Schutz der angemeldeten Oberfläche vor iframe-Einbettung. Ohne nachgewiesene HTML-Injektion kein bestätigter XSS-Angriff. | CSP als frühes Meta-Element im Produktionsbuild: Skripte nur von eigener Origin, keine Inline-Handler/`eval`, keine fremden Frames/Objekte/Basis-URLs/Formularziele, API-Verbindungen auf Supabase beschränkt. Innerhalb eines Frames wird die Anwendungsoberfläche nicht gemountet. |
 | Niedrig | Mitbearbeiternamen stammen aus veränderlichen Nutzer-Metadaten und können andere Personen imitieren. | Nur der Besitzer sieht zusätzlich die aus `auth.users` stammende bestätigte Konto-E-Mail-Adresse. Einladung erklärt diese Weitergabe. Metadaten entscheiden niemals über Rollen. |
 | Niedrig | Öffentliche E-Mail-Anmeldung aktiv, obwohl die App ausschließlich Google anbietet; Zugriffstokens bislang 1 h gültig. | Öffentlichen E-Mail-Provider geschlossen; vorhandene echte Konten waren Google-Konten. Neue JWTs 15 Minuten, Erneuerungstoken rotieren weiter. Google-Client-Secret bleibt ausschließlich im Backend. |
+| Mittel / zusätzliche Transportabsicherung | Direkte Postgres-/Pooler-Verbindungen konnten ohne TLS hergestellt werden. Die HTTP-APIs der App waren bereits verschlüsselt. | SSL Enforcement für direkte Datenbankverbindungen aktiviert und nach dem kurzen Supabase-Datenbankneustart bestätigt. |
 | Niedrig / Lieferkette | GitHub-Actions per veränderlichem Versions-Tag, keine Sicherheitsprüfungen als Deployment-Voraussetzung. | Actions an vollständige Commit-SHAs gebunden; Checkout ohne persistierte Git-Zugangsdaten; Audit, SQL-/Parser-/Auth-Tests und Browser-Sicherheitsprüfungen vor Produktionsbuild. Schreibrechte nur im Deployment-Job, keine PR-Deployments. Dependabot erstellt wöchentliche Update-PRs; kein Auto-Merge. |
 
 ## Verifizierte vorhandene Schutzmaßnahmen
@@ -42,8 +43,10 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
   Wechsel der Sichtbarkeit/Token-Erneuerung macht alte Leselinks ungültig;
   Einladungen laufen nach sieben Tagen ab. Entziehen der Mitgliedschaft ist
   nach dem nächsten API-Zugriff wirksam, auch bei bereits ausgestelltem JWT.
-- Definer-Funktionen autorisieren anhand `auth.uid()` und verwenden einen leeren
-  `search_path`. Der private Projektionshelfer ist kein aufrufbarer API-Endpunkt.
+- Anwendungs-Definer-Funktionen autorisieren anhand `auth.uid()` und verwenden
+  einen leeren `search_path`. Die zusätzliche plattformverwaltete RLS-Eventfunktion
+  hat den sicheren Suchpfad `pg_catalog` und ist für Browser-Rollen gesperrt.
+  Der private Projektionshelfer ist kein aufrufbarer API-Endpunkt.
 - Shop-Import verlangt ein durch Supabase validiertes Nutzer-Token und hat ein
   atomar begrenztes Budget von 40 Vorschauen pro Konto/DB-Tag. CORS ist auf
   freigegebene Origins begrenzt, ersetzt aber keine Authentifizierung.
@@ -80,7 +83,37 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 - Live-Auth-Vorprüfung nach Konfigurationsänderung: Google aktiv, öffentlicher
   E-Mail-/anonymer Provider aus, drei getrennte QA-Sitzungen mit höchstens
   900 Sekunden Laufzeit; sämtliche QA-Konten anschließend gelöscht.
-- Produktions-Zugriffstests: Nachtrag nach abgeschlossenem Rollout.
+- Produktions-Zugriffstests: **62 Prüfungen bestanden**, drei getrennte Konten
+  (Besitzer/Mitbearbeiter/Außenstehender) plus anonymer Zugriff. Sichere öffentliche
+  und geheime Projektionen, Ablehnung privater Abfragen und unveränderlicher
+  Spalten, keine Rollenübernahme durch Metadaten, Entzug der Mitgliedschaft,
+  Edge-Token-/Origin-/Größen-/JSON-/SSRF-Eingaben. Drei gleichzeitige Schreibaufrufe
+  bei Budgetstand 499 erlauben genau einen; drei Vorschau-Budgetaufrufe bei 39
+  erlauben ebenfalls genau einen. Keine echten Shop-Aufrufe in diesen Angriffstests.
+- Live-Metadatenkontrolle: **12 Rollen-/Tabellenkombinationen** ohne
+  `TRUNCATE`-/`TRIGGER`-/`REFERENCES`-Rechte, alle sechs Anwendungstabellen mit RLS;
+  **12 Funktions-/Rollenkombinationen** entsprechen der vorgesehenen Freigabe.
+  Kein unsicherer Definer-Suchpfad. Browser-Rollen dürfen in `public`, `auth` und
+  `extensions` keine eigenen Objekte anlegen. Keine verbleibenden Security-QA-Konten.
+- Legitimierter Import in der veröffentlichten mobilen App: Apple-Produkttitel,
+  Bild und 35-Euro-SKU-Preis importiert, gespeichert und nach Reload erhalten;
+  manuelle Preisänderung bleibt geschützt, ausdrückliche Preisübernahme und
+  Preisansicht über Leselink funktionieren, Axe-Zugänglichkeitsprüfung bestanden.
+  Fivi lieferte am Prüfzeitpunkt HTTP 429, deshalb keine Wiederholung dieses Abrufs.
+- Mobile Live-Einladungsprüfung vollständig bestanden: Einladungslink erstellen,
+  minimale Gastvorschau, kontrollierter PKCE-Rückweg mit SHA-256-Verifierprüfung,
+  ausdrücklicher Beitritt, Hinzufügen/Bearbeiten/Erfüllen/Löschen, Synchronisation
+  zum Besitzer, sichtbare bestätigte Mitglieds-E-Mail, Einladungswiderruf,
+  Mitgliederentzug, gesperrter Wiederbeitritt und Verlassen ohne Datenlöschung.
+  Für die simulierte OAuth-Rückgabe ist im betreffenden Testkontext der Service
+  Worker blockiert, damit Playwrights Netzwerk-Mock greift; Besitzer-/Gastkontext
+  und der separate Preis-/Offline-Test verwenden den regulären PWA-Ablauf.
+  Sämtliche QA-Konten einschließlich zugehöriger Daten wurden bereinigt.
+- Bereitstellung des Sicherheitscodes: GitHub-Pages-Workflow **42615733260**
+  erfolgreich; Live-HTML enthält die CSP und das veröffentlichte Bundle verwendet
+  PKCE sowie die neue öffentliche RPC. Datenbankmigrationen 003 und 004 sowie
+  die abgesicherte Edge Function sind angewendet. Deklarierte Auth-Einstellungen
+  ohne Abweichung; Google aktiv, E-Mail/anonym aus. Datenbank-TLS verbindlich aktiv.
 
 ## Verbleibende Grenzen und Betrieb
 
@@ -135,6 +168,8 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 - [Supabase: Database Functions](https://supabase.com/docs/guides/database/functions)
   und [Securing your API](https://supabase.com/docs/guides/api/securing-your-api)
   – Definer-Funktionen und explizite Berechtigungen.
+- [Supabase: SSL Enforcement](https://supabase.com/docs/guides/platform/ssl-enforcement)
+  – verschlüsselte direkte Datenbankverbindungen und Neustart bei Umstellung.
 - [Supabase: PKCE flow](https://supabase.com/docs/guides/auth/sessions/pkce-flow)
   – lokaler Verifier und Code-Austausch.
 - [MDN: CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP) und

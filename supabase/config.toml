@@ -1,5 +1,8 @@
 project_id = "wunschnagel"
 
+[db.ssl_enforcement]
+enabled = true
+
 [auth]
 site_url = "https://pdohmen91.github.io/Wunschnagel/"
 additional_redirect_urls = ["https://pdohmen91.github.io/Wunschnagel/", "http://127.0.0.1:5173/"]

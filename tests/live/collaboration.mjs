@@ -4,7 +4,7 @@ import { signInQa, openQaSession } from './qa-auth.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { webkit, chromium, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
@@ -17,7 +17,8 @@ const admin = createClient(url, keys.find(k => k.type === 'secret').api_key, opt
 const anon = createClient(url, key, options)
 const base = process.env.WUNSCHNAGEL_QA_BASE || 'https://pdohmen91.github.io/Wunschnagel/'
 const userIds = []
-let browser, phase = 'Setup'
+let browser, memberPage, phase = 'Setup'
+const diagnostics = []
 async function checked(request) { const { data, error } = await request; if (error) throw new Error(error.message); return data }
 async function account(name) {
   const email = `wunschnagel-collab-qa-${randomBytes(8).toString('hex')}@example.invalid`, password = randomBytes(32).toString('base64url')
@@ -25,7 +26,7 @@ async function account(name) {
   userIds.push(created.user.id)
   const client = createClient(url, key, options)
   const signed = await signInQa(client, admin, email)
-  return { id: created.user.id, client, session: signed.session }
+  return { id: created.user.id, email, client, session: signed.session }
 }
 async function signIn(page, session) { await openQaSession(page, base, url, session) }
 
@@ -36,8 +37,16 @@ try {
   await checked(owner.client.from('wishes').insert({ wishlist_id: list.id, title: '[QA] Ein Wunsch', url: 'https://example.com/qa', notes: 'Nur isolierte Testdaten' }))
   const engine = process.env.WUNSCHNAGEL_QA_BROWSER === 'chrome' ? chromium : webkit
   browser = await engine.launch(engine === chromium ? { channel: 'chrome' } : {})
-  const ownerContext = await browser.newContext(mobile), memberContext = await browser.newContext(mobile), guestContext = await browser.newContext(mobile)
-  const ownerPage = await ownerContext.newPage(), memberPage = await memberContext.newPage(), guestPage = await guestContext.newPage()
+  // The member's OAuth endpoint is mocked. A controlling service worker can
+  // bypass Playwright request routes; the owner/guest still use the real PWA.
+  const ownerContext = await browser.newContext(mobile), memberContext = await browser.newContext({ ...mobile, serviceWorkers: 'block' }), guestContext = await browser.newContext(mobile)
+  let challenge = ''
+  const ownerPage = await ownerContext.newPage(), guestPage = await guestContext.newPage()
+  memberPage = await memberContext.newPage()
+  memberPage.on('request', request => { if (request.url().includes('/auth/v1/')) { const u = new URL(request.url()); diagnostics.push({ kind: 'auth-request', method: request.method(), path: u.pathname, grant: u.searchParams.get('grant_type') }) } })
+  memberPage.on('console', message => { if (message.type() === 'error') diagnostics.push({ kind: 'console-error', message: message.text().replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted-jwt]') }) })
+  memberPage.on('pageerror', error => diagnostics.push({ kind: 'pageerror', message: error.message }))
+  memberPage.on('requestfailed', request => { if (request.url().includes('/auth/v1/token')) diagnostics.push({ kind: 'token-request-failed', message: request.failure()?.errorText }) })
   phase = 'Owner creates invitation through mobile UI'
   await signIn(ownerPage, owner.session)
   await expect(ownerPage.getByRole('heading', { name: list.title, exact: true })).toBeVisible()
@@ -62,16 +71,21 @@ try {
   assert.equal(await checked(anon.rpc('get_shared_wishlist', { token: list.share_token })), null)
   await memberPage.screenshot({ path: 'test-results/collaboration-invitation-mobile.png' })
   await memberPage.route(`${url}/auth/v1/authorize?**`, route => route.fulfill({ status: 200, contentType: 'text/html', body: '<p>QA OAuth handoff</p>' }))
-  await memberPage.getByRole('button', { name: 'Mit Google anmelden', exact: true }).click()
-  await memberPage.waitForURL(target => target.pathname.endsWith('/authorize'))
-  // The real Google consent was confirmed by the operator separately. Complete
-  // this controlled handoff with the isolated user's legitimate Supabase session.
   await memberPage.route(`${url}/auth/v1/token?grant_type=pkce`, async route => {
+    if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST,OPTIONS' } }); return }
+    diagnostics.push({ kind: 'controlled-pkce-exchange' })
     const body = route.request().postDataJSON()
     assert.equal(body.auth_code, 'qa-controlled-code')
     assert.ok(body.code_verifier?.length >= 43)
-    await route.fulfill({ json: editor.session, headers: { 'Access-Control-Allow-Origin': '*' } })
+    assert.equal(createHash('sha256').update(body.code_verifier).digest('base64url'), challenge)
+    await route.fulfill({ json: editor.session, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST,OPTIONS' } })
   })
+  await memberPage.getByRole('button', { name: 'Mit Google anmelden', exact: true }).click()
+  await memberPage.waitForURL(target => target.pathname.endsWith('/authorize'))
+  const oauthUrl = new URL(memberPage.url()); challenge = oauthUrl.searchParams.get('code_challenge'); assert.equal(oauthUrl.searchParams.get('code_challenge_method')?.toLowerCase(), 's256'); assert.ok(oauthUrl.searchParams.get('code_challenge')?.length >= 43)
+  // The real Google consent was confirmed by the operator separately. Complete
+  // this controlled handoff with the isolated user's legitimate Supabase session.
+  diagnostics.push({ kind: 'verifier-storage-before-callback', origins: (await memberContext.storageState()).origins.map(o => ({ origin: o.origin, keys: o.localStorage.map(k => ({ name: k.name, size: k.value.length })) })) })
   await memberPage.goto(base + '?code=qa-controlled-code')
   await expect(memberPage).toHaveURL(/#\/invite\/[a-f0-9]{64}$/)
   await expect(memberPage.getByRole('button', { name: 'Einladung annehmen', exact: true })).toBeVisible()
@@ -112,7 +126,8 @@ try {
   assert.equal((await checked(editor.client.from('wishlists').delete().eq('id', list.id).select('id'))).length, 0)
   for (const fn of ['get_collaboration', 'create_wishlist_invite', 'revoke_wishlist_invite']) assert.ok((await editor.client.rpc(fn, { list_id: list.id })).error)
   phase = 'Member update reaches owner, management shows joined user'
-  await expect(ownerPage.getByText('QA Mitbearbeiter', { exact: true })).toBeVisible({ timeout: 15000 })
+  await expect(ownerPage.getByRole('button', { name: 'QA Mitbearbeiter entfernen', exact: true })).toBeVisible({ timeout: 15000 })
+  await expect(ownerPage.locator('.member-email')).toHaveText(editor.email)
   await ownerPage.screenshot({ path: 'test-results/collaboration-members-mobile.png' })
   phase = 'Revocation blocks new joins while preserving existing membership'
   await ownerPage.getByRole('button', { name: 'Einladungslink deaktivieren', exact: true }).click()
@@ -141,7 +156,7 @@ try {
   await ownerPage.getByRole('button', { name: 'QA Mitbearbeiter entfernen', exact: true }).click()
   await ownerPage.getByRole('button', { name: 'Person entfernen', exact: true }).click()
   await expect(ownerPage.getByRole('button', { name: 'Einladungslink erstellen', exact: true })).toBeVisible()
-  await expect(ownerPage.getByText('QA Mitbearbeiter', { exact: true })).toHaveCount(0)
+  await expect(ownerPage.getByRole('button', { name: 'QA Mitbearbeiter entfernen', exact: true })).toHaveCount(0)
   assert.equal((await checked(editor.client.rpc('get_my_wishlists'))).length, 0)
   assert.equal((await checked(editor.client.from('wishes').update({ title: 'Blocked' }).eq('id', saved.id).select('id'))).length, 0)
   assert.ok((await editor.client.from('wishes').insert({ wishlist_id: list.id, title: 'Blocked', url: 'https://example.com' })).error)
@@ -166,6 +181,13 @@ try {
   assert.equal((await checked(owner.client.from('wishes').select('id').eq('wishlist_id', list.id))).length, 2)
   console.log(JSON.stringify({ invitationCreatedOnMobile: true, anonymousPreviewIsMinimal: true, oauthReturnRestoresInvitation: true, explicitAcceptanceRequired: true, joinedListSurvivesReload: true, memberCanAddAndEdit: true, listAdministrationOwnerOnly: true, updatesReachOwner: true, ownerSeesMembers: true, viewingLinksRemainReadOnly: true, revocationPreservesMembers: true, removalRevokesEditing: true, removedMemberCannotRejoin: true, memberCanLeaveWithoutDeletingWishes: true }))
 } catch (e) {
+  if (memberPage) {
+    const u = new URL(memberPage.url()); diagnostics.push({ kind: 'location', origin: u.origin, pathname: u.pathname, hashRoute: u.hash.split('/')[1], hasCode: u.searchParams.has('code') })
+    diagnostics.push({ kind: 'storageKeys', keys: await memberPage.evaluate(() => Object.keys(localStorage)) })
+    diagnostics.push({ kind: 'alerts', text: await memberPage.locator('[role=alert], [role=status]').allTextContents().catch(() => []) })
+    await memberPage.screenshot({ path: 'test-results/collaboration-security-failure.png' }).catch(() => {})
+  }
+  console.error(JSON.stringify({ diagnostics }))
   console.error(JSON.stringify({ phase, message: String(e.message).split('\n')[0].replace(/(access_token|refresh_token)=[^&\s]+/g, '$1=[redacted]').replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted-jwt]') }))
   process.exitCode = 1
 } finally {
