@@ -159,6 +159,9 @@ test('anonymous users read public lists only through a safe RPC projection', asy
   await role()
   await assert.rejects(count('wishlists'), /permission denied/)
   await assert.rejects(count('wishes'), /permission denied/)
+  await assert.rejects(db.query("insert into public.wishlists(owner_id,title) values($1,'Anonymous list')", [alice]), /permission denied/)
+  await assert.rejects(db.query("insert into public.wishes(wishlist_id,title,url) values($1,'Anonymous wish','https://example.com')", [publicId]), /permission denied/)
+
   const result = (await db.query<{ data: { list: Record<string, unknown>; items: unknown[] } }>('select public.get_public_wishlist($1) as data', [publicId])).rows[0].data
   assert.equal(result.list.title, 'Public')
   assert.equal(result.items.length, 1)

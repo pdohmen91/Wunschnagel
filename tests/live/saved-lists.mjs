@@ -32,6 +32,7 @@ try {
   const save = (api = viewer, value = list.share_token, kind = 'token', expected = viewerId) => api.rpc('save_wishlist_bookmark', { bookmark_kind: kind, bookmark_value: value, expected_user: expected })
   const remove = id => ok(viewer.rpc('delete_wishlist_bookmark', { bookmark_list_id: id, expected_user: viewerId }))
   phase = 'RPC permissions and account isolation'
+  await denied(anon.from('wishlists').insert({ owner_id: ownerId, title: '[QA] Denied anonymous creation' }));
   await denied(save(anon)); await denied(anon.rpc('get_wishlist_bookmarks', { expected_user: viewerId }))
   await denied(anon.from('wishlist_bookmarks').select('*')); await denied(viewer.from('wishlist_bookmarks').select('*'))
   await denied(save(viewer, list.share_token, 'token', ownerId))
@@ -75,6 +76,8 @@ try {
     await expect(pg.locator('.saved-library-trigger, .saved-list-entry')).toHaveCount(0)
     await pg.goto(base)
     await expect(pg.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0)
+    await expect(pg.getByRole('button', { name: 'Mit Google anmelden', exact: true })).toBeVisible()
+    await expect(pg.getByRole('button', { name: /ausprobieren|Neue Wunschliste|Wunschliste erstellen|Wunsch hinzufügen/ })).toHaveCount(0)
     assert.equal(await pg.evaluate(() => localStorage.getItem('wunschnagel-saved-lists-v1')), null)
     assert.deepEqual(await get(viewer), [])
     phase = 'account save and independent-device synchronization'
@@ -84,6 +87,11 @@ try {
     assert.equal((await get(viewer))[0].list_id, list.id)
     await openQaSession(pb, base, url, sessions[1])
     let dialog = await library(pb)
+    await dialog.getByRole('button', { name: 'Neue Wunschliste', exact: true }).click()
+    await pb.getByRole('textbox', { name: 'Name deiner Liste', exact: true }).fill('[QA] Im Konto erstellt')
+    await pb.getByRole('button', { name: 'Liste erstellen', exact: true }).click()
+    await expect(pb.getByRole('heading', { name: '[QA] Im Konto erstellt', exact: true })).toBeVisible()
+    dialog = await library(pb)
     await expect(dialog.locator('.saved-list-entry')).toContainText('In deinem Konto')
     await dialog.getByRole('link', { name: new RegExp(list.title.replace(/[\[\]]/g, '\\$&')) }).click()
     await expect(pb.getByRole('button', { name: 'Gemerkt', exact: true })).toBeVisible()

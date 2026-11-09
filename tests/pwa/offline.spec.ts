@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('production build works under GitHub Pages subpath and opens offline after first installation', async ({ page, context }) => {
   await page.goto('./')
-  await expect(page.getByRole('heading', { name: 'Kleine & große Wünsche' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Deine Wünsche/ })).toBeVisible()
   const manifest = await page.evaluate(async () => {
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!
     return { url: link.href, body: await fetch(link.href).then(response => response.json()) }
@@ -25,7 +25,7 @@ test('production build works under GitHub Pages subpath and opens offline after 
   await expect.poll(() => page.evaluate(async url => !!await caches.match(url), artworkUrl)).toBe(true)
   await context.setOffline(true)
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Kleine & große Wünsche' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Deine Wünsche/ })).toBeVisible()
   await expect(page.getByText('Du bist offline.', { exact: false })).toBeVisible()
   const response = await page.evaluate(() => fetch('./icon-192.png').then(response => response.ok))
   expect(response).toBe(true)

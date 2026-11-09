@@ -55,7 +55,12 @@ function loadDemo(): DemoData {
   return seed()
 }
 
+// Only Playwright's explicit development fixture server may use local data.
+// Production builds stay closed even if this flag is supplied during build.
+export const uiFixturesEnabled = import.meta.env.DEV && import.meta.env.VITE_UI_FIXTURES === 'true' && !supabase
+
 export function demoRepository(): Repository {
+  if (!uiFixturesEnabled) throw new Error('Die lokale Testdatenquelle ist hier nicht verfügbar.')
   const data = loadDemo()
   const persist = () => { localStorage.setItem(STORAGE, JSON.stringify(data)) }
   persist()
@@ -97,21 +102,28 @@ export function demoRepository(): Repository {
 
 export function cloudRepository(userId: string): Repository {
   const db = supabase!
+  function configured() {
+    if (!supabase) throw new Error('Die Anmeldung ist hier noch nicht verfügbar. Bitte öffne die veröffentlichte App.')
+  }
+  function signedIn() {
+    configured()
+    if (!userId) throw new Error('Bitte melde dich an, um eigene Listen und Wünsche zu verwalten.')
+  }
   const previews = new PreviewCache()
   return {
-    lists: async () => { const { data, error } = await db.rpc('get_my_wishlists'); if (error) throw error; return data as Wishlist[] },
-    items: async listId => { const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
-    createList: async input => { const { data, error } = await db.from('wishlists').insert({ ...input, owner_id: userId }).select().single(); if (error) throw error; return data as Wishlist },
-    updateList: async (listId, input) => { const { error } = await db.from('wishlists').update(input).eq('id', listId).eq('owner_id', userId); if (error) throw error },
-    deleteList: async listId => { const { error } = await db.from('wishlists').delete().eq('id', listId).eq('owner_id', userId); if (error) throw error },
-    rotateLink: async listId => { const { data, error } = await db.rpc('rotate_share_token', { list_id: listId }); if (error) throw error; return data as string },
-    saveItem: async (listId, input, itemId) => {
+    lists: async () => { signedIn(); const { data, error } = await db.rpc('get_my_wishlists'); if (error) throw error; return data as Wishlist[] },
+    items: async listId => { signedIn(); const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
+    createList: async input => { signedIn(); const { data, error } = await db.from('wishlists').insert({ ...input, owner_id: userId }).select().single(); if (error) throw error; return data as Wishlist },
+    updateList: async (listId, input) => { signedIn(); const { error } = await db.from('wishlists').update(input).eq('id', listId).eq('owner_id', userId); if (error) throw error },
+    deleteList: async listId => { signedIn(); const { error } = await db.from('wishlists').delete().eq('id', listId).eq('owner_id', userId); if (error) throw error },
+    rotateLink: async listId => { signedIn(); const { data, error } = await db.rpc('rotate_share_token', { list_id: listId }); if (error) throw error; return data as string },
+    saveItem: async (listId, input, itemId) => { signedIn();
       const result = itemId ? await db.from('wishes').update(input).eq('id', itemId).eq('wishlist_id', listId).select('id').single() : await db.from('wishes').insert({ ...input, wishlist_id: listId })
       if (result.error) throw result.error
     },
-    deleteItem: async itemId => { const { error } = await db.from('wishes').delete().eq('id', itemId).select('id').single(); if (error) throw error },
-    fulfillItem: async (itemId, fulfilled) => { const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId).select('id').single(); if (error) throw error },
-    preview: async (url, signal, refresh = false) => {
+    deleteItem: async itemId => { signedIn(); const { error } = await db.from('wishes').delete().eq('id', itemId).select('id').single(); if (error) throw error },
+    fulfillItem: async (itemId, fulfilled) => { signedIn(); const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId).select('id').single(); if (error) throw error },
+    preview: async (url, signal, refresh = false) => { signedIn();
       signal?.throwIfAborted()
       if (refresh) previews.invalidate(url)
       const cached = !refresh && previews.get(url)
@@ -122,7 +134,7 @@ export function cloudRepository(userId: string): Repository {
       previews.put(url, data as Preview)
       return data as Preview
     },
-    shared: async (kind, value) => {
+    shared: async (kind, value) => { configured();
       if (kind === 'token') {
         const { data, error } = await db.rpc('get_shared_wishlist', { token: value })
         if (error) throw error
@@ -134,27 +146,27 @@ export function cloudRepository(userId: string): Repository {
       if (!data) throw new Error('Diese Liste ist nicht öffentlich oder wurde gelöscht.')
       return data as SharedList
     },
-    purchase: async (listId, itemId, route, receipt) => {
+    purchase: async (listId, itemId, route, receipt) => { configured();
       const { data, error } = await db.rpc('purchase_wish', { list_id: listId, item_id: itemId, read_token: route.kind === 'token' ? route.value : null, receipt })
       if (error) throw error
       return data as 'purchased' | 'already_purchased'
     },
-    undoPurchase: async (listId, itemId, route, receipt) => {
+    undoPurchase: async (listId, itemId, route, receipt) => { configured();
       const { data, error } = await db.rpc('undo_wish_purchase', { list_id: listId, item_id: itemId, read_token: route.kind === 'token' ? route.value : null, receipt })
       if (error) throw error
       return data === true
     },
-    collaboration: async listId => { const { data, error } = await db.rpc('get_collaboration', { list_id: listId }); if (error) throw error; return data as Collaboration },
-    createInvite: async listId => { const { error } = await db.rpc('create_wishlist_invite', { list_id: listId }); if (error) throw error },
-    revokeInvite: async listId => { const { error } = await db.rpc('revoke_wishlist_invite', { list_id: listId }); if (error) throw error },
-    invitation: async token => {
+    collaboration: async listId => { signedIn(); const { data, error } = await db.rpc('get_collaboration', { list_id: listId }); if (error) throw error; return data as Collaboration },
+    createInvite: async listId => { signedIn(); const { error } = await db.rpc('create_wishlist_invite', { list_id: listId }); if (error) throw error },
+    revokeInvite: async listId => { signedIn(); const { error } = await db.rpc('revoke_wishlist_invite', { list_id: listId }); if (error) throw error },
+    invitation: async token => { configured();
       const { data, error } = await db.rpc('get_wishlist_invite', { invite_token: token })
       if (error) throw error
       if (!data) throw new Error('Diese Einladung ist abgelaufen oder wurde deaktiviert. Bitte frage nach einem neuen Link.')
       return data as ListInvitation
     },
-    acceptInvite: async token => { const { data, error } = await db.rpc('accept_wishlist_invite', { invite_token: token }); if (error) throw error; return data as string },
-    removeMember: async (listId, memberId) => { const { error } = await db.rpc('remove_wishlist_member', { list_id: listId, member_id: memberId }); if (error) throw error },
-    leaveList: async listId => { const { error } = await db.rpc('leave_wishlist', { list_id: listId }); if (error) throw error },
+    acceptInvite: async token => { signedIn(); const { data, error } = await db.rpc('accept_wishlist_invite', { invite_token: token }); if (error) throw error; return data as string },
+    removeMember: async (listId, memberId) => { signedIn(); const { error } = await db.rpc('remove_wishlist_member', { list_id: listId, member_id: memberId }); if (error) throw error },
+    leaveList: async listId => { signedIn(); const { error } = await db.rpc('leave_wishlist', { list_id: listId }); if (error) throw error },
   }
 }

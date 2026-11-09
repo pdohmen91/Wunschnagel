@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('production CSP blocks inline script, inline handlers and base URL injection', async ({ page }) => {
   await page.goto('./')
-  await expect(page.getByRole('heading', { name: 'Kleine & große Wünsche', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Deine Wünsche/ })).toBeVisible()
   const result = await page.evaluate(async () => {
     const script = document.createElement('script'); script.textContent = 'window.securityInjected = true'; document.head.append(script)
     const button = document.createElement('button'); button.setAttribute('onclick', 'window.securityInjected = true'); document.body.append(button); button.click()

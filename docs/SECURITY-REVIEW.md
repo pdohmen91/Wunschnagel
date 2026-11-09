@@ -193,3 +193,9 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 ## Ergänzung 09.11.2026: persönliche gemerkte Listen
 
 Neue Merker sind private Verweise, keine Freigabe- oder Mitgliedschaftsrechte. Tabelle ohne Client-Rechte und drei eng begrenzte authentifizierte RPCs mit Identitätsprüfung, leerem Suchpfad und explizitem Kontofilter. Neue private Metadaten werden nach Freigabe-Widerruf nicht über Merker ausgegeben. Merken ist ausschließlich mit Anmeldung möglich. Die frühere lokale Gast-Speicherung ist entfernt; alte Gast-Merker werden ohne Auslesen oder Hochladen gelöscht. Details und Prüfungen: [SAVED-LISTS.md](SAVED-LISTS.md).
+
+## Ergänzung 09.11.2026: eigene Listen nur mit Anmeldung
+
+Der normale App-Einstieg bietet keinen anonymen Demo-Modus und keine lokale Ersatzspeicherung mehr an. Fehlende Backend-Konfiguration öffnet keine Testdaten. Alte Demo-Listen werden weder gelesen noch hochgeladen. Schreibdialoge erfordern Bearbeitungsrechte; ein Sitzungsverlust schließt offene Formulare. Private Methoden der Datenquelle prüfen Benutzer und Konfiguration vor Netzwerkzugriff. Die serverseitigen Rollenrechte verweigern anonymen Nutzern das Anlegen von Listen und Wünschen weiterhin.
+
+Die lokale Datenquelle bleibt ausschließlich für den ausdrücklich konfigurierten Entwicklungsserver der Browser-Suite verfügbar. Der Produktionsbuild ignoriert deren Freigabe-Flag. Die PWA-Suite prüft das mit gesetztem Test-Flag, vorhandenen alten Demo-Daten und einem Demo-URL-Versuch. Chrome und iPhone-WebKit prüfen den Gast-Einstieg, angemeldetes Erstellen und erneutes Öffnen sowie Sitzungsverlust bei geöffnetem Formular.
