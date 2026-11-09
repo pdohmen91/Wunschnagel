@@ -235,8 +235,8 @@ export default function App() {
         <span className="brand-wordmark"><strong>Wunschnagel</strong><small>Deine Wünsche. Festgehalten.</small></span>
       </a>
       <div className="sidebar-body">
-        <div className="nav-title"><span>{route ? 'Geteilte Liste' : 'Meine Listen'}</span>{!route && <span className="count">{lists.length}</span>}</div>
-        {!route && <nav className="list-nav" aria-label="Wunschlisten">
+        <div className="nav-title"><span>{invite ? 'Einladung' : route ? 'Geteilte Liste' : 'Meine Listen'}</span>{!route && !invite && <span className="count">{lists.length}</span>}</div>
+        {!route && !invite && <nav className="list-nav" aria-label="Wunschlisten">
           {lists.map(list => <button key={list.id} className={`list-link ${selectedId === list.id ? 'active' : ''}`} title={list.title} aria-pressed={selectedId === list.id} onClick={() => { setSelectedId(list.id); setQuery(''); setFilter('all') }}>
             <span className="list-emoji">{list.emoji}</span><span>{list.title}</span><PrivacyIcon value={list.visibility} />
           </button>)}
@@ -258,9 +258,9 @@ export default function App() {
 
     <main className="main">
       <header className="topbar">
-        <span>{route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
+        <span>{invite ? 'Einladung zur Wunschliste' : route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
         <div>
-          {compact && !route && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
+          {compact && !route && !invite && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
           {compact && !route && !demo && !user && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
           {compact && route && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Meine Listen</a>}
           {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
@@ -272,7 +272,7 @@ export default function App() {
         <button className="install-prompt-action" onClick={() => setModal('install')} aria-label="App installieren" aria-haspopup="dialog"><ArrowDownToLine size={17} /><span>App installieren</span><small>Direkt vom Startbildschirm öffnen</small><ArrowRight size={15} /></button>
         <button className="icon-button" aria-label="Installationshinweis schließen" onClick={installation.dismiss}><X size={16} /></button>
       </div>}
-      {demo && (compact ? <button className="compact-demo" onClick={() => setModal('preview')}><Info size={14} /><span>Vorschau · nur auf diesem Gerät</span><ChevronDown size={14} /></button> : <div className="demo-banner"><Info size={15} /><p><strong>Lokale Vorschau.</strong> Nur in diesem Browser gespeichert. Noch nicht teilbar.</p></div>)}
+      {demo && !invite && (compact ? <button className="compact-demo" onClick={() => setModal('preview')}><Info size={14} /><span>Vorschau · nur auf diesem Gerät</span><ChevronDown size={14} /></button> : <div className="demo-banner"><Info size={15} /><p><strong>Lokale Vorschau.</strong> Nur in diesem Browser gespeichert. Noch nicht teilbar.</p></div>)}
       {!online && <div className="offline-banner"><WifiOff size={16} /> Du bist offline. Gemeinsame Listen benötigen eine Internetverbindung.</div>}
       <div className="page-content">
         {!authReady ? <Loading /> : invite ? <Invitation token={invite} repo={repo} signedIn={!!user} onLogin={login} onAccept={async id => {
