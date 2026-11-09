@@ -476,6 +476,7 @@ function WishMark() {
 
 function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill, onHighlight }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void; onHighlight: () => void }) {
   const offers = offerSearch(item)
+  const offerLabel = offers.label.includes(offers.provider) ? offers.label : `${offers.label} bei ${offers.provider}`
   const hasNotes = !!item.notes?.trim()
   function followGift(event: MouseEvent<HTMLAnchorElement>, url: string, label: string) {
     if (!canPurchase) return
@@ -526,7 +527,7 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
       <div className="wish-bottom">
         <span className={`price ${item.price === null ? 'empty-price' : ''}`}>{item.price !== null ? money.format(item.price) : 'Kein Preis angegeben'}{item.price !== null && <small>ca.</small>}</span>
         <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>
-        {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offers.label} bei ${offers.provider} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
+        {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offerLabel} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
       </div>
     </div>
     {canPurchase && !item.fulfilled && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
@@ -789,7 +790,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
 
         <section className="offer-search-settings" aria-label="Angebote finden">
           <label className="field">Angebote finden<span className="select-wrapper"><select aria-label="Angebote suchen bei" aria-describedby="offer-source-help" value={offerSource} onChange={event => setOfferSource(event.target.value as OfferSource)}>{Object.entries(offerSources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><ChevronDown size={16} /></span></label>
-          <p className="input-help" id="offer-source-help">Optional kannst du gezielt Gebrauchtangebote oder eine eigene Suche verlinken. Mit „Nur Shop-Link“ erscheint kein zusätzlicher Button.</p>
+          <p className="input-help" id="offer-source-help">Optional kannst du eine Angebotsliste oder eigene Suche verlinken. Mit „Nur Shop-Link“ erscheint kein zusätzlicher Button.</p>
           {offerSource !== 'none' && (offerSource === 'custom' ? <label className="field">Such- oder Preisvergleichslink<input required type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" value={searchUrl} maxLength={2000} onChange={event => setSearchUrl(event.target.value)} placeholder="https://…" /></label> : <>
             <label className="field">Suchbegriff <span>optional</span><input value={searchTerm} maxLength={200} onChange={event => setSearchTerm(event.target.value)} placeholder={title.trim() || 'Marke und genaue Modellnummer'} aria-describedby="offer-term-help" /></label>
             <p className="input-help" id="offer-term-help">Ohne eigenen Suchbegriff verwenden wir den Titel. Mit Modellnummer, Ausgabe oder Setnummer finden andere leichter das Richtige.</p>

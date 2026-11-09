@@ -1,5 +1,5 @@
 export type Visibility = 'private' | 'link' | 'public'
-export type OfferSource = 'none' | 'idealo' | 'ebay' | 'kleinanzeigen' | 'custom'
+export type OfferSource = 'none' | 'idealo' | 'ebay_all' | 'ebay' | 'kleinanzeigen' | 'custom'
 export type Wishlist = {
   id: string
   owner_id: string
@@ -38,6 +38,7 @@ export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'
 
 export const offerSources: Record<Exclude<OfferSource, 'idealo'>, string> = {
   none: 'Nur Shop-Link',
+  ebay_all: 'eBay · alle Angebote',
   ebay: 'Gebrauchtangebote · eBay',
   kleinanzeigen: 'Kleinanzeigen',
   custom: 'Eigener Suchlink',
@@ -51,12 +52,12 @@ export function offerSearch(wish: Pick<Wish, 'title' | 'offer_source' | 'search_
     return { url, label: 'Angebote finden', provider: hostname(url), term }
   }
   if (!term) return { url: '', label: 'Angebote finden', provider: '', term: '' }
-  if (wish.offer_source === 'ebay') {
+  if (wish.offer_source === 'ebay' || wish.offer_source === 'ebay_all') {
     const url = new URL('https://www.ebay.de/sch/i.html')
     url.searchParams.set('_nkw', term)
     // Used condition IDs include books/media. Exclude broken/parts-only listings.
-    url.searchParams.set('LH_ItemCondition', '3000|4000|5000|6000')
-    return { url: url.href, label: 'Gebraucht suchen', provider: 'eBay', term }
+    if (wish.offer_source === 'ebay') url.searchParams.set('LH_ItemCondition', '3000|4000|5000|6000')
+    return { url: url.href, label: wish.offer_source === 'ebay' ? 'Gebraucht suchen' : 'Bei eBay suchen', provider: 'eBay', term }
   }
   if (wish.offer_source === 'kleinanzeigen') {
     const url = new URL('https://www.kleinanzeigen.de/s-suchanfrage.html')

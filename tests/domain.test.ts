@@ -23,6 +23,14 @@ test('automatic price comparisons stay disabled for new wishes and legacy idealo
 })
 
 test('used and classified links open result lists rather than individual offers', () => {
+  const allOffers = offerSearch({ title: 'Mein Wunsch', offer_source: 'ebay_all', search_term: 'Modell X123 & Zubehör' })
+  const allUrl = new URL(allOffers.url)
+  assert.equal(allUrl.hostname, 'www.ebay.de')
+  assert.equal(allUrl.pathname, '/sch/i.html')
+  assert.equal(allUrl.searchParams.get('_nkw'), 'Modell X123 & Zubehör')
+  assert.equal(allUrl.searchParams.has('LH_ItemCondition'), false)
+  assert.equal(allOffers.label, 'Bei eBay suchen')
+
   const used = new URL(offerSearch({ title: 'Modell X123', offer_source: 'ebay' }).url)
   assert.equal(used.pathname, '/sch/i.html')
   assert.equal(used.searchParams.get('_nkw'), 'Modell X123')

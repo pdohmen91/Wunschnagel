@@ -49,6 +49,7 @@ before(async () => {
   await db.exec(await readFile(new URL('../supabase/migrations/202611090003_public_projection.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090004_security_hardening.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090007_optional_offer_search.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611090009_ebay_all_offers.sql', import.meta.url), 'utf8'))
 })
 
 test('browser roles have no whole-table operations or mutable security columns', async () => {
@@ -135,6 +136,7 @@ test('existing wishes receive offer-search defaults and only owners can change t
   assert.deepEqual(row, { offer_source: 'idealo', search_term: '', search_url: '' })
   const fresh = (await db.query<{ id: string; offer_source: string }>("insert into public.wishes(wishlist_id,title,url) values($1,'No automatic comparison','https://example.com') returning id,offer_source", [privateId])).rows[0]
   assert.equal(fresh.offer_source, 'none')
+  assert.equal((await db.query<{ offer_source: string }>("update public.wishes set offer_source='ebay_all' where id=$1 returning offer_source", [fresh.id])).rows[0].offer_source, 'ebay_all')
   await db.query('delete from public.wishes where id=$1', [fresh.id])
 
   await db.query("update public.wishes set offer_source='ebay', search_term='Genaues Modell' where id=$1", [itemId])
