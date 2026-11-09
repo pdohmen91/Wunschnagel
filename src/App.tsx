@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import type { CSSProperties, FormEvent, KeyboardEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
-import { hostname, parsePrice, readShareRoute, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
+import { hostname, parsePrice, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, Visibility, Wish, Wishlist, WishInput, WishSort } from './domain'
 import { supabase } from './lib/client'
 import { cloudRepository, demoRepository } from './lib/repository'
@@ -499,6 +499,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   const [error, setError] = useState('')
   const customTitle = useRef(Boolean(item?.title))
   const customImage = useRef(Boolean(item?.image_url))
+  const sharedTitle = useRef('')
   const preview = useLinkPreview(url, repo, !item || url !== item.url || !item.image_url)
   const previewBusy = preview.status === 'loading'
   const previewImage = image || (preview.url === item?.url ? item.image_url : '')
@@ -506,14 +507,14 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   useEffect(() => setImageFailed(false), [previewImage])
 
   useEffect(() => {
-    if (!customTitle.current) setTitle('')
+    if (!customTitle.current) setTitle(sharedTitle.current)
     if (!customImage.current) setImage('')
   }, [preview.url])
 
   useEffect(() => {
     if (!preview.data) return
-    if (!customTitle.current) setTitle(preview.data.title.slice(0, 200))
-    if (!customImage.current) setImage(preview.data.image_url)
+    if (!customTitle.current && preview.data.title) setTitle(preview.data.title.slice(0, 200))
+    if (!customImage.current && preview.data.image_url) setImage(preview.data.image_url)
   }, [preview.data])
 
   async function submit(e: FormEvent) {
@@ -533,9 +534,16 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
       <FormFields><fieldset disabled={busy}>
         <p className="form-destination">Speichern in <strong>{listTitle}</strong></p>
         <label className="field">Link zum Wunsch
-          <input autoFocus required type="text" inputMode="url" aria-describedby="wish-link-help" autoCapitalize="none" autoCorrect="off" maxLength={2000} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://shop.de/dein-wunsch" />
+          <input autoFocus required type="text" inputMode="url" aria-describedby="wish-link-help" autoCapitalize="none" autoCorrect="off" maxLength={2000} value={url} onChange={e => { sharedTitle.current = ''; setUrl(e.target.value) }} onPaste={event => {
+            const product = sharedProduct(event.clipboardData.getData('text'))
+            if (!product || product.url === preview.url && !product.title) return
+            event.preventDefault()
+            sharedTitle.current = product.title
+            setUrl(product.url)
+            if (!customTitle.current) setTitle(product.title)
+          }} placeholder="https://shop.de/dein-wunsch" />
         </label>
-        <p className="input-help" id="wish-link-help">Öffne den Artikel im Shop. Kopiere den Link aus der Adresszeile oder über „Teilen“.</p>
+        <p className="input-help" id="wish-link-help">Kopiere den Link aus dem Shop oder füge den Text aus „Teilen“ ein. Ein mitgeteilter Produktname wird übernommen.</p>
         <div className={`wish-title-preview ${previewImage ? 'with-image' : ''}`}>
         <label className="field">Dein Wunsch
           <input required maxLength={200} value={title} className={preview.data && !customTitle.current ? 'auto-filled' : undefined} aria-busy={previewBusy} onChange={e => { customTitle.current = true; setTitle(e.target.value) }} placeholder={previewBusy ? 'Titel wird geladen …' : 'Zum Beispiel: Espressokanne für zwei'} pattern=".*\S.*" />
@@ -543,6 +551,8 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         {previewImage && <div className="product-preview">{imageFailed ? <Gift size={24} aria-label="Bild nicht erreichbar" /> : <img src={previewImage} alt="Bildvorschau zum Wunsch" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}<span>Bildvorschau</span></div>}
         </div>
         {preview.hint && <p key={preview.status} className="preview-hint" role="status">{preview.hint}</p>}
+        {preview.data?.title && customTitle.current && title !== preview.data.title && <button type="button" className="text-button preview-retry" onClick={() => { setTitle(preview.data!.title.slice(0, 200)); customTitle.current = true }}>Shop-Titel übernehmen <ArrowDownToLine size={14} /></button>}
+        {preview.data?.image_url && customImage.current && image !== preview.data.image_url && <button type="button" className="text-button preview-retry" onClick={() => { setImage(preview.data!.image_url); customImage.current = true }}>Shop-Bild übernehmen <ArrowDownToLine size={14} /></button>}
         {preview.status === 'error' && <button type="button" className="text-button preview-retry" onClick={preview.reload}><RotateCcw size={15} /> Erneut versuchen</button>}
         {imageFailed && <p className="input-help">Das Bild ist nicht erreichbar. Du kannst den Wunsch trotzdem speichern.</p>}
         <label className="field">Notizen &amp; Hinweise <span>optional</span>

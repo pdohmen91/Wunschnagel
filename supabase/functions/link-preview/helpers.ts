@@ -1,3 +1,5 @@
+import { PreviewError } from './errors.ts'
+
 /** Only public HTTPS destinations are allowed, including on each redirect. */
 export const DEFAULT_SHOP_HOSTS = [
   'amazon.de', 'www.amazon.de', 'amzn.eu', 'amzn.to',
@@ -9,13 +11,15 @@ export const DEFAULT_SHOP_HOSTS = [
   'decathlon.de', 'www.decathlon.de', 'apple.com', 'www.apple.com',
   'bialetti.com', 'www.bialetti.com', 'marshall.com', 'www.marshall.com',
   'avocadostore.de', 'www.avocadostore.de',
+  'ebay.io', 'ebay.us', 'ebay.de', 'www.ebay.de', 'ebay.com', 'www.ebay.com',
+  'eu.store.bambulab.com', 'fivi.gg', 'www.fivi.gg', 'dyson.de', 'www.dyson.de',
 ]
 
 export function shopDestination(value: string, allowedHosts: readonly string[]): URL {
   const url = destination(value)
   // Exact host matching also prevents DNS rebinding through arbitrary domains.
   // Custom shops can be explicitly trusted by the project owner in a secret.
-  if (!allowedHosts.includes(url.hostname)) throw new Error('Für diesen Shop bitte Titel und Bild-Link manuell ergänzen.')
+  if (!allowedHosts.includes(url.hostname)) throw new PreviewError('unsupported_shop', 'Diesen Shop können wir noch nicht automatisch auslesen. Bitte ergänze Titel und Bild selbst manuell.')
   return url
 }
 
@@ -51,9 +55,9 @@ export function destination(value: string): URL {
 }
 
 function decode(value: string): string {
-  return value.replace(/&(?:amp|quot|apos|lt|gt|#39|#(\d+)|#x([0-9a-f]+));/gi, (match, dec, hex) => {
+  return value.replace(/&(?:amp|quot|apos|lt|gt|nbsp|ndash|mdash|hellip|copy|reg|trade|#39|#(\d+)|#x([0-9a-f]+));/gi, (match, dec, hex) => {
     if (dec || hex) { const code = parseInt(dec || hex, hex ? 16 : 10); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : '' }
-    return ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&#39;': "'", '&lt;': '<', '&gt;': '>' } as Record<string, string>)[match.toLowerCase()] || match
+    return ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&#39;': "'", '&lt;': '<', '&gt;': '>', '&nbsp;': ' ', '&ndash;': '–', '&mdash;': '—', '&hellip;': '…', '&copy;': '©', '&reg;': '®', '&trade;': '™' } as Record<string, string>)[match.toLowerCase()] || match
   }).trim()
 }
 
@@ -63,18 +67,22 @@ function attributes(tag: string): Map<string, string> {
   return result
 }
 
-function imageUrl(value: unknown, base: string): string {
+export function imageUrl(value: unknown, base: string): string {
   if (typeof value !== 'string' || !value.trim()) return ''
   try { return destination(new URL(value, base).href).href } catch { return '' }
 }
 
-function structuredProducts(html: string): Record<string, unknown>[] {
+function structuredProducts(html: string, base: string) {
   const products: Record<string, unknown>[] = []
+  const references = new Map<string, Record<string, unknown>>()
   let visited = 0
   const visit = (value: unknown, depth: number) => {
     if (depth > 12 || ++visited > 2000 || !value || typeof value !== 'object') return
     if (Array.isArray(value)) { for (const entry of value) visit(entry, depth + 1); return }
     const node = value as Record<string, unknown>
+    if (typeof node['@id'] === 'string') {
+      try { references.set(new URL(node['@id'], base).href, node) } catch { /* Ignore invalid identifiers. */ }
+    }
     const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']]
     if (types.some(type => typeof type === 'string' && /(?:^|[/#])Product(?:Group)?$/.test(type))) products.push(node)
     for (const entry of Object.values(node)) visit(entry, depth + 1)
@@ -83,19 +91,35 @@ function structuredProducts(html: string): Record<string, unknown>[] {
     if (attributes(match[1]).get('type')?.toLowerCase() !== 'application/ld+json') continue
     try { visit(JSON.parse(match[2]), 0) } catch { /* Ignore malformed or incomplete structured data. */ }
   }
-  return products
+  return { products, references }
 }
 
-function structuredImage(value: unknown, base: string, depth = 0): string {
+function structuredImage(value: unknown, base: string, references: Map<string, Record<string, unknown>>, depth = 0): string {
   if (depth > 4) return ''
   if (typeof value === 'string') return imageUrl(value, base)
   if (Array.isArray(value)) {
-    for (const entry of value) { const image = structuredImage(entry, base, depth + 1); if (image) return image }
+    for (const entry of value) { const image = structuredImage(entry, base, references, depth + 1); if (image) return image }
   } else if (value && typeof value === 'object') {
     const object = value as Record<string, unknown>
-    return imageUrl(object.contentUrl, base) || imageUrl(object.url, base)
+    const direct = imageUrl(object.contentUrl, base) || imageUrl(object.url, base)
+    if (direct) return direct
+    if (typeof object['@id'] === 'string') {
+      try {
+        const reference = references.get(new URL(object['@id'], base).href)
+        if (reference && reference !== object) return structuredImage(reference, base, references, depth + 1)
+      } catch { /* Ignore invalid identifiers. */ }
+    }
   }
   return ''
+}
+
+function plainText(value: string): string { return decode(value.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim() }
+
+export function rejectChallengePage(html: string): void {
+  const title = plainText(html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || '')
+  if (/^(?:just a moment|access denied|robot check|attention required|pardon our interruption|zugriff verweigert|captcha)\b/i.test(title) || /<form\b[^>]*action\s*=\s*["'][^"']*validateCaptcha/i.test(html)) {
+    throw new PreviewError('shop_blocked', 'Dieser Shop verlangt eine Prüfung im Browser und blockiert den automatischen Abruf. Titel und Bild kannst du selbst ergänzen.')
+  }
 }
 
 export function metadata(html: string, base: string): { title: string; image_url: string; description: string } {
@@ -110,8 +134,16 @@ export function metadata(html: string, base: string): { title: string; image_url
     image = imageUrl(tags.get(key), base)
     if (image) break
   }
-  const products = structuredProducts(html)
-  if (!image) for (const product of products) { image = structuredImage(product.image, base); if (image) break }
+  const { products, references } = structuredProducts(html, base)
+  // Prefer the product whose URL belongs to the opened page over recommendations.
+  products.sort((a, b) => {
+    const matches = (product: Record<string, unknown>) => {
+      if (typeof product.url !== 'string') return 0
+      try { return Number(new URL(product.url, base).pathname === new URL(base).pathname) } catch { return 0 }
+    }
+    return matches(b) - matches(a)
+  })
+  if (!image) for (const product of products) { image = structuredImage(product.image, base, references); if (image) break }
   if (!image) for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
     if (attrs.get('rel')?.toLowerCase().split(/\s+/).includes('image_src')) image = imageUrl(attrs.get('href'), base)
@@ -129,8 +161,8 @@ export function metadata(html: string, base: string): { title: string; image_url
   const productTitle = products.find(product => typeof product.name === 'string')?.name as string | undefined
   const productDescription = products.find(product => typeof product.description === 'string')?.description as string | undefined
   return {
-    title: (tags.get('og:title') || tags.get('twitter:title') || productTitle || decode(html.match(/<title[^>]*>([^<]{0,1000})<\/title>/i)?.[1] || '')).slice(0, 200),
+    title: plainText(tags.get('og:title') || tags.get('twitter:title') || productTitle || html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || html.match(/<h1\b[^>]*>([\s\S]{0,8000}?)<\/h1>/i)?.[1] || '').slice(0, 200),
     image_url: image,
-    description: (tags.get('og:description') || tags.get('description') || productDescription || '').slice(0, 1000),
+    description: plainText(tags.get('og:description') || tags.get('description') || productDescription || '').slice(0, 1000),
   }
 }

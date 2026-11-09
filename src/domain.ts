@@ -61,6 +61,23 @@ export function hostname(value: string): string {
   try { return new URL(value).hostname.replace(/^www\./, '') } catch { return '' }
 }
 
+/** Shop sharing often copies a product name and a link together. */
+export function sharedProduct(value: string): { url: string; title: string } | null {
+  const text = value.trim()
+  const matches = [...text.matchAll(/https?:\/\/[^\s<>"“”]+/gi)]
+  if (matches.length !== 1) return null
+  let link = matches[0][0].replace(/[.,;!?]+$/, '')
+  for (const [open, close] of [['(', ')'], ['[', ']'], ['{', '}']]) {
+    while (link.endsWith(close) && link.split(close).length > link.split(open).length) link = link.slice(0, -1)
+  }
+  let url: string
+  try { url = webUrl(link) } catch { return null }
+  const prefix = text.slice(0, matches[0].index).trim().split(/\r?\n/).filter(Boolean).at(-1) || ''
+  const generic = /^(?:schau(?:t)?\b|sieh\b|check out\b|look\b|ich habe\b|hier (?:ist|ein)\b|hey\b|teile\b|shared\b|sent\b)/i.test(prefix)
+  const title = generic ? '' : prefix.replace(/^["'„“]+|["'”’\s:–-]+$/g, '').replace(/\s+/g, ' ').slice(0, 200)
+  return { url, title }
+}
+
 export function parsePrice(value: string): number | null {
   if (!value.trim()) return null
   const price = Number(value.trim().replace(',', '.'))

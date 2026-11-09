@@ -3,6 +3,7 @@ import type { Plugin } from 'vite'
 import { DEFAULT_SHOP_HOSTS } from '../supabase/functions/link-preview/helpers.ts'
 import { fetchShopPreview } from '../supabase/functions/link-preview/fetch.ts'
 import type { PreviewFetchOptions } from '../supabase/functions/link-preview/fetch.ts'
+import { previewFailure } from '../supabase/functions/link-preview/errors.ts'
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), {
   status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -25,8 +26,8 @@ export async function localLinkPreview(request: Request, overrides: Partial<Prev
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(8000)]),
     })
     return json(preview)
-  } catch {
-    return json({ error: 'Für diesen Shop ist keine Vorschau verfügbar. Bitte gib den Titel manuell ein.' }, 422)
+  } catch (error) {
+    return json(previewFailure(error), 422)
   }
 }
 

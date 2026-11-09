@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { DEFAULT_SHOP_HOSTS, shopDestination } from './helpers.ts'
 import { fetchShopPreview } from './fetch.ts'
+import { previewFailure } from './errors.ts'
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
@@ -35,7 +36,7 @@ Deno.serve(async request => {
         },
       }))
     } finally { clearTimeout(timeout) }
-  } catch {
-    return json({ error: 'Für diesen Shop ist keine Vorschau verfügbar. Bitte ergänze Titel und Bild-Link selbst.' }, 422)
+  } catch (error) {
+    return json(previewFailure(error), 422)
   }
 })

@@ -16,6 +16,53 @@ test('automatically loads title and image from a pasted link and saves the wish'
   await expect(page.getByRole('article').filter({ hasText: 'Automatisch geladener Produkttitel' })).toBeVisible()
 })
 
+test('shared product text keeps its name when the shop blocks the lookup', async ({ page }) => {
+  await page.route('**/__api/link-preview', route => route.fulfill({ status: 422, json: { code: 'shop_blocked', error: 'Dieser Shop blockiert den automatischen Abruf.' } }))
+  const link = page.getByRole('textbox', { name: 'Link zum Wunsch' })
+  await link.evaluate((node, text) => {
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', { value: { getData: () => text } })
+    node.dispatchEvent(event)
+  }, 'Meine schöne Wunschlampe\nhttps://www.dyson.de/wunschlampe')
+  await expect(link).toHaveValue('https://www.dyson.de/wunschlampe')
+  await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Meine schöne Wunschlampe')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('blockiert den automatischen Abruf')
+  await page.getByRole('button', { name: 'Wunsch speichern' }).click()
+  await expect(page.getByRole('article').filter({ hasText: 'Meine schöne Wunschlampe' })).toBeVisible()
+})
+
+test('a shop title and image can be adopted explicitly without losing user edits', async ({ page }) => {
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/__api/link-preview', async route => { await pending; await route.fulfill({ json: { title: 'Produktname aus dem Shop', image_url: 'https://www.thalia.de/imported.png', description: '' } }) })
+  await page.route('https://www.thalia.de/*.png', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"/>' }))
+  await page.getByRole('textbox', { name: 'Link zum Wunsch' }).fill('https://www.thalia.de/produkt')
+  await page.getByRole('textbox', { name: 'Dein Wunsch', exact: true }).fill('Mein eigener Titel')
+  await page.getByText('Preis & Bild-Link ergänzen', { exact: false }).click()
+  const image = page.getByRole('textbox', { name: 'Bild-Link' })
+  await image.fill('https://www.thalia.de/custom.png')
+  release()
+  await expect(page.getByRole('button', { name: 'Shop-Titel übernehmen' })).toBeVisible()
+  await expect(image).toHaveValue('https://www.thalia.de/custom.png')
+  await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Mein eigener Titel')
+  await page.getByRole('button', { name: 'Shop-Titel übernehmen' }).click()
+  await page.getByRole('button', { name: 'Shop-Bild übernehmen' }).click()
+  await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Produktname aus dem Shop')
+  await expect(image).toHaveValue('https://www.thalia.de/imported.png')
+})
+
+test('an image-only lookup cannot erase the title from shared product text', async ({ page }) => {
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: '', image_url: 'https://www.thalia.de/only-image.png', description: '' } }))
+  await page.route('https://www.thalia.de/only-image.png', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"/>' }))
+  await page.getByRole('textbox', { name: 'Link zum Wunsch' }).evaluate(node => {
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', { value: { getData: () => 'Der geteilte Produktname https://www.thalia.de/produkt' } })
+    node.dispatchEvent(event)
+  })
+  await expect(page.getByRole('img', { name: 'Bildvorschau zum Wunsch', exact: true })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Dein Wunsch', exact: true })).toHaveValue('Der geteilte Produktname')
+})
+
 test('editing a saved wish without an image retries the preview and preserves its title', async ({ page }) => {
   let calls = 0
   await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: 'Titel aus dem Shop', image_url: ++calls === 1 ? '' : 'https://www.thalia.de/recovered.png', description: '' } }))

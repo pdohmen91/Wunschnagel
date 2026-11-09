@@ -1,4 +1,5 @@
 import { supabase } from './client'
+import { PreviewCache, previewRequestError } from './previewCache'
 import type { ListInput, Wishlist, Wish, WishInput, Preview, SharedList } from '../domain'
 
 export interface Repository {
@@ -11,7 +12,7 @@ export interface Repository {
   saveItem(listId: string, input: WishInput, id?: string): Promise<void>
   deleteItem(id: string): Promise<void>
   fulfillItem(id: string, fulfilled: boolean): Promise<void>
-  preview(url: string, signal?: AbortSignal): Promise<Preview>
+  preview(url: string, signal?: AbortSignal, refresh?: boolean): Promise<Preview>
   shared(kind: 'token' | 'public', value: string): Promise<SharedList>
 }
 
@@ -78,6 +79,7 @@ export function demoRepository(): Repository {
 
 export function cloudRepository(userId: string): Repository {
   const db = supabase!
+  const previews = new PreviewCache()
   return {
     lists: async () => { const { data, error } = await db.from('wishlists').select('*').eq('owner_id', userId).order('created_at'); if (error) throw error; return data as Wishlist[] },
     items: async listId => { const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
@@ -91,7 +93,17 @@ export function cloudRepository(userId: string): Repository {
     },
     deleteItem: async itemId => { const { error } = await db.from('wishes').delete().eq('id', itemId); if (error) throw error },
     fulfillItem: async (itemId, fulfilled) => { const { error } = await db.from('wishes').update({ fulfilled }).eq('id', itemId); if (error) throw error },
-    preview: async (url, signal) => { const { data, error } = await db.functions.invoke('link-preview', { body: { url }, signal }); if (error) throw new Error('Dieser Shop liefert gerade keine Vorschau. Bitte gib den Titel manuell ein.'); return data as Preview },
+    preview: async (url, signal, refresh = false) => {
+      signal?.throwIfAborted()
+      if (refresh) previews.invalidate(url)
+      const cached = !refresh && previews.get(url)
+      if (cached) return cached
+      const { data, error } = await db.functions.invoke('link-preview', { body: { url }, signal })
+      if (error) throw await previewRequestError(error)
+      if (!data || typeof data.title !== 'string' || typeof data.image_url !== 'string') throw new Error('Der Shop hat keine verwendbaren Produktdaten geliefert. Bitte ergänze Titel und Bild selbst.')
+      previews.put(url, data as Preview)
+      return data as Preview
+    },
     shared: async (kind, value) => {
       if (kind === 'token') {
         const { data, error } = await db.rpc('get_shared_wishlist', { token: value })

@@ -16,9 +16,9 @@ export function useLinkPreview(input: string, repo: Pick<Repository, 'preview'>,
     const timer = window.setTimeout(async () => {
       setState({ url, data: null, status: 'loading', hint: 'Titel und Bild werden aus dem Shop geladen …' })
       try {
-        const data = await repo.preview(url, controller.signal)
+        const data = await repo.preview(url, controller.signal, retry.url === url)
         if (controller.signal.aborted) return
-        setState({ url, data, status: 'done', hint: data.image_url ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : data.title ? 'Titel geladen. Der Shop liefert kein verwendbares Bild. Du kannst unter „Preis & Bild-Link ergänzen“ eine Bildadresse eintragen.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.' })
+        setState({ url, data, status: 'done', hint: data.image_url && data.title ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : data.image_url ? 'Bild geladen. Bitte ergänze noch den Titel für deinen Wunsch.' : data.title ? 'Titel geladen. Der Shop liefert kein verwendbares Bild. Du kannst unter „Preis & Bild-Link ergänzen“ eine Bildadresse eintragen.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.' })
       } catch (error) {
         if (!controller.signal.aborted) setState({ url, data: null, status: 'error', hint: error instanceof Error ? error.message : 'Der Titel konnte nicht geladen werden. Bitte gib ihn manuell ein.' })
       }
