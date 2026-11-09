@@ -115,3 +115,30 @@ Bis 960 Pixel App-Breite stehen „+ Wunsch“ und „Teilen“ einzeilig in ein
 Die sichtbare Höhe und der vertikale Versatz des Visual Viewports begrenzen offene Formulare bei einer Bildschirmtastatur. Direkte Aktionen bleiben sichtbar, während ergänzende Einleitungstexte vorübergehend entfallen. Außerhalb eines Dialogs wird die untere Leiste bei verdecktem unteren Bildschirmbereich ausgeblendet. Zoom wird dabei ausdrücklich von einer verkleinerten Eingabefläche unterschieden.
 
 Messwerte und Testumfang stehen in [MOBILE-REVIEW.md](MOBILE-REVIEW.md).
+
+## Dezente Anlassvarianten
+
+Öffentliche und per Link geteilte Listen erkennen ihren Anlass aus dem Namen,
+unabhängig von Groß-/Kleinschreibung: `Geburtstag` einschließlich Zusammensetzungen
+wie `Geburtstagswünsche`, sowie `Weihnacht` für `Weihnachten`/`Weihnachtswünsche`.
+Private Listen, normale Namen und Namen mit beiden Anlässen bleiben neutral.
+Die Darstellung ändert keine gespeicherten Angaben oder Freigaberechte.
+
+- Geburtstag: leicht rosiges Papier, warme Rosé-Akzente und ein gestrichelter
+  Geschenkanhänger am Titel.
+- Weihnachten: cremefarbenes Papier, Tannengrün und gedämpftes Gold; eine kleine
+  goldene Kante am Anhänger.
+- Das allgemeine Standardsymbol wird passend zu Torte oder Tanne. Ein bewusst
+  gewähltes anderes Listensymbol bleibt erhalten.
+- Typografie, Kartengrößen, Touchflächen und Reihenfolge bleiben dieselben. Es
+  kommen keine zusätzlichen Banner, Animationen oder dekorativen Flächen hinzu.
+- Überschrift, Kartenflächen, Filter, Angebotsbuttons und Kaufdialoge verwenden
+  dieselben Anlass-Tokens. Die dunkle Wunschnagel-Navigation bleibt erkennbar.
+- Die Tokens werden beim Wechsel auf eine neutrale/private Liste wieder entfernt.
+  Sie gelten auch für native Dialoge und die mobile Aktionsleiste außerhalb des
+  App-Containers. Reduzierte Bewegung bleibt berücksichtigt.
+
+Visuell geprüft in Chrome und mobilem WebKit, einschließlich 320 Pixel Breite,
+Kontrastprüfung und des thematisch passenden Kaufdialogs. Im Zuge der mobilen
+Prüfung wurde die Gast-Kaufaktion über die volle Kartenbreite gesetzt; der
+„Bereits gekauft“-Hinweis bleibt innerhalb des kleinen Produktbildes.

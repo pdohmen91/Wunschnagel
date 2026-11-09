@@ -81,6 +81,9 @@ test('another guest sees the bought warning without undo rights; the owner proje
   const state = { purchased: true, canPurchase: true, receipt: null, writes: 0 }
   await mock(page, state)
   await expect(page.locator('.gift-purchase-status')).toContainText('Bereits gekauft')
+  const image = await page.locator('.wish-image').boundingBox(), badge = await page.locator('.gift-badge').boundingBox()
+  expect(badge!.x).toBeGreaterThanOrEqual(image!.x)
+  expect(badge!.x + badge!.width).toBeLessThanOrEqual(image!.x + image!.width)
   await expect(page.getByRole('button', { name: 'Kaufmarkierung verwalten', exact: true })).toHaveCount(0)
   await page.getByRole('link', { name: 'Zum Shop', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('Bitte schenke es nicht doppelt')

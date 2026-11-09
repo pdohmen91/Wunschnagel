@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort, ShareRoute } from './domain'
 import { authCallbackWarning, supabase } from './lib/client'
 import { cloudRepository, demoRepository } from './lib/repository'
 import type { Repository } from './lib/repository'
 import { ensureGiftReceipt, forgetGiftReceipt, giftReceipt } from './lib/giftReceipts'
+import { listOccasion } from './lib/listOccasion'
 import { useLinkPreview } from './lib/useLinkPreview'
 import { animate, closeDetails, dialogOpener, dismissDialog, useCardMotion, useHeightMotion } from './lib/motion'
 import { useCompactLayout } from './lib/useCompactLayout'
@@ -52,8 +53,16 @@ export default function App() {
   activeList.current = selectedId
   const repo = useMemo(() => !supabase || demo && !invite ? demoRepository() : cloudRepository(user?.id || ''), [demo, user?.id, invite])
   const selected = invite ? null : route ? sharedList : lists.find(list => list.id === selectedId) || null
+  const occasion = selected ? listOccasion(selected.title, selected.visibility) : null
   const canEdit = !route && !invite && (demo || !!user)
   const isOwner = canEdit && (demo || selected?.owner_id === user?.id)
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (occasion) root.dataset.occasion = occasion
+    else delete root.dataset.occasion
+    return () => { delete root.dataset.occasion }
+  }, [occasion])
 
   useEffect(() => {
     const onHash = () => { setHash(window.location.hash); setError(''); setGiftTarget(null); setModal(current => current === 'gift' ? null : current) }
@@ -264,7 +273,7 @@ export default function App() {
     <button className="button primary" aria-label="Wunsch hinzufügen" onClick={() => { setEditItem(null); setModal('item') }}><Plus size={18} /> {compact ? 'Wunsch' : 'Wunsch hinzufügen'}</button>
   </> : null
 
-  return <div className="app-shell" data-compact={compact} data-account-actions={!!(user && !demo || demo && supabase)}>
+  return <div className="app-shell" data-occasion={occasion || undefined} data-compact={compact} data-account-actions={!!(user && !demo || demo && supabase)}>
     <aside className="sidebar">
       <a className="brand" href={import.meta.env.BASE_URL} aria-label="Wunschnagel Startseite">
         <span className="brand-icon"><WishMark /></span>
@@ -330,8 +339,8 @@ export default function App() {
             <div className="breadcrumb"><span>{route ? 'Mit dir geteilt' : 'Meine Listen'}</span><span>/</span><strong>{selected.title}</strong></div>
             <section className="list-heading">
               <div>
-                <div className="list-eyebrow"><span>{route ? 'Mit dir geteilt' : 'Deine Wunschliste'}</span>{!route && <span>{String(lists.findIndex(list => list.id === selected.id) + 1).padStart(2, '0')} / {String(lists.length).padStart(2, '0')}</span>}</div>
-                <div className="list-title-row"><span className="list-cover" aria-hidden="true">{selected.emoji}</span><h1>{selected.title}</h1></div>
+                <div className="list-eyebrow"><span>{occasion === 'birthday' ? 'Geburtstagswünsche' : occasion === 'christmas' ? 'Weihnachtswünsche' : route ? 'Mit dir geteilt' : 'Deine Wunschliste'}</span>{!route && <span>{String(lists.findIndex(list => list.id === selected.id) + 1).padStart(2, '0')} / {String(lists.length).padStart(2, '0')}</span>}</div>
+                <div className="list-title-row"><span className="list-cover" aria-hidden="true">{selected.emoji === '🌿' && occasion ? occasion === 'birthday' ? <Cake size={23} strokeWidth={1.5} /> : <TreePine size={23} strokeWidth={1.5} /> : selected.emoji}</span><h1>{selected.title}</h1></div>
                 {selected.description && !compact && <p>{selected.description}</p>}
                 <div className="list-meta">
                   <span className={`privacy-pill ${selected.visibility}`} title={visibilityDescriptions[selected.visibility]}><PrivacyIcon value={selected.visibility} />{visibilityLabels[selected.visibility]}</span>

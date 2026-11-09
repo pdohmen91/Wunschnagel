@@ -606,3 +606,50 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
 .gift-dialog-actions { flex-direction: column; align-items: stretch; gap: 9px; margin-top: 16px; }
 .gift-dialog-actions > .button { min-height: 44px; white-space: normal; text-align: center; }
 .gift-badge { position: absolute; bottom: 12px; right: 12px; display: flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid var(--ink); border-radius: 2px; background: var(--ink); color: var(--paper); font-size: 12px; pointer-events: none; }
+
+/* Occasion accents keep the same paper, typography and compact layout. Tokens
+   live on html so native dialogs and the portaled mobile actions match too. */
+:root[data-occasion=birthday] {
+  --paper: #faf1ed;
+  --soft: #f4e4e1;
+  --line: #e0ceca;
+  --accent: #efb2a0;
+  --occasion-ink: #794451;
+  --occasion-detail: #b06a70;
+  --occasion-hover: #f4c4b6;
+}
+:root[data-occasion=christmas] {
+  --paper: #f5f3ea;
+  --soft: #e8ede5;
+  --line: #cfd8cb;
+  --accent: #dbb86e;
+  --occasion-ink: #284c3b;
+  --occasion-detail: #6e805c;
+  --occasion-hover: #e5c98f;
+}
+html[data-occasion] .main { transition: background-color 220ms ease; }
+html[data-occasion] .list-heading { border-bottom-color: var(--occasion-detail); }
+html[data-occasion] .list-heading h1, html[data-occasion] .list-eyebrow { color: var(--occasion-ink); }
+html[data-occasion] .list-cover { color: var(--occasion-ink); background: var(--soft); border-color: var(--occasion-detail); }
+html[data-occasion=birthday] .list-cover { border-style: dashed; border-radius: 3px 3px 10px 3px; }
+html[data-occasion=christmas] .list-cover { box-shadow: inset 0 -3px 0 var(--accent); }
+html[data-occasion] .tabs button.selected { background: var(--soft); }
+html[data-occasion] .wish-image { background: var(--soft); }
+html[data-occasion] .wish-number { border-color: var(--occasion-detail); color: var(--occasion-ink); }
+html[data-occasion] .primary { border-color: var(--occasion-ink); box-shadow: 0 2px 0 var(--occasion-ink); }
+html[data-occasion] .primary:hover { background: var(--occasion-hover); border-color: var(--occasion-ink); }
+html[data-occasion] .offer-search-link { background: var(--soft); border-color: var(--occasion-detail); }
+html[data-occasion] .offer-search-link:hover { background: var(--occasion-hover); }
+html[data-occasion] .gift-badge { background: var(--occasion-ink); border-color: var(--occasion-ink); }
+html[data-occasion] .guest-gift-guide, html[data-occasion] .gift-privacy { border-left-color: var(--occasion-detail); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-occasion] .main { transition: none; }
+}
+html[data-occasion] .image-placeholder { background: var(--soft); color: var(--occasion-ink); }
+html[data-occasion] .image-placeholder span { color: inherit; }
+@container app-viewport (max-width: 620px) {
+  .gift-purchase-status { grid-column: 1 / -1; min-width: 0; padding: 10px 0 0; }
+  .gift-purchase-status > .button { white-space: nowrap; }
+  .gift-badge { max-width: calc(100% - 6px); bottom: 3px; right: 3px; padding: 4px; gap: 4px; font-size: 12px; line-height: 1.2; }
+  .gift-badge > svg { flex-shrink: 0; }
+}
