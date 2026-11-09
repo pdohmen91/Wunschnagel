@@ -34,14 +34,22 @@ function dereference(value: unknown, base: string, references: Map<string, Node>
 }
 
 /** Stronger URL matches distinguish the selected variant from recommendations. */
+const selectionKeys = ['variant', 'variant_id', 'id', 'sku', 'product', 'pid']
+const productPath = (url: URL) => url.pathname.replace(/^\/[a-z]{2}(?:-[a-z]{2})?(?=\/products\/)/i, '').replace(/\/$/, '')
+
 export function productMatch(value: unknown, base: string): number {
   if (typeof value !== 'string') return 0
   try {
     const target = new URL(base), candidate = new URL(value, base)
-    if (candidate.origin !== target.origin || candidate.pathname.replace(/\/$/, '') !== target.pathname.replace(/\/$/, '')) return -1
-    const variant = target.searchParams.get('variant'), candidateVariant = candidate.searchParams.get('variant')
-    if (candidateVariant && candidateVariant !== variant) return -1
-    return variant && variant === candidateVariant ? 3 : 2
+    if (candidate.origin !== target.origin || productPath(candidate) !== productPath(target)) return -1
+    let selected = false
+    for (const key of selectionKeys) {
+      const variant = candidate.searchParams.get(key)
+      if (!variant) continue
+      if (variant !== target.searchParams.get(key)) return -1
+      selected = true
+    }
+    return selected ? 3 : 2
   } catch { return -1 }
 }
 
@@ -66,7 +74,17 @@ function offerPrice(offer: Node, base: string, references: Map<string, Node>, fa
 
 export function structuredPrice(products: Node[], base: string, references: Map<string, Node>, canonical?: string): number | null {
   if (!products.length) return null
-  const ranked = products.map(product => ({ product, score: Math.max(productMatch(product.url ?? product['@id'], base), canonical && productMatch(product.url ?? product['@id'], canonical) > 0 ? 1 : -1) }))
+  const target = new URL(base)
+  const sku = ['sku', 'product', 'pid', 'id', 'variant_id'].map(key => target.searchParams.get(key)).find(Boolean)
+  const ranked = products.map(product => {
+    let samePath = !product.url
+    try { if (typeof product.url === 'string') samePath = productPath(new URL(product.url, base)) === productPath(target) } catch { /* Invalid product URL. */ }
+    // Some server-rendered shops publish their internal storefront hostname.
+    // An exact selected SKU and product path still identify the same product;
+    // this never fetches or trusts that hostname as a network destination.
+    const exactSku = sku && String(product.sku) === sku && samePath
+    return { product, score: exactSku ? 4 : Math.max(productMatch(product.url ?? product['@id'], base), canonical && productMatch(product.url ?? product['@id'], canonical) > 0 ? 1 : -1) }
+  })
   const best = Math.max(...ranked.map(entry => entry.score))
   // A single Product with no URL is common. Multiple anonymous products cannot
   // be safely distinguished from recommendation cards.
@@ -75,12 +93,15 @@ export function structuredPrice(products: Node[], base: string, references: Map<
   return onePrice(selected.map(({ product }) => {
     const input = Array.isArray(product.offers) ? product.offers : [product.offers]
     let offers = input.slice(0, 250).map(value => dereference(value, base, references)).filter((value): value is Node => !!value)
-    const target = new URL(base)
-    const sku = target.searchParams.get('sku') || target.searchParams.get('product')
     if (sku && offers.some(offer => offer.sku != null)) offers = offers.filter(offer => String(offer.sku) === sku)
     const scores = offers.map(offer => productMatch(offer.url, base))
     const matchingVariant = scores.some(score => score === 3)
-    const matching = offers.filter((_offer, index) => matchingVariant ? scores[index] === 3 : scores[index] >= 0)
+    let matching = offers.filter((_offer, index) => matchingVariant ? scores[index] === 3 : scores[index] >= 0)
+    // These product pages default to new goods; refurbished alternatives are
+    // separate offers. A URL with an explicit selection stays conservative.
+    if (['www.mediamarkt.de', 'mediamarkt.de', 'www.saturn.de', 'saturn.de'].includes(target.hostname) && !target.search && matching.some(offer => typeof offer.itemCondition === 'string' && /(?:^|[/#])NewCondition$/.test(offer.itemCondition))) {
+      matching = matching.filter(offer => typeof offer.itemCondition === 'string' && /(?:^|[/#])NewCondition$/.test(offer.itemCondition))
+    }
     return onePrice(matching.map(offer => offerPrice(offer, base, references, product.priceCurrency)))
   }))
 }

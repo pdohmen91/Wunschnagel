@@ -1,5 +1,6 @@
 import { PreviewError } from './errors.ts'
 import { euroPrice, productMatch, structuredPrice } from './prices.ts'
+import { storefrontPrice } from './storefrontPrices.ts'
 
 /** Only public HTTPS destinations are allowed, including on each redirect. */
 export const DEFAULT_SHOP_HOSTS = [
@@ -121,7 +122,7 @@ function plainText(value: string): string { return decode(value.replace(/<[^>]*>
 
 export function rejectChallengePage(html: string): void {
   const title = plainText(html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || '')
-  if (/^(?:just a moment|access denied|robot check|attention required|pardon our interruption|zugriff verweigert|captcha)\b/i.test(title) || /<form\b[^>]*action\s*=\s*["'][^"']*validateCaptcha/i.test(html)) {
+  if (/^(?:just a moment|access denied|robot check|client challenge|attention required|pardon our interruption|zugriff verweigert|captcha)\b/i.test(title) || /<form\b[^>]*action\s*=\s*["'][^"']*validateCaptcha/i.test(html)) {
     throw new PreviewError('shop_blocked', 'Dieser Shop verlangt eine Prüfung im Browser und blockiert den automatischen Abruf. Titel und Bild kannst du selbst ergänzen.')
   }
 }
@@ -187,6 +188,7 @@ export function metadata(html: string, base: string): { title: string; image_url
     ?? euroPrice(tags.get('product:price:amount'), tags.get('product:price:currency'))
     ?? euroPrice(tags.get('og:price:amount'), tags.get('og:price:currency'))
     ?? microdataPrice(html)
+    ?? storefrontPrice(html, base, plainText)
   return {
     title: plainText(tags.get('og:title') || tags.get('twitter:title') || productTitle || html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || html.match(/<h1\b[^>]*>([\s\S]{0,8000}?)<\/h1>/i)?.[1] || '').slice(0, 200),
     image_url: image,

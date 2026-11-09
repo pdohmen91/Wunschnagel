@@ -53,7 +53,7 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
     try { decoder = new TextDecoder(charset) } catch { decoder = new TextDecoder() }
     let text = '', bytes = 0, nextProbe = 65_536, headRead = false
     const parameters = new URL(base).searchParams
-    const selectedVariant = ['variant', 'sku', 'product'].some(key => parameters.has(key))
+    const selectedVariant = ['variant', 'variant_id', 'id', 'sku', 'product', 'pid'].some(key => parameters.has(key))
     try {
       while (remainingBytes > 0) {
         signal.throwIfAborted()
@@ -127,6 +127,9 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
   const html = await readBody(response, url.href, true)
   rejectChallengePage(html)
   const preview = metadata(html, url.href)
+  if (['dm.de', 'www.dm.de'].includes(url.hostname) && /^dm-drogerie markt\b/i.test(preview.title) && !preview.image_url && preview.price === null) {
+    throw new PreviewError('no_metadata', 'Dieser Shop lädt Produktdaten erst im Browser. Bitte ergänze Titel, Bild und Preis selbst.')
+  }
   if (!preview.title && !preview.image_url && preview.price === null) throw new PreviewError('no_metadata', 'Der Shop liefert keine auslesbaren Produktdaten. Du kannst Titel, Bild und Preis selbst ergänzen.')
   return usableImage(preview)
 }

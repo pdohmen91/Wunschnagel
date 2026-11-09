@@ -1,0 +1,22 @@
+[
+  { "shop": "Amazon", "url": "https://www.amazon.de/kindle-paperwhite-2024/dp/B0CFPXBJ9Y" },
+  { "shop": "OTTO", "url": "https://www.otto.de/p/bialetti-teebereiter-moka-exclusive-6tz-induction-grey-CS0FJ50N2/" },
+  { "shop": "Zalando", "url": "https://www.zalando.de/adidas-originals-samba-og-sneaker-low-cloud-whitecore-black-ad111a37w-a11.html" },
+  { "shop": "IKEA", "url": "https://www.ikea.com/de/de/p/billy-buecherregal-weiss-00263850/" },
+  { "shop": "Thalia", "url": "https://www.thalia.de/shop/home/artikeldetails/A1009753594" },
+  { "shop": "Etsy", "url": "https://www.etsy.com/listing/1095025986/" },
+  { "shop": "Hugendubel", "url": "https://www.hugendubel.de/de/buch_gebunden/j_r_r_tolkien_john_r_r_tolkien-der_hobbit-9651479-produkt-details.html" },
+  { "shop": "MediaMarkt", "url": "https://www.mediamarkt.de/de/product/_sony-wh-1000xm5-over-ear-kopfhorer-bluetooth-black-2801006.html" },
+  { "shop": "Saturn", "url": "https://www.saturn.de/de/product/_sony-wh-1000xm5-sa-noise-cancelling-over-ear-kopfhorer-bluetooth-black-3008058.html" },
+  { "shop": "dm", "url": "https://www.dm.de/p/d/1639872/balea-med-duschgel-ultra-sensitive" },
+  { "shop": "ROSSMANN", "url": "https://www.rossmann.de/de/pflege-und-duft-isana-med-duschgel-ultra-sensitiv/p/4305615629186" },
+  { "shop": "Decathlon", "url": "https://www.decathlon.de/p/wanderrucksack-20-l-arpenaz-nh100-schwarz/_/R-p-301674" },
+  { "shop": "Apple", "url": "https://www.apple.com/de/shop/buy-airtag/airtag?product=MFE94ZM%2FA" },
+  { "shop": "Bialetti", "url": "https://www.bialetti.com/it_it/moka-express.html" },
+  { "shop": "Marshall", "url": "https://www.marshall.com/de/de/product/major-v?pid=1006832" },
+  { "shop": "Avocadostore", "url": "https://www.avocadostore.de/products/154254-edelstahl-trinkflasche-05-oder-1-liter-samebutgreen?variant_id=1558044" },
+  { "shop": "eBay", "url": "https://www.ebay.de/itm/194506782421" },
+  { "shop": "Bambu Lab", "url": "https://eu.store.bambulab.com/de/products/a1-mini?id=599117891173982224" },
+  { "shop": "Fivi", "url": "https://fivi.gg/products/officemesser-luca-fivi" },
+  { "shop": "Dyson", "url": "https://www.dyson.de/staubsauger/kabellos/v8-cyclone/motorbar-schwarz" }
+]
