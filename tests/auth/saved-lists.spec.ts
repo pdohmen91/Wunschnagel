@@ -31,8 +31,9 @@ async function mock(page: Page, state: State) {
   })
 }
 async function library(page: Page) {
-  if (await page.locator('.topbar .mobile-list-trigger').isVisible()) await page.getByRole('button', { name: 'Listen', exact: true }).click()
-  else await page.getByRole('button', { name: /Gemerkte Listen/ }).click()
+  // Auth restoration can finish after navigation; wait for either layout's
+  // actual trigger rather than choosing a layout from an instantaneous check.
+  await page.getByRole('button', { name: 'Listen', exact: true }).or(page.getByRole('button', { name: /Gemerkte Listen/ })).click()
   return page.getByRole('dialog', { name: 'Meine Wunschlisten' })
 }
 async function audit(page: Page) {
