@@ -60,9 +60,9 @@ export async function sortWishesUI(page: Page, value: string) {
 }
 
 export async function openHelp(page: Page) {
-  const trigger = await compactUI(page) ? page.getByRole('button', { name: 'Details & Hilfe', exact: true }) : page.getByRole('button', { name: 'So funktioniert’s', exact: true })
+  const trigger = page.getByRole('button', { name: 'Details & Hilfe', exact: true })
   await trigger.click()
-  if (await compactUI(page)) await page.getByRole('dialog').getByRole('button', { name: 'So funktioniert’s', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'So funktioniert’s', exact: true }).click()
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'So funktioniert’s', exact: true })).toBeVisible()
   return trigger
 }

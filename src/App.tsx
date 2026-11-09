@@ -322,7 +322,7 @@ export default function App() {
         {!compact && user && !demo && <button className="new-list saved-library-trigger" onClick={() => setModal('lists')}><Bookmark size={17} /> Gemerkte Listen <span className="count">{saved.entries.length}</span></button>}
         {route && !compact && <a className="new-list" href={import.meta.env.BASE_URL}><ArrowLeft size={16} /> Meine Listen</a>}
       </div>
-      <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> Auf dem Handy installieren</button>
+      {!installation.installed && <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> App installieren</button>}
       <div className="profile">
         <span className="avatar">{demo ? 'D' : name.slice(0, 1)}</span>
         <span><strong>{demo ? 'Lokale Demo' : user ? name : 'Wunschnagel'}</strong><small>{demo ? 'Nur auf diesem Gerät' : user ? 'Dein Konto' : 'Wunschlisten für alle Anlässe'}</small></span>
@@ -331,16 +331,14 @@ export default function App() {
     </aside>
 
     <main className="main">
-      <header className="topbar">
-        <span>{invite ? 'Einladung zur Wunschliste' : route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
+      {compact && <header className="topbar">
         <div>
           {compact && !invite && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
           {compact && route && !user && !demo && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Anmelden</a>}
           {compact && !route && !demo && !user && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
-          {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
           {user && !demo && <button className="icon-button mobile-account" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={19} /></button>}
         </div>
-      </header>
+      </header>}
       {compact && installation.visible && <div className="app-install-prompt" role="region" aria-label="Wunschnagel als App nutzen">
         <button className="install-prompt-action" onClick={() => setModal('install')} aria-label="App installieren" aria-haspopup="dialog"><ArrowDownToLine size={17} /><span>App installieren</span><small>Direkt vom Startbildschirm öffnen</small><ArrowRight size={15} /></button>
         <button className="icon-button" aria-label="Installationshinweis schließen" onClick={installation.dismiss}><X size={16} /></button>
@@ -365,18 +363,15 @@ export default function App() {
         </section> : <>
           {error && <div className="error-panel" role="alert"><Info size={20} /><div><strong>Die Liste konnte nicht geladen werden.</strong><p>{error}</p>{route && !supabase ? <a className="text-button" href={import.meta.env.BASE_URL}>Zur Startseite <ArrowRight size={15} /></a> : <button className="text-button" onClick={() => window.location.reload()}>Erneut versuchen</button>}</div></div>}
           {selected ? <div className="list-view" key={selected.id}>
-            <div className="breadcrumb"><span>{route ? 'Mit dir geteilt' : 'Meine Listen'}</span><span>/</span><strong>{selected.title}</strong></div>
             <section className="list-heading">
               {occasion === 'christmas' && <ChristmasHeaderArtwork />}
               <div>
-                <div className="list-eyebrow"><span>{occasion === 'birthday' ? 'Geburtstagswünsche' : occasion === 'christmas' ? 'Weihnachtswünsche' : route ? 'Mit dir geteilt' : 'Deine Wunschliste'}</span>{!route && <span>{String(lists.findIndex(list => list.id === selected.id) + 1).padStart(2, '0')} / {String(lists.length).padStart(2, '0')}</span>}</div>
                 <div className="list-title-row"><span className="list-cover" aria-hidden="true">{selected.emoji === '🌿' && occasion ? occasion === 'birthday' ? <Cake size={23} strokeWidth={1.5} /> : <TreePine size={23} strokeWidth={1.5} /> : selected.emoji}</span><h1>{selected.title}</h1></div>
                 {selected.description && !compact && <p>{selected.description}</p>}
                 <div className="list-meta">
                   <span className={`privacy-pill ${selected.visibility}`} title={visibilityDescriptions[selected.visibility]}><PrivacyIcon value={selected.visibility} />{visibilityLabels[selected.visibility]}</span>
                   {canEdit && !isOwner && <span className="collaboration-role">Mitbearbeiter</span>}
-                  {!compact && <span>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</span>}
-                  {compact && <button className="list-info-trigger" onClick={() => setModal('info')}><CircleHelp size={15} /> Details &amp; Hilfe</button>}
+                  <button className="list-info-trigger" onClick={() => setModal('info')}><CircleHelp size={15} /> Details &amp; Hilfe</button>
                   {route && user && !demo && !loading && !error && <button className="save-shared-list" aria-pressed={savedHere} disabled={bookmarkBusy || !authReady} onClick={() => void toggleBookmark()} title="In deinem Konto für später speichern">{bookmarkBusy ? <LoaderCircle className="spin" size={16} /> : savedHere ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}{savedHere ? 'Gemerkt' : remembered ? 'Link aktualisieren' : 'Liste merken'}</button>}
                   {route && authReady && !user && !demo && !loading && !error && <a className="save-shared-list" href={import.meta.env.BASE_URL}><LogIn size={16} /> Zum Merken anmelden</a>}
                   {isOwner && <button className={`edit-list ${compact ? 'compact-edit-list' : ''}`} aria-label="Liste bearbeiten" onClick={() => setModal('edit-list')}><Pencil size={compact ? 17 : 14} />{!compact && 'Liste bearbeiten'}</button>}
@@ -384,10 +379,6 @@ export default function App() {
               </div>
               {!compact && listActions && <div className="heading-actions">{listActions}</div>}
             </section>
-            {!compact && <div className={`usage-guide ${canEdit ? 'own-list-guide' : ''}`}>
-              <p>{canEdit ? <>Hier hängen deine Geschenkideen. Über <strong>„Wunsch hinzufügen“</strong> fügst du einen Shop-Link ein.</> : <>Öffne <strong>„Zum Shop“</strong>, um dir ein Geschenk anzusehen. Markiere ein gekauftes Geschenk anschließend als gekauft – ohne Anmeldung. Der Besitzer sieht diese Markierung nicht.</>}</p>
-              <button className="text-button" onClick={() => setModal('help')}><CircleHelp size={17} /> So funktioniert’s</button>
-            </div>}
             {route && canPurchase && <p className="guest-gift-guide"><Gift size={17} /><span>Schon gekauft? Markiere das Geschenk hier, damit es niemand doppelt kauft. Ohne Anmeldung und für den Besitzer verborgen.</span></p>}
             {!loading && items.length === 0 ? <section className="list-empty">
               <span className="empty-icon"><WishMark /></span>
@@ -408,7 +399,7 @@ export default function App() {
                   </select></label>
                 </div>}
               </div>}
-              {items.length > 0 && <p className={`status-explanation ${compact ? 'screen-reader-only' : ''}`} id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
+              {items.length > 0 && <p className="screen-reader-only" id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
               {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
               {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
               {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
