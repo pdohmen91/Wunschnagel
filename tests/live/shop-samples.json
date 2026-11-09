@@ -18,5 +18,6 @@
   { "shop": "eBay", "url": "https://www.ebay.de/itm/194506782421" },
   { "shop": "Bambu Lab", "url": "https://eu.store.bambulab.com/de/products/a1-mini?id=599117891173982224" },
   { "shop": "Fivi", "url": "https://fivi.gg/products/officemesser-luca-fivi" },
-  { "shop": "Dyson", "url": "https://www.dyson.de/staubsauger/kabellos/v8-cyclone/motorbar-schwarz" }
+  { "shop": "Dyson", "url": "https://www.dyson.de/staubsauger/kabellos/v8-cyclone/motorbar-schwarz" },
+  { "shop": "Tesla", "url": "https://shop.tesla.com/de_de/product/wall-connector" }
 ]

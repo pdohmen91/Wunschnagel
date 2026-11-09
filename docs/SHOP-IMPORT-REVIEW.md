@@ -29,6 +29,10 @@ Die Tabelle beschreibt konkrete Stichproben, keine Garantie für jede Produktsei
 | [Fivi](https://fivi.gg/products/officemesser-luca-fivi) | Ja | Geladen | 25,00 € | Vollständig |
 | [Dyson](https://www.dyson.de/staubsauger/kabellos/v8-cyclone/motorbar-schwarz) | Ja | Geladen | 249,00 € | Vollständig |
 
+## Zusätzliche Prüfung: Tesla
+
+Am 9. November 2026 wurde zusätzlich `shop.tesla.com` als exakter Shop-Host freigegeben. Geprüft wurde der öffentliche Link [Wall Connector](https://shop.tesla.com/de_de/product/wall-connector), den der Betreiber zum Test genannt hat. Sowohl der lokale Import als auch die produktive Edge Function erhielten HTTP 403. Die Online-Funktion meldet nach der Freigabe deshalb korrekt `shop_blocked` anstelle von `unsupported_shop`; Titel, Bild und Preis konnten nicht automatisch geladen werden. Es wurden weder Bot-Schutzmaßnahmen umgangen noch Nutzerkonten oder bestehende Wünsche geändert. Das isolierte Testkonto wurde gelöscht. Die Freigabe ist keine Zusage eines erfolgreichen Tesla-Imports.
+
 ## Korrigierte Ursachen
 
 - **Amazon:** Primärer Kaufpreis aus eindeutig markierten Preisfeldern. Allgemeine a-price-Felder, Empfehlungen und Fremdwährungen werden nicht beliebig übernommen.

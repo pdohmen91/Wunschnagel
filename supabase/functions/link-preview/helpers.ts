@@ -15,6 +15,7 @@ export const DEFAULT_SHOP_HOSTS = [
   'avocadostore.de', 'www.avocadostore.de',
   'ebay.io', 'ebay.us', 'ebay.de', 'www.ebay.de', 'ebay.com', 'www.ebay.com',
   'eu.store.bambulab.com', 'fivi.gg', 'www.fivi.gg', 'dyson.de', 'www.dyson.de',
+  'shop.tesla.com',
 ]
 
 export function shopDestination(value: string, allowedHosts: readonly string[]): URL {

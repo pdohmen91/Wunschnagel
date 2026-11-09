@@ -13,7 +13,8 @@ test('DNS answers must be public and mapped IPv6 addresses are rejected', () => 
 })
 test('shop allowlist uses exact hosts and cannot be bypassed with suffixes or subdomains', () => {
   assert.equal(shopDestination('https://www.amazon.de/product', DEFAULT_SHOP_HOSTS).hostname, 'www.amazon.de')
-  for (const value of ['https://www.amazon.de.attacker.com', 'https://attacker.amazon.de', 'https://attacker.com']) assert.throws(() => shopDestination(value, DEFAULT_SHOP_HOSTS))
+  assert.equal(shopDestination('https://shop.tesla.com/de_de/product/wall-connector', DEFAULT_SHOP_HOSTS).hostname, 'shop.tesla.com')
+  for (const value of ['https://www.amazon.de.attacker.com', 'https://attacker.amazon.de', 'https://attacker.com', 'https://shop.tesla.com.attacker.com', 'https://attacker.tesla.com']) assert.throws(() => shopDestination(value, DEFAULT_SHOP_HOSTS))
 })
 test('metadata handles attribute order, relative images, entities and fallback titles', () => {
   assert.deepEqual(metadata(`<html><head><meta content="Ein Wunsch &amp; mehr" property="og:title"><meta property='og:image' content='/product.jpg'><meta name="description" content="Für &#100;ich"></head></html>`, 'https://shop.de/product'), { title: 'Ein Wunsch & mehr', image_url: 'https://shop.de/product.jpg', description: 'Für dich', price: null })
