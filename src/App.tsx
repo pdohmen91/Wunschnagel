@@ -59,7 +59,7 @@ export default function App() {
   const repo = useMemo(() => !supabase || demo && !invite ? demoRepository() : cloudRepository(user?.id || ''), [demo, user?.id, invite])
   const selected = invite ? null : route ? sharedList : lists.find(list => list.id === selectedId) || null
   const remembered = selected ? saved.entries.find(entry => entry.list_id === selected.id) : undefined
-  const savedHere = !!(remembered && route && remembered.kind === route.kind && remembered.value === route.value && (!user || remembered.storage === 'account'))
+  const savedHere = !!(remembered && route && remembered.kind === route.kind && remembered.value === route.value)
   const occasion = selected ? listOccasion(selected.title, selected.visibility) : null
   const canEdit = !route && !invite && (demo || !!user)
   const isOwner = canEdit && (demo || selected?.owner_id === user?.id)
@@ -257,15 +257,15 @@ export default function App() {
   }
 
   async function toggleBookmark() {
-    if (!selected || !route || bookmarkBusy || !authReady) return
+    if (!user || demo || !selected || !route || bookmarkBusy || !authReady) return
     setBookmarkBusy(true)
     try {
       if (savedHere && remembered) {
         await saved.remove(remembered)
         setNotice('Aus deinen gemerkten Listen entfernt. Die Wunschliste bleibt bestehen.')
       } else {
-        const storage = await saved.remember(selected, route)
-        setNotice(storage === 'account' ? 'Liste in deinem Konto gemerkt. Du findest sie unter „Listen“.' : 'Liste auf diesem Gerät gemerkt. Du findest sie unter „Listen“.')
+        await saved.remember(selected, route)
+        setNotice('Liste in deinem Konto gemerkt. Du findest sie unter „Listen“.')
       }
     } catch (err) { setNotice(message(err)) }
     finally { setBookmarkBusy(false) }
@@ -313,7 +313,7 @@ export default function App() {
           {lists.map(list => <option key={list.id} value={list.id}>{list.emoji} {list.title}</option>)}
         </select></label>}
         {canEdit && !compact && <button className="new-list" onClick={() => setModal('list')}><Plus size={17} /> Neue Wunschliste</button>}
-        {!compact && <button className="new-list saved-library-trigger" onClick={() => setModal('lists')}><Bookmark size={17} /> Gemerkte Listen <span className="count">{saved.entries.length}</span></button>}
+        {!compact && user && !demo && <button className="new-list saved-library-trigger" onClick={() => setModal('lists')}><Bookmark size={17} /> Gemerkte Listen <span className="count">{saved.entries.length}</span></button>}
         {route && !compact && <a className="new-list" href={import.meta.env.BASE_URL}><ArrowLeft size={16} /> Meine Listen</a>}
       </div>
       <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> Auf dem Handy installieren</button>
@@ -329,8 +329,9 @@ export default function App() {
       <header className="topbar">
         <span>{invite ? 'Einladung zur Wunschliste' : route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
         <div>
-          {compact && !invite && (route || demo || user || saved.entries.length > 0) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
-          {compact && !route && !demo && !user && saved.entries.length === 0 && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
+          {compact && !invite && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
+          {compact && route && !user && !demo && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Anmelden</a>}
+          {compact && !route && !demo && !user && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
           {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
           {user && !demo && <button className="icon-button mobile-account" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={19} /></button>}
           {demo && supabase && <button className="icon-button mobile-account" aria-label="Zur Anmeldung" onClick={() => setDemo(false)}><LogIn size={19} /></button>}
@@ -372,7 +373,8 @@ export default function App() {
                   {canEdit && !isOwner && <span className="collaboration-role">Mitbearbeiter</span>}
                   {!compact && <span>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</span>}
                   {compact && <button className="list-info-trigger" onClick={() => setModal('info')}><CircleHelp size={15} /> Details &amp; Hilfe</button>}
-                  {route && !loading && !error && <button className="save-shared-list" aria-pressed={savedHere} disabled={bookmarkBusy || !authReady} onClick={() => void toggleBookmark()} title={user ? 'In deinem Konto für später speichern' : 'Ohne Anmeldung auf diesem Gerät speichern'}>{bookmarkBusy ? <LoaderCircle className="spin" size={16} /> : savedHere ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}{savedHere ? 'Gemerkt' : remembered && (!user || remembered.storage === 'account') ? 'Link aktualisieren' : user && remembered ? 'Im Konto merken' : 'Liste merken'}</button>}
+                  {route && user && !demo && !loading && !error && <button className="save-shared-list" aria-pressed={savedHere} disabled={bookmarkBusy || !authReady} onClick={() => void toggleBookmark()} title="In deinem Konto für später speichern">{bookmarkBusy ? <LoaderCircle className="spin" size={16} /> : savedHere ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}{savedHere ? 'Gemerkt' : remembered ? 'Link aktualisieren' : 'Liste merken'}</button>}
+                  {route && authReady && !user && !demo && !loading && !error && <a className="save-shared-list" href={import.meta.env.BASE_URL}><LogIn size={16} /> Zum Merken anmelden</a>}
                   {isOwner && <button className={`edit-list ${compact ? 'compact-edit-list' : ''}`} aria-label="Liste bearbeiten" onClick={() => setModal('edit-list')}><Pencil size={compact ? 17 : 14} />{!compact && 'Liste bearbeiten'}</button>}
                 </div>
               </div>

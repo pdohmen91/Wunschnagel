@@ -192,4 +192,4 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 
 ## Ergänzung 09.11.2026: persönliche gemerkte Listen
 
-Neue Merker sind private Verweise, keine Freigabe- oder Mitgliedschaftsrechte. Tabelle ohne Client-Rechte und drei eng begrenzte authentifizierte RPCs mit Identitätsprüfung, leerem Suchpfad und explizitem Kontofilter. Neue private Metadaten werden nach Freigabe-Widerruf nicht über Merker ausgegeben. Lokale Merker werden nur nach ausdrücklicher Einzelaktion ins Konto übertragen. Details und Prüfungen: [SAVED-LISTS.md](SAVED-LISTS.md).
+Neue Merker sind private Verweise, keine Freigabe- oder Mitgliedschaftsrechte. Tabelle ohne Client-Rechte und drei eng begrenzte authentifizierte RPCs mit Identitätsprüfung, leerem Suchpfad und explizitem Kontofilter. Neue private Metadaten werden nach Freigabe-Widerruf nicht über Merker ausgegeben. Merken ist ausschließlich mit Anmeldung möglich. Die frühere lokale Gast-Speicherung ist entfernt; alte Gast-Merker werden ohne Auslesen oder Hochladen gelöscht. Details und Prüfungen: [SAVED-LISTS.md](SAVED-LISTS.md).

@@ -62,22 +62,20 @@ try {
   assert.deepEqual(await get(viewer), [])
   assert.equal((await ok(anon.rpc('get_shared_wishlist', { token: list.share_token }))).list.id, list.id)
   if (process.env.WUNSCHNAGEL_QA_API_ONLY !== '1') {
-    phase = 'mobile guest remembers and reopens without login'
+    phase = 'mobile guests cannot save or access bookmarks'
     browser = await webkit.launch()
     const mobile = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce', serviceWorkers: 'block' }
     const cg = await browser.newContext(mobile), ca = await browser.newContext(mobile), cb = await browser.newContext(mobile)
     const pg = await cg.newPage(), pa = await ca.newPage(), pb = await cb.newPage()
     const link = base + '#/s/' + list.share_token
     await pg.goto(link)
-    await pg.getByRole('button', { name: 'Liste merken', exact: true }).click()
-    await expect(pg.getByRole('button', { name: 'Gemerkt', exact: true })).toBeVisible()
-    await pg.close()
-    const reopened = await cg.newPage(); await reopened.goto(base)
-    let dialog = await library(reopened)
-    await expect(dialog.locator('.saved-list-entry')).toContainText('Auf diesem Gerät')
-    await dialog.getByRole('link', { name: new RegExp(list.title.replace(/[\[\]]/g, '\\$&')) }).click()
-    await expect(reopened.getByRole('heading', { name: list.title, exact: true })).toBeVisible()
-    await expect(reopened.getByRole('button', { name: 'Liste bearbeiten', exact: true })).toHaveCount(0)
+    await expect(pg.getByRole('heading', { name: list.title, exact: true })).toBeVisible()
+    await expect(pg.getByRole('link', { name: 'Zum Merken anmelden', exact: true })).toBeVisible()
+    await expect(pg.getByRole('button', { name: /^(Liste merken|Gemerkt|Listen)$/ })).toHaveCount(0)
+    await expect(pg.locator('.saved-library-trigger, .saved-list-entry')).toHaveCount(0)
+    await pg.goto(base)
+    await expect(pg.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0)
+    assert.equal(await pg.evaluate(() => localStorage.getItem('wunschnagel-saved-lists-v1')), null)
     assert.deepEqual(await get(viewer), [])
     phase = 'account save and independent-device synchronization'
     await openQaSession(pa, link, url, sessions[1])
@@ -85,11 +83,12 @@ try {
     await expect(pa.getByRole('button', { name: 'Gemerkt', exact: true })).toBeVisible()
     assert.equal((await get(viewer))[0].list_id, list.id)
     await openQaSession(pb, base, url, sessions[1])
-    dialog = await library(pb)
+    let dialog = await library(pb)
     await expect(dialog.locator('.saved-list-entry')).toContainText('In deinem Konto')
     await dialog.getByRole('link', { name: new RegExp(list.title.replace(/[\[\]]/g, '\\$&')) }).click()
     await expect(pb.getByRole('button', { name: 'Gemerkt', exact: true })).toBeVisible()
     await expect(pb.getByRole('button', { name: 'Liste bearbeiten', exact: true })).toHaveCount(0)
+    await expect.poll(() => pb.locator('.christmas-header-art img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
     await pb.screenshot({ path: '/private/tmp/wunschnagel-bookmark-live-mobile.png', fullPage: true })
     phase = 'own-list navigation and removal do not change the shared source'
     dialog = await library(pb)

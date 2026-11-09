@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
-import { parseSavedLists, savedList, savedListUrl, writeSavedLists } from '../src/lib/savedLists.ts'
+import { clearLegacySavedLists, savedList, savedListUrl, validSavedList } from '../src/lib/savedLists.ts'
 
 const owner = '00000000-0000-4000-8000-000000000021', guest = '00000000-0000-4000-8000-000000000022'
 const db = new PGlite({ extensions: { pgcrypto } })
@@ -31,17 +31,24 @@ before(async () => {
 })
 after(async () => db.close())
 
-test('device bookmarks validate references, deduplicate and never retain wish data', () => {
+test('account references validate safe routes and retire guest storage without reading or uploading it', () => {
   const entry = savedList({ id: owner, title: 'Für Alex', emoji: '🎁' }, { kind: 'token', value: 'a'.repeat(64) })
-  assert.equal(parseSavedLists(JSON.stringify([entry, entry])).length, 1)
-  assert.deepEqual(parseSavedLists(JSON.stringify([{ ...entry, wishes: ['secret'], notes: 'secret', owner_id: guest, available: true }])), [entry])
-  for (const value of [null, '{}', 'broken', JSON.stringify([{ ...entry, value: 'javascript:alert(1)' }]), JSON.stringify([{ ...entry, list_id: 'invalid' }])]) assert.deepEqual(parseSavedLists(value), [])
+  assert.equal(validSavedList(entry), true)
+  for (const value of [null, {}, { ...entry, value: 'javascript:alert(1)' }, { ...entry, list_id: 'invalid' }]) assert.equal(validSavedList(value), false)
   assert.equal(savedListUrl(entry, 'https://example.com/Wunschnagel/?code=private#/p/test'), 'https://example.com/Wunschnagel/#/s/' + 'a'.repeat(64))
   assert.throws(() => savedListUrl({ kind: 'public', value: 'https://evil.example' }, 'https://example.com/'), /Ungültig/)
-  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
-  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { setItem() { throw new Error('quota') } } })
-  try { assert.throws(() => writeSavedLists([entry]), /nicht dauerhaft speichern/) }
-  finally { if (original) Object.defineProperty(globalThis, 'localStorage', original); else Reflect.deleteProperty(globalThis, 'localStorage') }
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage'), removed: string[] = []
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    removeItem(key: string) { removed.push(key) },
+    getItem() { assert.fail('Must never read guest bookmarks') },
+    setItem() { assert.fail('Must never write guest bookmarks') },
+  } })
+  try {
+    clearLegacySavedLists()
+    assert.deepEqual(removed, ['wunschnagel-saved-lists-v1'])
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('storage blocked') } })
+    assert.doesNotThrow(clearLegacySavedLists)
+  } finally { if (original) Object.defineProperty(globalThis, 'localStorage', original); else Reflect.deleteProperty(globalThis, 'localStorage') }
 })
 
 test('bookmarks are private, authenticated-only and cannot grant edit or membership', async () => {

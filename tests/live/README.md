@@ -25,6 +25,6 @@ Geprüft werden Erstellen einer Einladung, minimaler Gastzugriff vor dem Beitrit
 
 ## Gemerkte Listen
 
-`tests/live/saved-lists.mjs` prüft mit zwei eigens angelegten und anschließend gelöschten QA-Konten die echten Merker-RPCs, private Kontotrennung, widerrufene Links, unveränderte Bearbeitungsrechte, anonymes Wiederfinden und Synchronisierung zwischen unabhängigen mobilen WebKit-Kontexten. E-Mail-Versand und bestehende Nutzerdaten werden nicht verwendet.
+`tests/live/saved-lists.mjs` prüft mit zwei eigens angelegten und anschließend gelöschten QA-Konten die echten Merker-RPCs, private Kontotrennung, widerrufene Links, unveränderte Bearbeitungsrechte, gesperrtes Merken ohne Anmeldung und Synchronisierung zwischen unabhängigen mobilen WebKit-Kontexten. E-Mail-Versand und bestehende Nutzerdaten werden nicht verwendet.
 
 Gleiche Umgebungsvariablen wie beim Geschenkstatus-Test: `WUNSCHNAGEL_QA_CONFIG`, `WUNSCHNAGEL_QA_SUPABASE`, optional `WUNSCHNAGEL_QA_BASE`; mit `WUNSCHNAGEL_QA_API_ONLY=1` ausschließlich API-Prüfung.

@@ -14,7 +14,7 @@ Eine installierbare Wunschlisten-Web-App für Freunde und Familie. React und Typ
 - Suche, Filter für offene und erfüllte Wünsche sowie Sortierung nach Preis, Name und Datum.
 - Gut lesbare Texte, große Bedienflächen, mobile Listenauswahl und vollständig aufklappbare Hinweise.
 - Ansicht geteilter Listen ohne Anmeldung und ohne Bearbeitungsrechte.
-- Geteilte Listen mit „Liste merken“ festhalten und unter „Listen → Gemerkte Listen“ wiederfinden: ohne Anmeldung im Browser bzw. der installierten App, angemeldet geräteübergreifend im eigenen Konto. Lokale Merker lassen sich ausdrücklich einzeln ins Konto übernehmen. [Details](docs/SAVED-LISTS.md).
+- Geteilte Listen mit „Liste merken“ festhalten und unter „Listen → Gemerkte Listen“ wiederfinden: ausschließlich angemeldet, geräteübergreifend im eigenen Konto. Ohne Anmeldung lassen sich keine Listen merken. [Details](docs/SAVED-LISTS.md).
 - Gemeinsames Bearbeiten über einen separaten Einladungslink: Google-Anmeldung und ausdrückliches Annehmen; Mitglieder können Wünsche hinzufügen, bearbeiten, löschen und abhaken. Besitzer verwalten Einladungen und Mitglieder, Mitbearbeiter können die Liste verlassen.
 - Geheimen Link kopieren, über das System teilen und widerrufen/erneuern.
 - Google-Anmeldung nach Einrichtung des Providers.

@@ -696,7 +696,7 @@ html[data-occasion=christmas] .dialog { border-top-color: #d5b474; }
   .christmas-nav-lights { top: auto; bottom: 0; height: 14px; }
 }
 
-/* Personal bookmarks: a small action on shared lists, a clear home in Listen. */
+/* Account bookmarks: a small action on shared lists, a clear home in Listen. */
 .save-shared-list { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; }
 .save-shared-list[aria-pressed=true] { background: #eee5eb; border-color: #82687b; }
 .save-shared-list > svg { flex-shrink: 0; }
@@ -718,7 +718,6 @@ html[data-occasion=christmas] .dialog { border-top-color: #d5b474; }
 .saved-list-open small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 3px; }
 .saved-list-open > svg, .saved-list-remove { flex-shrink: 0; }
 .saved-list-remove { min-width: 44px; min-height: 44px; }
-.saved-list-adopt { margin: 0 10px 6px; font-size: 12px; min-height: 44px; }
 .library-footnote { margin-top: 12px; }
 html[data-occasion=christmas] .save-shared-list { background: #244b39; color: #fff3d9; border-color: #a99a73; }
 html[data-occasion=christmas] .save-shared-list[aria-pressed=true] { background: #f1d8a3; color: #183a2c; border-color: #f1d8a3; }
