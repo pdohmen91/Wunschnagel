@@ -48,7 +48,10 @@ test('shared Christmas list and the gift popup share the pine and gold palette',
   await page.getByRole('link', { name: 'Zum Shop', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('link', { name: 'Zum Shop', exact: true })).toBeVisible()
-  expect(await dialog.getByRole('link', { name: 'Zum Shop', exact: true }).evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(219, 184, 110)')
+  // Opening the dialog can place its action under the existing mouse cursor.
+  // Check the base palette in a deterministic non-hover state.
+  await page.mouse.move(0, 0)
+  await expect(dialog.getByRole('link', { name: 'Zum Shop', exact: true })).toHaveCSS('background-color', 'rgb(219, 184, 110)')
   await audit(page)
   await dialog.screenshot({ path: info.outputPath('christmas-gift-dialog.png') })
 })
