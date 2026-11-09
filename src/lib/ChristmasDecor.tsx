@@ -13,20 +13,9 @@ function Star({ x, y, size = 8 }: { x: number; y: number; size?: number }) {
 }
 
 export function ChristmasHeaderArtwork() {
-  return <svg className="christmas-header-art" viewBox="0 0 360 180" aria-hidden="true" focusable="false">
-    <PineSprig transform="translate(240 -105) rotate(38 60 140) scale(1.6)" color="#91aa7d" />
-    <PineSprig transform="translate(155 -95) rotate(75 60 140) scale(1.35)" color="#6f936b" />
-    <g stroke="#d9b878" fill="none" strokeWidth="1.2">
-      <path d="M259 20V70M305 5V98" />
-      <path d="M252 71h14v6h-14zM299 98h12v6h-12z" fill="#d9b878" />
-      <circle cx="259" cy="94" r="19" fill="#d8b56e" />
-      <circle cx="305" cy="118" r="16" fill="#b16551" stroke="#c38b64" />
-      <path d="M245 89q14 14 28 0M245 99q14 14 28 0" stroke="#fff0c5" />
-      <path d="M300 106q-8 12 0 24M310 106q8 12 0 24" stroke="#f4c79e" />
-    </g>
-    <g color="#e3c88c"><Star x={205} y={40} size={8} /><Star x={335} y={57} size={5} /><Star x={230} y={139} size={4} /></g>
-    <g fill="#c2785b"><circle cx="282" cy="36" r="4" /><circle cx="291" cy="33" r="3.5" /><circle cx="287" cy="44" r="3" /></g>
-  </svg>
+  return <picture className="christmas-header-art" aria-hidden="true">
+    <img src={`${import.meta.env.BASE_URL}illustrations/christmas-hero-v2.webp`} width={1536} height={1024} alt="" decoding="async" fetchPriority="high" />
+  </picture>
 }
 
 export function ChristmasAtmosphere() {

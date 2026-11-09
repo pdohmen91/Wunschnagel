@@ -1,8 +1,11 @@
-// Cache only the application shell. API responses and shop images never enter this cache.
+// Cache the application shell and explicitly named bundled artwork only.
+// API responses, private lists and external shop images never enter this cache.
 const CACHE = 'wunschnagel-shell-v1'
 // The build fills this with the emitted JS/CSS files, available on first install.
 const BUILD_ASSETS = []
 const scope = new URL(self.registration.scope)
+// Seasonal artwork is cached on first use, not downloaded for every install.
+const artwork = ['illustrations/christmas-hero-v2.webp'].map(path => new URL(path, scope).href)
 const shell = ['index.html', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable.png', 'manifest.webmanifest', ...BUILD_ASSETS].map(path => new URL(path, scope).href)
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(shell)))
@@ -19,7 +22,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request).catch(() => caches.match(new URL('index.html', scope).href)))
     return
   }
-  if (!shell.includes(url.href) && !url.pathname.startsWith(`${scope.pathname}assets/`)) return
+  if (!shell.includes(url.href) && !artwork.includes(url.href) && !url.pathname.startsWith(`${scope.pathname}assets/`)) return
   // These allowlisted static files do not vary by requesting Origin. Module
   // requests and installation fetches can carry different Origin headers.
   event.respondWith(caches.match(event.request, { ignoreVary: true }).then(cached => cached || fetch(event.request).then(response => {

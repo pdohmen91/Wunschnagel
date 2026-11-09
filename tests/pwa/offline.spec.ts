@@ -15,12 +15,21 @@ test('production build works under GitHub Pages subpath and opens offline after 
     await navigator.serviceWorker.ready
     if (!navigator.serviceWorker.controller) await new Promise<void>(resolve => navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true }))
   })
+  const artworkUrl = await page.evaluate(async () => {
+    const url = new URL('./illustrations/christmas-hero-v2.webp', location.href).href
+    const response = await fetch(url)
+    if (!response.ok || !response.headers.get('content-type')?.includes('image/webp')) throw new Error('Christmas artwork unavailable below Pages base path')
+    await response.arrayBuffer()
+    return url
+  })
+  await expect.poll(() => page.evaluate(async url => !!await caches.match(url), artworkUrl)).toBe(true)
   await context.setOffline(true)
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Kleine & große Wünsche' })).toBeVisible()
   await expect(page.getByText('Du bist offline.', { exact: false })).toBeVisible()
   const response = await page.evaluate(() => fetch('./icon-192.png').then(response => response.ok))
   expect(response).toBe(true)
+  expect(await page.evaluate(url => fetch(url).then(response => response.ok), artworkUrl)).toBe(true)
   const cachedUrls = await page.evaluate(async () => {
     const keys = await caches.keys()
     return (await Promise.all(keys.filter(key => key.startsWith('wunschnagel-')).map(async key => (await (await caches.open(key)).keys()).map(request => request.url)))).flat()

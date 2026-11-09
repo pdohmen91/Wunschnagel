@@ -126,14 +126,16 @@ Die Darstellung ändert keine gespeicherten Angaben oder Freigaberechte.
 
 - Geburtstag: leicht rosiges Papier, warme Rosé-Akzente und ein gestrichelter
   Geschenkanhänger am Titel.
-- Weihnachten: cremefarbenes Papier, ein dunkelgrüner Listenkopf wie eine
-  Weihnachtskarte, Tannengrün und gedämpftes Gold. Gezeichnete Zweige und kleine
-  Kugeln rahmen den Kopf; Sterne und ein Tannenzweig liegen im Papierhintergrund.
+- Weihnachten: ein bewusst opulenter Bildkopf mit dichter Tannengirlande,
+  großer roter Samtschleife, glänzenden roten/goldenen Kugeln, Sternen,
+  Zuckerstangen und warmen Lichtern. Darunter steht der Listenname auf
+  einer deckenden dunkelgrünen Fläche mit Goldkante.
 - Das allgemeine Standardsymbol wird passend zu Torte oder Tanne. Ein bewusst
   gewähltes anderes Listensymbol bleibt erhalten.
-- Typografie, Kartengrößen, Touchflächen und Reihenfolge bleiben dieselben.
-  Die Weihnachtsgrafiken liegen außerhalb des Layoutflusses und beanspruchen
-  keine zusätzliche Höhe. Es kommen keine weiteren Hinweistexte hinzu.
+- Karten, Touchflächen und Reihenfolge bleiben dieselben. Der Weihnachtskopf
+  bekommt ausdrücklich mehr Raum: 132 Pixel Motivhöhe mobil und 190 Pixel am
+  Desktop. Der Listenname und die Aktionen stehen unter dem Motiv; keine
+  ausgeblendete Illustration und keine Schrift über unruhigem Baumschmuck.
 - Überschrift, Kartenflächen, Filter, Angebotsbuttons und Kaufdialoge verwenden
   dieselben Anlass-Tokens. Die dunkle Wunschnagel-Navigation bleibt erkennbar.
 - Die Tokens werden beim Wechsel auf eine neutrale/private Liste wieder entfernt.
@@ -146,26 +148,35 @@ Prüfung wurde die Gast-Kaufaktion über die volle Kartenbreite gesetzt; der
 „Bereits gekauft“-Hinweis bleibt innerhalb des kleinen Produktbildes.
 
 
-## Weihnachtsillustration: Tannenzweige, Kugeln und warmes Licht
+## Opulenter Weihnachtskopf
 
-`src/lib/ChristmasDecor.tsx` zeichnet eigene SVG-Grafiken direkt in der App.
-Die Zweige, goldenen und ziegelroten Kugeln, Papiersterne und kleinen Lichter
-benötigen keine Downloads, Bilddienste oder zusätzliche Bibliotheken. Sie werden
-nur bei der erkannten Weihnachtsvariante eingeblendet. Die Navigation erhält
-passend zum Listenkopf ein dunkles Tannengrün und eine feine Lichterkette.
+`src/lib/ChristmasDecor.tsx` verbindet eine eigens generierte Weihnachtsillustration
+mit Vektorzeichnungen im restlichen Papierhintergrund. Das neue Hauptmotiv liegt
+als `public/illustrations/christmas-hero-v2.webp` im Projekt: 1536 × 1024 Pixel,
+ca. 372 KiB, aus dem generierten PNG ohne inhaltliche Änderung als WebP kodiert.
+Der obere Ausschnitt zeigt Girlande, Samtschleife, Glasornamente, Zuckerstangen,
+Tannenzapfen und kräftige warme Lichter in voller Farbe und Deckkraft. Das Motiv
+wurde mit dem Imagegen-Skill erzeugt und danach lokal für die Auslieferung optimiert.
 
-Die Illustrationsebenen haben keine Zeigerereignisse, keine Fokusziele und sind
-für Screenreader verborgen. Der Listenkopf hat eine deckende dunkelgrüne
-Unterlage mit heller Beschriftung; Informations- und Bearbeitungsaktionen behalten
-lesbare Fokus- und Hoverzustände. Die Papierelemente hinter Karten, Filtern und
-Fußzeile bleiben leicht. Die Dekoration darf keine neuen Positionierungsbezüge
-für die mobile Kopfleiste herstellen.
+Die Dekoration ist nicht anklickbar und für Screenreader verborgen. Das Bild hat
+einen eigenen reservierten Bereich; der eigentliche Listentitel steht darunter
+auf deckendem dunklem Grün mit heller Schrift. Die Navigationsleiste bleibt an
+ihrer bewährten Position. Mobile Kopfleistenaktionen, Filter und Kaufbuttons
+werden nicht von der Dekoration überlagert.
 
-Die Lichter blenden einmal für höchstens anderthalb Sekunden sanft ein. Es gibt
-keinen dauernden Schneefall oder fortlaufendes Blinken. Reduzierte Bewegung
-schaltet die Einblendung aus. Native Dialoge übernehmen eine kleine goldene
-Oberkante; Formularinhalte und Produktbilder erhalten keine überlagernde Grafik.
+Die Illustration wird nur bei einer passenden geöffneten Weihnachtsliste geladen.
+Dafür werden weder externe Bilddienste noch neue Bibliotheken benötigt. Der Service
+Worker darf genau diese gebündelte Bilddatei nach dem Laden zwischenspeichern;
+API-Antworten, private Listen und externe Shop-Bilder bleiben ausgeschlossen.
+Der Produktions-/Offline-Test prüft den Pages-Unterpfad, den gezielten Cacheeintrag
+und das spätere Abrufen des Motivs ohne Internet.
 
-Die Prüfung umfasst Desktop, mobiles WebKit bei 390 und 320 Pixel Breite,
-Kontrast, den Weihnachts-Kaufdialog, die Position der mobilen Kopfleistenaktionen,
-reduzierte Bewegung und das Entfernen der Grafiken bei neutralen/privaten Listen.
+Die kleinen Lichter in der Navigation blenden einmal für höchstens anderthalb
+Sekunden ein. Es gibt kein fortlaufendes Blinken oder automatischen Ton.
+Reduzierte Bewegung schaltet die Einblendung aus. Native Dialoge übernehmen
+eine goldene Oberkante und behalten schlichte, lesbare Formularflächen.
+
+Die Ansichtsprüfung umfasst Desktop, mobiles WebKit bei 390 und 320 Pixeln,
+vollständig geladene Grafik in ganzer Kopfbreite, genügend Motivhöhe, geschützte
+Textfläche, Kontrast, Kaufdialog, reduzierte Bewegung sowie das Zurücksetzen auf
+neutralen/privaten Listen.

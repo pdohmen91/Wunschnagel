@@ -662,13 +662,17 @@ html[data-occasion=christmas] .page-content { position: relative; isolation: iso
 .christmas-nav-lights { position: absolute; z-index: -1; top: 66px; left: 0; width: 100%; height: 16px; pointer-events: none; user-select: none; }
 .christmas-paper-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
 .christmas-paper-bough { position: absolute; bottom: 4px; left: -32px; width: clamp(170px, 26vw, 290px); height: auto; opacity: .18; }
-html[data-occasion=christmas] .list-heading { position: relative; isolation: isolate; border-bottom-color: transparent; }
-html[data-occasion=christmas] .list-heading::before { content: ''; position: absolute; inset: -9px -10px 0; z-index: -2; border: 1px solid #4c6c55; border-bottom: 3px solid #d5b474; border-radius: 3px 3px 16px 3px; background: #244638; box-shadow: inset 0 0 0 4px #ffffff05; pointer-events: none; }
-.christmas-header-art { position: absolute; top: -9px; right: -10px; width: min(48%, 320px); height: 100%; min-height: 110px; opacity: .33; pointer-events: none; user-select: none; z-index: -1; }
+html[data-occasion=christmas] .list-heading { --christmas-art-height: 190px; position: relative; isolation: isolate; align-items: end; padding: calc(var(--christmas-art-height) + 18px) 20px 20px; gap: 14px; margin-bottom: 20px; border-bottom-color: transparent; border-radius: 5px 5px 20px 5px; }
+html[data-occasion=christmas] .list-heading::before { content: ''; position: absolute; inset: 0; z-index: -2; border: 1px solid #d5b474; border-bottom: 4px solid #d5b474; border-radius: inherit; background: #123226; box-shadow: 3px 3px 0 #d5b47438; pointer-events: none; }
+.christmas-header-art { position: absolute; top: 0; left: 0; right: 0; width: 100%; height: var(--christmas-art-height); overflow: hidden; border-radius: 5px 5px 0 0; border-bottom: 2px solid #d5b474; opacity: 1; pointer-events: none; user-select: none; z-index: -1; }
+.christmas-header-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+html[data-occasion=christmas] .list-heading .list-eyebrow { display: none; }
+html[data-occasion=christmas] .list-heading .heading-actions { padding-top: 0; }
+
 html[data-occasion=christmas] .list-heading h1 { color: #fff8e9; }
 html[data-occasion=christmas] .list-heading .list-eyebrow { color: #e5cb91; }
 html[data-occasion=christmas] .list-heading > div > p, html[data-occasion=christmas] .list-meta { color: #e7e9da; }
-html[data-occasion=christmas] .list-cover { color: #fff0c9; background: #315640; border-color: #d5b474; }
+html[data-occasion=christmas] .list-cover { color: #fff0c9; background: #a62934; border-color: #e6bf70; }
 html[data-occasion=christmas] .list-heading .edit-list, html[data-occasion=christmas] .list-heading .list-info-trigger { color: #fff3d9; }
 html[data-occasion=christmas] .list-heading .edit-list:hover, html[data-occasion=christmas] .list-heading .list-info-trigger:hover { background: #3a5a46; color: #fff8e9; }
 html[data-occasion=christmas] .list-heading button:focus-visible { outline-color: #f0cf84; }
@@ -677,8 +681,8 @@ html[data-occasion=christmas] .wish-card { border-color: #c3cebd; box-shadow: 3p
 .christmas-light { animation: christmas-warm-in 900ms ease-out both; }
 @keyframes christmas-warm-in { from { opacity: .25; } to { opacity: 1; } }
 @container app-viewport (max-width: 620px) {
-  .christmas-header-art { width: 42%; min-height: 96px; opacity: .25; }
-  html[data-occasion=christmas] .list-heading::before { inset-inline: -8px; }
+  html[data-occasion=christmas] .list-heading { --christmas-art-height: 132px; padding: calc(var(--christmas-art-height) + 14px) 14px 16px; gap: 10px; margin-bottom: 18px; }
+  html[data-occasion=christmas] .list-heading h1 { font-size: 24px; line-height: 1.18; letter-spacing: -.45px; }
   .christmas-nav-lights { top: auto; bottom: 0; height: 14px; }
   .christmas-paper-bough { left: -44px; width: 185px; }
 }
