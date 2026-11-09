@@ -1,6 +1,6 @@
 # Designsprache: persönliche Wunschkartei
 
-Stand: 8. November 2026. Der vom Nutzer ausgewählte Produktname ist **Wunschnagel**. Der Claim lautet **Deine Wünsche. Festgehalten.**
+Stand: 9. November 2026. Der vom Nutzer ausgewählte Produktname ist **Wunschnagel**. Der Claim lautet **Deine Wünsche. Festgehalten.**
 
 Die visuelle Grundlage sind beschriftete Geschenkanhänger und eine sorgfältig angelegte Kartei. Sie verbindet die persönlichen Inhalte einer Wunschliste mit gut lesbarer, einfacher Bedienung. Produktbilder und eigene Notizen bleiben der Inhalt; zusätzliche Werbesprüche sind nicht Teil der Oberfläche.
 
@@ -99,10 +99,14 @@ In der lokalen Demo erklärt ein Dialog beim Teilen, dass andere Geräte die Dat
 
 Auf kleinen Bildschirmen öffnet „Details & Hilfe“ die Beschreibung und den Zugang zur Kurzanleitung. Suche und Sortierung liegen in einem eigenen Dialog; Änderungen werden erst mit „Ergebnisse anzeigen“ übernommen. Die Übersicht enthält nur Titel, Sichtbarkeit, Statusfilter und Wünsche. In Formularen scrollt nur der Eingabebereich; Speichern und Abbrechen stehen außerhalb des deaktivierbaren Eingabefeldsets und bleiben sichtbar.
 
+Wenn weitere Formularfelder unterhalb des sichtbaren Bereichs liegen, zeigt eine feste Zeile über den Aktionen „Weitere Felder · nach unten scrollen“. Weiche Kanten am Eingabebereich zeigen Inhalte oberhalb und unterhalb an. Am Ende verschwindet der Hinweis; vollständig sichtbare Formulare erhalten ihn nicht. Die Erkennung reagiert auf Tastatur, Größenänderungen und aufgeklappte Zusatzfelder. Die Hinweiszeile fängt keine Touch-Eingaben ab.
+
 
 ## Handy als Hauptgerät
 
 Im mobilen Browser steht „App installieren“ als beschriftete Leiste direkt unter der Marke, sowohl vor der Anmeldung als auch bei eigenen und geteilten Listen. Die Leiste lässt sich für die aktuelle Browser-Sitzung schließen und entfällt in der installierten App. Die Installation bleibt oben im Listen-Dialog als breite Schaltfläche erreichbar. So bleibt die Aktion auffindbar, ohne die dauerhaft genutzte App-Ansicht zu vergrößern.
+
+Die installierte iOS-App unterlegt den Statusbereich mit dunkler Tinte und hält die Marke sowie die Kopfleisten-Aktionen mindestens 24 px vom oberen Inhaltsrand entfernt. Größere vom Gerät gemeldete sichere Insets bleiben maßgeblich. `apple-mobile-web-app-status-bar-style=black` verlangt eine nicht durchscheinende Statusleiste; siehe [Apple: Supported Meta Tags](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html). Der Abstand schützt die Beschriftung zusätzlich vor dem systemseitigen Kanteneffekt. Dessen konkrete Darstellung hängt vom iOS-Stand ab.
 
 Bis 960 Pixel App-Breite stehen „+ Wunsch“ und „Teilen“ einzeilig in einer festen unteren Aktionsleiste. Sie wird außerhalb des Größencontainers gerendert und berücksichtigt denselben tatsächlich sichtbaren Bereich wie Dialoge und Rückmeldungen. Unterhalb der Inhalte und über Systemrändern bleibt ein ausreichender Abstand. Der Listenkopf ist auf schmalen Geräten kompakter; dekorative Indizes treten zugunsten der Wünsche zurück.
 

@@ -25,6 +25,7 @@ export function visibleVerticalBounds(layoutHeight: number, visual: { height: nu
 
 export function installViewportFit(): () => void {
   const update = () => {
+    document.documentElement.dataset.iosStandalone = String('standalone' in navigator && navigator.standalone === true)
     const display = window.screen as Screen & { availLeft?: number }
     const width = visibleContentWidth({
       viewportWidth: window.innerWidth,

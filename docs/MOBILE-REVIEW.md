@@ -1,6 +1,6 @@
 # Prüfung für überwiegende Handynutzung
 
-Stand: 8. November 2026.
+Stand: 9. November 2026.
 
 ## Änderungen
 
@@ -12,11 +12,13 @@ Stand: 8. November 2026.
 - Überschriften, Abstände, Desktop-Bilder und Formulare sind kleiner. Texteingaben behalten 16 Pixel Schrift, Hauptaktionen 48 Pixel Höhe und weitere interaktive Elemente mindestens 44 Pixel. Lange Wunschtitel umbrechen vollständig, Hinweise lassen sich ausklappen. Das Bearbeitungsmenü sitzt unter dem Vorschaubild und öffnet sich nach oben. Fehlende Preise und Notizen erzeugen auf Handys keine zusätzlichen Platzhalterzeilen.
 - Die Aktionsleiste berücksichtigt Notch und Home-Indikator. Am Seitenende bleibt genug Platz, um die letzte Karte und ihren Shop-Link darüber zu lesen und zu bedienen. Rückmeldungen erscheinen oberhalb der Leiste.
 - Formulare richten sich nach der sichtbaren Höhe über der Tastatur. Bei geöffneter Tastatur werden die lange Einleitung und zusätzliche Footer-Hinweise ausgeblendet. Die Eingaben scrollen, während Speichern und Abbrechen erreichbar bleiben.
+- „Weitere Felder · nach unten scrollen“ macht zusätzlich erreichbare Angaben deutlich. Die Hinweiszeile bleibt über den Aktionen sichtbar, solange unten Inhalte fehlen. Am Formularende oder wenn alles hineinpasst, verschwindet sie. Kantenmarkierungen zeigen die Scrollrichtung.
+- In der installierten iOS-App stehen Logo und Kopfleisten-Aktionen unter einem durchgehend dunklen Statusbereich mit mindestens 24 Pixeln Abstand. Größere sichere Geräteeinzüge bleiben erhalten. Statusleisten-Konfiguration und Abstände sind in Browserprofilen geprüft; der gerätespezifische Systemeffekt wurde damit nicht auf dem physischen Nutzergerät verifiziert.
 - Pinch-Zoom verkleinert nicht künstlich die Formularfläche. Die vorhandene Breitenkorrektur für ein abgeschnittenes Dia-Fenster bleibt aktiv.
 
 ## Browserprüfungen
 
-Die vollständige Prüfung des kompakteren Designs bestand 113 Browserfälle; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Die anschließende Installationsänderung bestand 32 gezielte Browserprüfungen für Auffindbarkeit, Schließen, installierten Zustand, mobile Bedienung und Fensterbreiten. Dazu kommen 38 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des vollständigen Laufs.
+137 verschiedene Browserfälle bestanden; zwölf Handyfälle werden in den Desktop-Profilen bewusst ausgelassen. Acht Zeitüberschreitungen während des ersten Simulatorstarts wurden nach dessen Abschluss gezielt wiederholt und bestanden. Dazu kommen 38 Fach- und Zugriffsprüfungen. Chrome wird mit einem Pixel-7-Profil und WebKit mit einem iPhone-13-Profil geprüft. Die normalen Desktop- und Offline-Prüfungen bleiben Bestandteil des vollständigen Laufs.
 
 | Bereich | Prüfung |
 | --- | --- |
@@ -28,6 +30,7 @@ Die vollständige Prüfung des kompakteren Designs bestand 113 Browserfälle; zw
 | Platz für Inhalte | Zwei vollständige Beispielwünsche gleichzeitig sichtbar bei 390 × 844 Pixeln; vorher war es einer |
 | Rückmeldungen | Hinweise überdecken die untere Aktionsleiste nicht |
 | Formular | Neuer Wunsch und neue Liste lassen sich bei begrenzter sichtbarer Höhe anlegen |
+| Scroll-Hinweis | Bei verborgenem Formularinhalt sichtbar, am Ende und ohne Überlauf ausgeblendet; reagiert auf geänderte Höhe |
 | Gemeldete Ansicht | Zwei von drei Wünschen offen, erste Karte vor 360 Pixeln, keine umgebrochenen Hauptbuttons |
 | Sekundäre Werkzeuge | Such- und Sortierdialog mit lesbarer Auswahl; Abbrechen verwirft Änderungen, Übernehmen wendet sie an |
 | Regression | Zugriffsschutz, automatischer Titel, Animationen, Fokus, Desktop und Offline-Build |
@@ -41,4 +44,4 @@ Ein gesonderter XCTest lief erfolgreich auf einem eigens angelegten iPhone-17-Pr
 
 Dabei wurde ein Fehler entdeckt, den der Desktop-WebKit-Test nicht abbildete: iOS-Safari konnte im automatisch bemessenen Flex-Dialog die Formularfläche auf null reduzieren. Eine definierte, vom sichtbaren Viewport begrenzte Blockhöhe behebt dies. Während der Tastatureingabe weichen auch die wiederholte Zielangabe und der Link-Hilfstext den Pflichtfeldern.
 
-Der wiederverwendbare Test liegt in [tests/safari-ios](../tests/safari-ios/README.md). Er bestand auch nach dem Umbau der mobilen Übersicht erneut; Screenshots von Übersicht, Eingabe mit Tastatur und Querformat wurden visuell kontrolliert. Der separat angelegte Simulator wurde anschließend wieder gelöscht; Daten im normalen Browser und in vorhandenen Simulatoren wurden nicht verändert. Physische Android- und iPhone-Geräte wurden nicht geprüft.
+Der wiederverwendbare Test liegt in [tests/safari-ios](../tests/safari-ios/README.md). Er bestand am 9. November nach dem Einbau der Scroll-Hinweise erneut; Screenshots von Übersicht, Eingabe mit Tastatur und Querformat wurden visuell kontrolliert. Das war Safari im Simulator, keine installierte Home-Screen-App. Der separat angelegte Simulator wurde anschließend wieder gelöscht; Daten im normalen Browser und in vorhandenen Simulatoren wurden nicht verändert. Physische Android- und iPhone-Geräte wurden nicht geprüft.

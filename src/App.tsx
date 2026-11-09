@@ -12,6 +12,7 @@ import { useLinkPreview } from './lib/useLinkPreview'
 import { animate, closeDetails, dialogOpener, dismissDialog, useCardMotion, useHeightMotion } from './lib/motion'
 import { useCompactLayout } from './lib/useCompactLayout'
 import { useInstallPrompt } from './lib/useInstallPrompt'
+import { FormFields } from './lib/FormFields'
 
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
@@ -432,11 +433,11 @@ function CollectionToolsDialog({ query, sort, onClose, onApply }: { query: strin
   return <Dialog formLayout title="Suchen & sortieren" onClose={onClose}>
     <p className="dialog-intro">Finde genau den Wunsch, der den Nagel auf den Kopf trifft. Suche nach Name, Shop oder Hinweis und sortiere deine Liste.</p>
     <form onSubmit={event => { event.preventDefault(); void onApply(draftQuery, draftSort) }}>
-      <div className="form-fields"><fieldset>
+      <FormFields><fieldset>
         <label className="field">Wünsche durchsuchen<input autoFocus aria-label="Wünsche durchsuchen" value={draftQuery} onChange={event => setDraftQuery(event.target.value)} placeholder="Name, Shop oder Hinweis" inputMode="search" enterKeyHint="search" autoCapitalize="none" autoCorrect="off" /></label>
         <label className="field">Sortierung<span className="select-wrapper"><select aria-label="Wünsche sortieren" value={draftSort} onChange={event => setDraftSort(event.target.value as WishSort)}><option value="added">Reihenfolge der Liste</option><option value="newest">Neueste zuerst</option><option value="name">Name A–Z</option><option value="price-asc">Preis aufsteigend</option><option value="price-desc">Preis absteigend</option></select><ChevronDown size={16} /></span></label>
         <button type="button" className="text-button" onClick={() => { setDraftQuery(''); setDraftSort('added') }}><RotateCcw size={15} /> Suche und Sortierung zurücksetzen</button>
-      </fieldset></div>
+      </fieldset></FormFields>
       <div className="dialog-actions"><button type="button" className="button secondary" onClick={onClose}>Abbrechen</button><button className="button primary"><Search size={16} /> Ergebnisse anzeigen</button></div>
     </form>
   </Dialog>
@@ -471,7 +472,7 @@ function ListDialog({ list, onClose, onSave, onDelete }: { list: Wishlist | null
   async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); setError(''); try { await onSave({ title: title.trim(), description: description.trim(), emoji, visibility }) } catch (e) { setError(message(e)); setBusy(false) } }
   return <Dialog formLayout title={list ? 'Wunschliste bearbeiten' : 'Neue Wunschliste'} onClose={() => !busy && onClose()}>
     <p className="dialog-intro">{list ? 'Ändere Name, Beschreibung oder wer die Liste sehen darf.' : 'Ein neuer Anlass? Zeit für einen nagelneuen Wunschzettel. Gib deiner Liste einen Namen.'}</p>
-    <form onSubmit={submit}><div className="form-fields"><fieldset disabled={busy}>
+    <form onSubmit={submit}><FormFields><fieldset disabled={busy}>
       <label className="field">Name deiner Liste<input autoFocus required maxLength={100} value={title} onChange={e => setTitle(e.target.value)} placeholder="Zum Beispiel: Zum Geburtstag" pattern=".*\S.*" /></label>
       <label className="field">Beschreibung <span>optional</span><textarea aria-describedby="list-description-help" maxLength={1000} rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Zum Beispiel: Ideen für meinen Geburtstag" /></label>
       <p className="input-help" id="list-description-help">Die Beschreibung sehen auch die Personen, mit denen du die Liste teilst.</p>
@@ -480,7 +481,7 @@ function ListDialog({ list, onClose, onSave, onDelete }: { list: Wishlist | null
       <p key={visibility} className="field-help" id="list-visibility-help"><PrivacyIcon value={visibility} />{visibilityDescriptions[visibility]}</p>
       {list && list.visibility !== 'private' && visibility === 'private' && <p className="hint">Bestehende Freigabelinks funktionieren dann nicht mehr. Beim späteren Freigeben wird ein neuer Link erstellt.</p>}
       {error && <p role="alert" className="form-error">{error}</p>}
-    </fieldset></div><div className="dialog-actions">
+    </fieldset></FormFields><div className="dialog-actions">
       {onDelete && <button type="button" disabled={busy} className="text-button danger-text delete-list-action" onClick={onDelete}><Trash2 size={16} /> Liste löschen</button>}
       <button type="button" className="button secondary" disabled={busy} onClick={onClose}>Abbrechen</button>
       <button className="button primary" disabled={busy || !title.trim()}>{busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />} {list ? 'Speichern' : 'Liste erstellen'}</button>
@@ -529,7 +530,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   return <Dialog formLayout title={item ? 'Wunsch bearbeiten' : 'Wunsch hinzufügen'} onClose={() => !busy && onClose()}>
     <p className="dialog-intro">Füge den Link zur Produktseite ein. Titel und Bild laden automatisch, soweit der Shop es erlaubt. Du kannst die Angaben ändern.</p>
     <form onSubmit={submit}>
-      <div className="form-fields"><fieldset disabled={busy}>
+      <FormFields><fieldset disabled={busy}>
         <p className="form-destination">Speichern in <strong>{listTitle}</strong></p>
         <label className="field">Link zum Wunsch
           <input autoFocus required type="text" inputMode="url" aria-describedby="wish-link-help" autoCapitalize="none" autoCorrect="off" maxLength={2000} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://shop.de/dein-wunsch" />
@@ -557,7 +558,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
           </div><button type="button" className="text-button preview-retry" onClick={preview.reload} disabled={!preview.url || previewBusy}>{previewBusy ? <LoaderCircle className="spin" size={15} /> : <RotateCcw size={15} />} Shop-Vorschau neu laden</button></div>
         </details>
         {error && <p className="form-error" role="alert">{error}</p>}
-      </fieldset></div>
+      </fieldset></FormFields>
       <div className="dialog-actions">
         <p className="save-guidance" id="wish-save-help">{!preview.url ? 'Füge zuerst einen gültigen Shop-Link ein.' : !title.trim() ? previewBusy ? 'Titel wird geladen. Du kannst ihn auch selbst eintragen.' : 'Trage einen Titel für deinen Wunsch ein.' : 'Shop-Link und Titel sind ausgefüllt. Du kannst jetzt speichern.'}</p>
         <button type="button" className="button secondary" disabled={busy} onClick={onClose}>Abbrechen</button>
