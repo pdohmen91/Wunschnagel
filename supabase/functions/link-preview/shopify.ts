@@ -1,4 +1,24 @@
 import { imageUrl } from './helpers.ts'
+import { euroPrice } from './prices.ts'
+
+/** Shopify Ajax amounts are integers in minor units, never whole euros. */
+export function shopifyAmount(value: unknown, productUrl: URL): number | null {
+  if (!value || typeof value !== 'object') return null
+  const product = value as Record<string, unknown>
+  if (product.requires_selling_plan) return null
+  const variants = Array.isArray(product.variants) ? product.variants : []
+  const variantId = productUrl.searchParams.get('variant')
+  const amount = (input: unknown): number | null => typeof input === 'number' && Number.isSafeInteger(input) ? euroPrice(input / 100, 'EUR') : null
+  if (variantId) {
+    const variant = variants.find(entry => entry && typeof entry === 'object' && String(entry.id) === variantId)
+    return variant && !variant.requires_selling_plan ? amount(variant.price) : null
+  }
+  if (variants.length) {
+    const prices = variants.map(variant => variant && !variant.requires_selling_plan ? amount(variant.price) : null)
+    return prices[0] !== null && prices.every(price => price === prices[0]) ? prices[0] : null
+  }
+  return product.price_varies ? null : amount(product.price)
+}
 
 // The documented public Ajax Product API needs no account or API key.
 // Enable it only for reviewed stores; an unknown domain is never probed.
@@ -9,7 +29,7 @@ export function shopifyProductUrl(url: URL): URL | null {
   return new URL(`${match[1]}products/${match[2]}.js`, url.origin)
 }
 
-export function shopifyMetadata(value: unknown, productUrl: URL): { title: string; image_url: string; description: string } | null {
+export function shopifyMetadata(value: unknown, productUrl: URL): { title: string; image_url: string; description: string; price: number | null } | null {
   if (!value || typeof value !== 'object') return null
   const product = value as Record<string, unknown>
   if (!product.id || typeof product.title !== 'string' || !product.title.trim()) return null
@@ -29,5 +49,5 @@ export function shopifyMetadata(value: unknown, productUrl: URL): { title: strin
   if (!image && Array.isArray(product.images)) {
     for (const entry of product.images) { image = imageValue(entry); if (image) break }
   }
-  return { title: `${product.title}${variantsTitle}`.replace(/\s+/g, ' ').trim().slice(0, 200), image_url: image, description: '' }
+  return { title: `${product.title}${variantsTitle}`.replace(/\s+/g, ' ').trim().slice(0, 200), image_url: image, description: '', price: null }
 }

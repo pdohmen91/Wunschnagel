@@ -42,11 +42,12 @@ test('keeps a usable title when an image destination cannot be resolved publicly
   assert.equal(result.image_url, '')
 })
 
-test('stops downloading after the page head when its preview has an image', async () => {
+test('stops downloading after the page head when title, image and price are complete', async () => {
   let cancelled = false
-  const body = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('<head><title>Titel aus dem Head</title><meta property="og:image" content="https://images.shop.de/preview.jpg"></head>')) }, cancel() { cancelled = true } })
+  const body = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('<head><title>Titel aus dem Head</title><meta property="og:image" content="https://images.shop.de/preview.jpg"><meta property="product:price:amount" content="39.90"><meta property="product:price:currency" content="EUR"></head>')) }, cancel() { cancelled = true } })
   const result = await fetchShopPreview('https://www.thalia.de/produkt', { ...options, fetcher: async () => new Response(body, { headers: { 'Content-Type': 'text/html' } }) })
   assert.equal(result.title, 'Titel aus dem Head')
+  assert.equal(result.price, 39.9)
   assert.equal(cancelled, true)
 })
 

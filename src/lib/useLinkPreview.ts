@@ -14,11 +14,12 @@ export function useLinkPreview(input: string, repo: Pick<Repository, 'preview'>,
     if (!url || (!enabled && retry.url !== url)) return
     const controller = new AbortController()
     const timer = window.setTimeout(async () => {
-      setState({ url, data: null, status: 'loading', hint: 'Titel und Bild werden aus dem Shop geladen …' })
+      setState({ url, data: null, status: 'loading', hint: 'Titel, Bild und Preis werden aus dem Shop geladen …' })
       try {
         const data = await repo.preview(url, controller.signal, retry.url === url)
         if (controller.signal.aborted) return
-        setState({ url, data, status: 'done', hint: data.image_url && data.title ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : data.image_url ? 'Bild geladen. Bitte ergänze noch den Titel für deinen Wunsch.' : data.title ? 'Titel geladen. Der Shop liefert kein verwendbares Bild. Du kannst unter „Preis & Bild-Link ergänzen“ eine Bildadresse eintragen.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.' })
+        const summary = data.image_url && data.title ? 'Shop-Daten geladen. Eigene Angaben bleiben erhalten.' : data.image_url ? 'Bild geladen. Bitte ergänze noch den Titel für deinen Wunsch.' : data.title ? 'Titel geladen. Der Shop liefert kein verwendbares Bild. Du kannst unter „Preis & Bild-Link ergänzen“ eine Bildadresse eintragen.' : 'Der Shop liefert keine Vorschau. Bitte gib den Titel manuell ein.'
+        setState({ url, data, status: 'done', hint: summary + (data.price == null ? ' Kein eindeutiger Euro-Preis gefunden; du kannst ihn selbst ergänzen.' : '') })
       } catch (error) {
         if (!controller.signal.aborted) setState({ url, data: null, status: 'error', hint: error instanceof Error ? error.message : 'Der Titel konnte nicht geladen werden. Bitte gib ihn manuell ein.' })
       }

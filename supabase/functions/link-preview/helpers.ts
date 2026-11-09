@@ -1,4 +1,5 @@
 import { PreviewError } from './errors.ts'
+import { euroPrice, productMatch, structuredPrice } from './prices.ts'
 
 /** Only public HTTPS destinations are allowed, including on each redirect. */
 export const DEFAULT_SHOP_HOSTS = [
@@ -55,9 +56,9 @@ export function destination(value: string): URL {
 }
 
 function decode(value: string): string {
-  return value.replace(/&(?:amp|quot|apos|lt|gt|nbsp|ndash|mdash|hellip|copy|reg|trade|#39|#(\d+)|#x([0-9a-f]+));/gi, (match, dec, hex) => {
+  return value.replace(/&(?:amp|quot|apos|lt|gt|nbsp|euro|ndash|mdash|hellip|copy|reg|trade|#39|#(\d+)|#x([0-9a-f]+));/gi, (match, dec, hex) => {
     if (dec || hex) { const code = parseInt(dec || hex, hex ? 16 : 10); return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : '' }
-    return ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&#39;': "'", '&lt;': '<', '&gt;': '>', '&nbsp;': ' ', '&ndash;': '–', '&mdash;': '—', '&hellip;': '…', '&copy;': '©', '&reg;': '®', '&trade;': '™' } as Record<string, string>)[match.toLowerCase()] || match
+    return ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&#39;': "'", '&lt;': '<', '&gt;': '>', '&nbsp;': ' ', '&euro;': '€', '&ndash;': '–', '&mdash;': '—', '&hellip;': '…', '&copy;': '©', '&reg;': '®', '&trade;': '™' } as Record<string, string>)[match.toLowerCase()] || match
   }).trim()
 }
 
@@ -81,7 +82,10 @@ function structuredProducts(html: string, base: string) {
     if (Array.isArray(value)) { for (const entry of value) visit(entry, depth + 1); return }
     const node = value as Record<string, unknown>
     if (typeof node['@id'] === 'string') {
-      try { references.set(new URL(node['@id'], base).href, node) } catch { /* Ignore invalid identifiers. */ }
+      try {
+        const key = new URL(node['@id'], base).href
+        if (Object.keys(node).length > Object.keys(references.get(key) || {}).length) references.set(key, node)
+      } catch { /* Ignore invalid identifiers. */ }
     }
     const types = Array.isArray(node['@type']) ? node['@type'] : [node['@type']]
     if (types.some(type => typeof type === 'string' && /(?:^|[/#])Product(?:Group)?$/.test(type))) products.push(node)
@@ -122,7 +126,24 @@ export function rejectChallengePage(html: string): void {
   }
 }
 
-export function metadata(html: string, base: string): { title: string; image_url: string; description: string } {
+function microdataPrice(html: string): number | null {
+  const prices: string[] = [], currencies: string[] = []
+  // Scripts can contain HTML templates unrelated to the displayed product.
+  const markup = html.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+  for (const match of markup.matchAll(/<([a-z][\w:-]*)\b[^>]{0,8000}>/gi)) {
+    const attrs = attributes(match[0])
+    const props = attrs.get('itemprop')?.toLowerCase().split(/\s+/) || []
+    if (!props.includes('price') && !props.includes('pricecurrency')) continue
+    const value = attrs.get('content') ?? attrs.get('value') ?? plainText(markup.slice(match.index! + match[0].length).match(/^[\s\S]{0,300}?(?=<\/)/)?.[0] || '')
+    if (props.includes('price')) prices.push(value)
+    if (props.includes('pricecurrency')) currencies.push(value)
+  }
+  if (!prices.length || new Set(currencies.map(value => value.toUpperCase())).size > 1) return null
+  const amounts = prices.map(value => euroPrice(value, currencies[0]))
+  return amounts[0] !== null && amounts.every(value => value === amounts[0]) ? amounts[0] : null
+}
+
+export function metadata(html: string, base: string): { title: string; image_url: string; description: string; price: number | null } {
   const tags = new Map<string, string>()
   for (const match of html.matchAll(/<meta\s+[^>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
@@ -136,13 +157,7 @@ export function metadata(html: string, base: string): { title: string; image_url
   }
   const { products, references } = structuredProducts(html, base)
   // Prefer the product whose URL belongs to the opened page over recommendations.
-  products.sort((a, b) => {
-    const matches = (product: Record<string, unknown>) => {
-      if (typeof product.url !== 'string') return 0
-      try { return Number(new URL(product.url, base).pathname === new URL(base).pathname) } catch { return 0 }
-    }
-    return matches(b) - matches(a)
-  })
+  products.sort((a, b) => productMatch(b.url ?? b['@id'], base) - productMatch(a.url ?? a['@id'], base))
   if (!image) for (const product of products) { image = structuredImage(product.image, base, references); if (image) break }
   if (!image) for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
     const attrs = attributes(match[0])
@@ -160,9 +175,22 @@ export function metadata(html: string, base: string): { title: string; image_url
   }
   const productTitle = products.find(product => typeof product.name === 'string')?.name as string | undefined
   const productDescription = products.find(product => typeof product.description === 'string')?.description as string | undefined
+  let canonical: string | undefined
+  for (const match of html.matchAll(/<link\b[^>]{0,8000}>/gi)) {
+    const attrs = attributes(match[0])
+    if (attrs.get('rel')?.toLowerCase().split(/\s+/).includes('canonical')) {
+      try { const url = new URL(attrs.get('href') || '', base); if (url.origin === new URL(base).origin) canonical = url.href } catch { /* Ignore malformed canonical URLs. */ }
+      break
+    }
+  }
+  const price = structuredPrice(products, base, references, canonical)
+    ?? euroPrice(tags.get('product:price:amount'), tags.get('product:price:currency'))
+    ?? euroPrice(tags.get('og:price:amount'), tags.get('og:price:currency'))
+    ?? microdataPrice(html)
   return {
     title: plainText(tags.get('og:title') || tags.get('twitter:title') || productTitle || html.match(/<title[^>]*>([\s\S]{0,2000}?)<\/title>/i)?.[1] || html.match(/<h1\b[^>]*>([\s\S]{0,8000}?)<\/h1>/i)?.[1] || '').slice(0, 200),
     image_url: image,
     description: plainText(tags.get('og:description') || tags.get('description') || productDescription || '').slice(0, 1000),
+    price,
   }
 }

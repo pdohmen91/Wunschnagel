@@ -289,6 +289,9 @@ h1, h2, h3, p { margin: 0; }
 .help-note strong { color: var(--ink); font-size: 14px; font-weight: 600; }
 .help-note p { color: #66543c; }
 .share-explanation { margin-block: 18px; }
+.shop-price-preview { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 10px; padding: 10px 12px; background: var(--paper); border-left: 3px solid var(--accent); font-size: 13px; }
+.shop-price-preview strong { margin-left: 6px; font-size: 15px; }
+.shop-price-preview small { display: block; margin-top: 4px; color: var(--muted); line-height: 1.5; }
 .share-mode { flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; padding: 4px; background: var(--paper); border: 1px solid #d1bfca; border-radius: 4px; }
 .share-mode button { min-height: 48px; padding: 8px; font-size: 14px; line-height: 1.35; border-radius: 3px; }
 .share-mode button[aria-pressed=true] { background: var(--ink); color: var(--surface); }

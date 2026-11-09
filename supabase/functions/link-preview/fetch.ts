@@ -1,6 +1,7 @@
 import { metadata, publicAddress, rejectChallengePage, shopDestination } from './helpers.ts'
 import { PreviewError, rejectShopStatus } from './errors.ts'
-import { shopifyMetadata, shopifyProductUrl } from './shopify.ts'
+import { shopifyAmount, shopifyMetadata, shopifyProductUrl } from './shopify.ts'
+import { euroPrice } from './prices.ts'
 
 export type PreviewFetchOptions = {
   allowedHosts: readonly string[]
@@ -51,6 +52,8 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
     let decoder: TextDecoder
     try { decoder = new TextDecoder(charset) } catch { decoder = new TextDecoder() }
     let text = '', bytes = 0, nextProbe = 65_536, headRead = false
+    const parameters = new URL(base).searchParams
+    const selectedVariant = ['variant', 'sku', 'product'].some(key => parameters.has(key))
     try {
       while (remainingBytes > 0) {
         signal.throwIfAborted()
@@ -66,13 +69,14 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
         if (headJustRead || bytes >= nextProbe) {
           nextProbe = bytes + 65_536
           const preview = metadata(text, base)
-          if (preview.title && preview.image_url) break
+          // Price data often appears after the head, alongside Product JSON-LD.
+          if (!selectedVariant && preview.title && preview.image_url && preview.price !== null) break
         }
       }
       return text + decoder.decode()
     } finally { await reader.cancel() }
   }
-  const usableImage = async (preview: { title: string; image_url: string; description: string }) => {
+  const usableImage = async (preview: { title: string; image_url: string; description: string; price: number | null }) => {
     if (preview.image_url) {
       try { await checkDns(new URL(preview.image_url)) } catch { preview.image_url = '' }
     }
@@ -92,7 +96,24 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
       let data: unknown = null
       try { data = JSON.parse(body) } catch { /* Fall back to HTML if the response isn't product JSON. */ }
       const preview = shopifyMetadata(data, product)
-      if (preview) return usableImage(preview)
+      if (preview) {
+        await usableImage(preview)
+        const amount = shopifyAmount(data, product)
+        if (amount !== null && remainingBytes > 0) {
+          // Product JSON omits the presentment currency. Shopify documents the
+          // read-only, anonymous cart endpoint as the way to identify it.
+          // Never send visitor cookies, never add anything to a cart.
+          const cartUrl = new URL(productApi.href.replace(/\/products\/[^/]+\.js$/, '/cart.js'))
+          try {
+            const { response: cart, url: cartBase } = await trustedFetch(cartUrl, 'application/json')
+            if (cart.ok && /(?:application\/(?:json|javascript)|text\/javascript)/i.test(cart.headers.get('content-type') || '')) {
+              const currency = JSON.parse(await readBody(cart, cartBase.href))?.currency
+              preview.price = euroPrice(amount, currency)
+            } else await cart.body?.cancel()
+          } catch { /* Missing currency must not discard a useful title/image. */ }
+        }
+        return preview
+      }
     }
   }
 
@@ -106,6 +127,6 @@ export async function fetchShopPreview(input: string, options: PreviewFetchOptio
   const html = await readBody(response, url.href, true)
   rejectChallengePage(html)
   const preview = metadata(html, url.href)
-  if (!preview.title && !preview.image_url) throw new PreviewError('no_metadata', 'Der Shop liefert keine auslesbaren Produktdaten. Du kannst Titel und Bild selbst ergänzen.')
+  if (!preview.title && !preview.image_url && preview.price === null) throw new PreviewError('no_metadata', 'Der Shop liefert keine auslesbaren Produktdaten. Du kannst Titel, Bild und Preis selbst ergänzen.')
   return usableImage(preview)
 }

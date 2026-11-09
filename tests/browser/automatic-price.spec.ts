@@ -1,0 +1,73 @@
+import { expect, test } from '@playwright/test'
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Wunsch hinzufügen', exact: true }).click()
+})
+
+test('imports a euro price, shows it before expanding optional fields and persists it', async ({ page }) => {
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: 'Automatischer Preis', image_url: '', description: '', price: 39.9 } }))
+  await page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true }).fill('https://www.thalia.de/produkt')
+  const pricePreview = page.locator('.shop-price-preview')
+  await expect(pricePreview).toContainText('39,90')
+  await expect(pricePreview).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Preis in €' })).not.toBeVisible()
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  const wish = page.getByRole('article').filter({ hasText: 'Automatischer Preis' })
+  await expect(wish.locator('.price')).toContainText('39,90')
+  await page.reload()
+  await expect(wish.locator('.price')).toContainText('39,90')
+})
+
+test('a late shop response preserves a custom price and lets the user explicitly adopt the shop price', async ({ page }) => {
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/__api/link-preview', async route => { await pending; await route.fulfill({ json: { title: 'Ein Wunsch', image_url: '', description: '', price: 39.9 } }) })
+  await page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true }).fill('https://www.thalia.de/produkt')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('werden aus dem Shop geladen')
+  await page.locator('summary').filter({ hasText: 'Preis & Bild-Link ergänzen' }).click()
+  const price = page.getByRole('textbox', { name: 'Preis in €' })
+  await price.fill('25,00')
+  release()
+  await expect(page.getByRole('button', { name: 'Shop-Preis übernehmen', exact: true })).toBeVisible()
+  await expect(price).toHaveValue('25,00')
+  await page.getByRole('button', { name: 'Shop-Preis übernehmen', exact: true }).click()
+  await expect(price).toHaveValue('39,9')
+  await price.fill('')
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  await expect(page.getByRole('article').filter({ hasText: 'Ein Wunsch' }).locator('.price')).toContainText('Kein Preis angegeben')
+})
+
+test('changing links discards only an untouched imported price, including a zero price', async ({ page }) => {
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: route.request().postDataJSON().url.endsWith('/first') ? 'Erster Wunsch' : 'Neuer Wunsch', image_url: '', description: '', price: route.request().postDataJSON().url.endsWith('/first') ? 0 : null } }))
+  const link = page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true })
+  await link.fill('https://www.thalia.de/first')
+  await expect(page.locator('.shop-price-preview')).toContainText('0,00')
+  await page.locator('summary').filter({ hasText: 'Preis & Bild-Link ergänzen' }).click()
+  const price = page.getByRole('textbox', { name: 'Preis in €' })
+  await expect(price).toHaveValue('0')
+  await link.fill('https://www.thalia.de/second')
+  await expect(price).toHaveValue('')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('Kein eindeutiger Euro-Preis')
+  await expect(page.locator('.shop-price-preview')).toHaveCount(0)
+})
+
+test('saved prices stay unchanged when refreshing and a missing price can be loaded later', async ({ page }) => {
+  let calls = 0
+  await page.route('**/__api/link-preview', route => route.fulfill({ json: { title: 'Preis erneut laden', image_url: '', description: '', price: ++calls === 1 ? null : 45 } }))
+  await page.getByRole('textbox', { name: 'Link zum Wunsch', exact: true }).fill('https://www.thalia.de/produkt')
+  await expect(page.getByRole('dialog').getByRole('status')).toContainText('Kein eindeutiger Euro-Preis')
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  const wish = page.getByRole('article').filter({ hasText: 'Preis erneut laden' })
+  await wish.locator('summary').click()
+  await wish.getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Preis in €' })).toHaveValue('45')
+  await page.getByRole('textbox', { name: 'Preis in €' }).fill('30')
+  await page.getByRole('button', { name: 'Wunsch speichern', exact: true }).click()
+  await expect(wish.locator('.price')).toContainText('30,00')
+  await wish.locator('summary').click()
+  await wish.getByRole('button', { name: 'Bearbeiten', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Preis in €' })).toHaveValue('30')
+  await expect(page.getByRole('button', { name: 'Shop-Preis übernehmen', exact: true })).toBeVisible()
+})

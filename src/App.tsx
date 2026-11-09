@@ -562,8 +562,10 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   const [error, setError] = useState('')
   const customTitle = useRef(Boolean(item?.title))
   const customImage = useRef(Boolean(item?.image_url))
+  const customPrice = useRef(item?.price != null)
   const sharedTitle = useRef('')
-  const preview = useLinkPreview(url, repo, !item || url !== item.url || !item.image_url)
+  const preview = useLinkPreview(url, repo, !item || url !== item.url || !item.image_url || item.price == null)
+  const shopPrice = typeof preview.data?.price === 'number' && Number.isFinite(preview.data.price) && preview.data.price >= 0 && preview.data.price <= 999999.99 ? preview.data.price : null
   const previewBusy = preview.status === 'loading'
   const previewImage = image || (preview.url === item?.url ? item.image_url : '')
   const [imageFailed, setImageFailed] = useState(false)
@@ -572,13 +574,15 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   useEffect(() => {
     if (!customTitle.current) setTitle(sharedTitle.current)
     if (!customImage.current) setImage('')
+    if (!customPrice.current) setPrice('')
   }, [preview.url])
 
   useEffect(() => {
     if (!preview.data) return
     if (!customTitle.current && preview.data.title) setTitle(preview.data.title.slice(0, 200))
     if (!customImage.current && preview.data.image_url) setImage(preview.data.image_url)
-  }, [preview.data])
+    if (!customPrice.current && shopPrice !== null) setPrice(shopPrice.toString().replace('.', ','))
+  }, [preview.data, shopPrice])
 
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError('')
@@ -595,7 +599,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   }
 
   return <Dialog formLayout title={item ? 'Wunsch bearbeiten' : 'Wunsch hinzufügen'} onClose={() => !busy && onClose()}>
-    <p className="dialog-intro">Füge den Link zur Produktseite ein. Titel und Bild laden automatisch, soweit der Shop es erlaubt. Du kannst die Angaben ändern.</p>
+    <p className="dialog-intro">Füge den Link zur Produktseite ein. Titel, Bild und Euro-Preis laden automatisch, soweit der Shop es erlaubt. Du kannst die Angaben ändern.</p>
     <form onSubmit={submit}>
       <FormFields><fieldset disabled={busy}>
         <p className="form-destination">Speichern in <strong>{listTitle}</strong></p>
@@ -617,6 +621,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
         {previewImage && <div className="product-preview">{imageFailed ? <Gift size={24} aria-label="Bild nicht erreichbar" /> : <img src={previewImage} alt="Bildvorschau zum Wunsch" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}<span>Bildvorschau</span></div>}
         </div>
         {preview.hint && <p key={preview.status} className="preview-hint" role="status">{preview.hint}</p>}
+        {shopPrice !== null && <div className="shop-price-preview"><p>Shop-Preis <strong>{money.format(shopPrice)}</strong><small>{customPrice.current ? 'Dein eingetragener Preis bleibt erhalten.' : 'Übernommen · Preise können sich ändern.'}</small></p>{customPrice.current && (!price.trim() || Number(price.replace(',', '.')) !== shopPrice) && <button type="button" className="text-button" onClick={() => { customPrice.current = true; setPrice(shopPrice.toString().replace('.', ',')) }}>Shop-Preis übernehmen <ArrowDownToLine size={14} /></button>}</div>}
         {preview.data?.title && customTitle.current && title !== preview.data.title && <button type="button" className="text-button preview-retry" onClick={() => { setTitle(preview.data!.title.slice(0, 200)); customTitle.current = true }}>Shop-Titel übernehmen <ArrowDownToLine size={14} /></button>}
         {preview.data?.image_url && customImage.current && image !== preview.data.image_url && <button type="button" className="text-button preview-retry" onClick={() => { setImage(preview.data!.image_url); customImage.current = true }}>Shop-Bild übernehmen <ArrowDownToLine size={14} /></button>}
         {preview.status === 'error' && <button type="button" className="text-button preview-retry" onClick={preview.reload}><RotateCcw size={15} /> Erneut versuchen</button>}
@@ -638,8 +643,8 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
 
         <details className="optional-fields" open={item !== null}>
           <summary>Preis &amp; Bild-Link ergänzen <span>optional</span><ChevronDown size={16} /></summary>
-          <div className="extra-wish-fields"><p className="input-help">Du kannst einen ungefähren Preis angeben oder das Bild durch eine andere Bildadresse ersetzen. Beide Felder dürfen leer bleiben.</p><div className="form-row">
-            <label className="field price-field">Preis in € <span>optional</span><input inputMode="decimal" maxLength={12} value={price} onChange={e => setPrice(e.target.value)} placeholder="29,90" /></label>
+          <div className="extra-wish-fields"><p className="input-help">Ein erkannter Euro-Preis wird automatisch übernommen. Du kannst ihn ändern oder entfernen und eine andere Bildadresse eintragen. Beide Felder dürfen leer bleiben.</p><div className="form-row">
+            <label className="field price-field">Preis in € <span>optional</span><input inputMode="decimal" maxLength={12} value={price} onChange={e => { customPrice.current = true; setPrice(e.target.value) }} placeholder="29,90" /></label>
             <label className="field">Bild-Link <span>optional</span><input type="url" autoCapitalize="none" autoCorrect="off" maxLength={2000} value={image} onChange={e => { customImage.current = true; setImage(e.target.value) }} placeholder="https://shop.de/bild.jpg" /></label>
           </div><button type="button" className="text-button preview-retry" onClick={preview.reload} disabled={!preview.url || previewBusy}>{previewBusy ? <LoaderCircle className="spin" size={15} /> : <RotateCcw size={15} />} Shop-Vorschau neu laden</button></div>
         </details>

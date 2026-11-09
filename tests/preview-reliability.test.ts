@@ -73,7 +73,7 @@ test('falls back to HTML for a missing product API but never retries a rate limi
 
 test('successful preview cache is bounded, isolated, expires and can be invalidated', () => {
   const cache = new PreviewCache(), otherAccount = new PreviewCache()
-  const data = { title: 'Produkt', image_url: 'https://fivi.gg/photo.jpg', description: '' }
+  const data = { title: 'Produkt', image_url: 'https://fivi.gg/photo.jpg', description: '', price: 29.9 }
   cache.put('one', data, 100)
   const loaded = cache.get('one', 101)!
   loaded.title = 'Verändert'
@@ -86,6 +86,8 @@ test('successful preview cache is bounded, isolated, expires and can be invalida
   assert.equal(cache.get('40', 101), null)
   cache.put('partial', { ...data, image_url: '' }, 100)
   assert.equal(cache.get('partial', 101), null)
+  cache.put('without-price', { ...data, price: null }, 100)
+  assert.equal(cache.get('without-price', 101), null)
 })
 
 test('an oversized invalid API response cannot trigger more downloads', async () => {

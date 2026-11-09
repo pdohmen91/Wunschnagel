@@ -16,7 +16,7 @@ test('shop allowlist uses exact hosts and cannot be bypassed with suffixes or su
   for (const value of ['https://www.amazon.de.attacker.com', 'https://attacker.amazon.de', 'https://attacker.com']) assert.throws(() => shopDestination(value, DEFAULT_SHOP_HOSTS))
 })
 test('metadata handles attribute order, relative images, entities and fallback titles', () => {
-  assert.deepEqual(metadata(`<html><head><meta content="Ein Wunsch &amp; mehr" property="og:title"><meta property='og:image' content='/product.jpg'><meta name="description" content="Für &#100;ich"></head></html>`, 'https://shop.de/product'), { title: 'Ein Wunsch & mehr', image_url: 'https://shop.de/product.jpg', description: 'Für dich' })
+  assert.deepEqual(metadata(`<html><head><meta content="Ein Wunsch &amp; mehr" property="og:title"><meta property='og:image' content='/product.jpg'><meta name="description" content="Für &#100;ich"></head></html>`, 'https://shop.de/product'), { title: 'Ein Wunsch & mehr', image_url: 'https://shop.de/product.jpg', description: 'Für dich', price: null })
   assert.equal(metadata('<title>Mein Buch</title>', 'https://shop.de/').title, 'Mein Buch')
   assert.equal(metadata('<meta property="og:image" content="javascript:alert(1)">', 'https://shop.de/').image_url, '')
   assert.equal(metadata('<meta property="og:image" content="https://127.0.0.1/track">', 'https://shop.de/').image_url, '')
@@ -31,7 +31,7 @@ test('finds Amazon product images in the body rather than unrelated page images'
 
 test('reads Product and ProductGroup images from nested JSON-LD safely', () => {
   const html = `<script type="application/ld+json">${JSON.stringify({ '@graph': [{ '@type': 'Organization', image: 'https://images.shop.de/logo.png' }, { '@type': ['Thing', 'Product'], name: 'Mein Produkt', description: 'Eine Idee', image: [{ '@type': 'ImageObject', contentUrl: '/product.jpg' }] }] })}</script>`
-  assert.deepEqual(metadata(html, 'https://shop.de/item'), { title: 'Mein Produkt', description: 'Eine Idee', image_url: 'https://shop.de/product.jpg' })
+  assert.deepEqual(metadata(html, 'https://shop.de/item'), { title: 'Mein Produkt', description: 'Eine Idee', image_url: 'https://shop.de/product.jpg', price: null })
   assert.equal(metadata('<script type="application/ld+json">{"@type":"https://schema.org/ProductGroup","image":["javascript:alert(1)","https://127.0.0.1/internal","/safe.jpg"]}</script>', 'https://shop.de/').image_url, 'https://shop.de/safe.jpg')
   assert.doesNotThrow(() => metadata('<script type="application/ld+json">invalid</script><script type="application/ld+json">null</script>', 'https://shop.de/'))
 })

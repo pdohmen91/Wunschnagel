@@ -10,7 +10,7 @@ export class PreviewCache {
   }
   put(url: string, data: Preview, now = Date.now()): void {
     // Partial results must be retryable immediately; keep complete previews briefly.
-    if (!data.title || !data.image_url) return
+    if (!data.title || !data.image_url || data.price == null) return
     this.entries.delete(url)
     this.entries.set(url, { data: structuredClone(data), expires: now + 5 * 60_000 })
     if (this.entries.size > 40) this.entries.delete(this.entries.keys().next().value!)
