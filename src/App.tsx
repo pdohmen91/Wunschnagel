@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { CSSProperties, FormEvent, KeyboardEvent, ReactNode } from 'react'
+import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
-import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort } from './domain'
+import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort, ShareRoute } from './domain'
 import { authCallbackWarning, supabase } from './lib/client'
 import { cloudRepository, demoRepository } from './lib/repository'
 import type { Repository } from './lib/repository'
+import { ensureGiftReceipt, forgetGiftReceipt, giftReceipt } from './lib/giftReceipts'
 import { useLinkPreview } from './lib/useLinkPreview'
 import { animate, closeDetails, dialogOpener, dismissDialog, useCardMotion, useHeightMotion } from './lib/motion'
 import { useCompactLayout } from './lib/useCompactLayout'
@@ -32,13 +33,15 @@ export default function App() {
   const [lists, setLists] = useState<Wishlist[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [sharedList, setSharedList] = useState<Wishlist | null>(null)
+  const [canPurchase, setCanPurchase] = useState(false)
+  const [giftTarget, setGiftTarget] = useState<{ itemId: string; url?: string; label?: string } | null>(null)
   const [items, setItems] = useState<Wish[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all')
   const [sort, setSort] = useState<WishSort>('added')
-  const [modal, setModal] = useState<'list' | 'edit-list' | 'item' | 'share' | 'install' | 'help' | 'lists' | 'info' | 'tools' | 'preview' | null>(null)
+  const [modal, setModal] = useState<'list' | 'edit-list' | 'item' | 'share' | 'install' | 'help' | 'lists' | 'info' | 'tools' | 'preview' | 'gift' | null>(null)
   const [editItem, setEditItem] = useState<Wish | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'item' | 'list'; id: string; title: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -53,7 +56,7 @@ export default function App() {
   const isOwner = canEdit && (demo || selected?.owner_id === user?.id)
 
   useEffect(() => {
-    const onHash = () => { setHash(window.location.hash); setError('') }
+    const onHash = () => { setHash(window.location.hash); setError(''); setGiftTarget(null); setModal(current => current === 'gift' ? null : current) }
     const onOnline = () => setOnline(navigator.onLine)
     const closeMenus = (event: PointerEvent) => {
       if (event.target instanceof Element && !event.target.closest('.card-menu')) {
@@ -131,6 +134,7 @@ export default function App() {
   useEffect(() => {
     const current = ++requestId.current
     setItems([])
+    setCanPurchase(false)
     setError('')
     if (invite) { setSharedList(null); setLoading(false); return }
     if (route) {
@@ -140,6 +144,7 @@ export default function App() {
       cloudRepository('').shared(route.kind, route.value).then(data => {
         if (requestId.current !== current) return
         setSharedList(data.list)
+        setCanPurchase(data.can_purchase === true)
         setItems(data.items)
       }).catch(e => { if (requestId.current === current) setError(message(e)) }).finally(() => { if (requestId.current === current) setLoading(false) })
       return
@@ -181,6 +186,31 @@ export default function App() {
     document.addEventListener('visibilitychange', onFocus)
     return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus) }
   }, [repo, demo, user, route, invite, selectedId, modal, busy])
+
+  useEffect(() => {
+    if (!route || !supabase || modal || !authReady) return
+    let active = true, pending = false
+    const version = requestId.current
+    async function sync() {
+      if (pending || document.visibilityState === 'hidden') return
+      pending = true
+      try {
+        const data = await cloudRepository('').shared(route!.kind, route!.value)
+        if (!active || version !== requestId.current) return
+        setSharedList(data.list); setItems(data.items); setCanPurchase(data.can_purchase === true)
+      } catch { /* Existing content remains; actions recheck access in the database. */ }
+      finally { pending = false }
+    }
+    const timer = window.setInterval(() => void sync(), 10000)
+    const onFocus = () => void sync()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus) }
+  }, [route, modal, authReady, user?.id])
+
+  function openGift(item: Wish, url?: string, label?: string) {
+    setGiftTarget({ itemId: item.id, url, label }); setModal('gift')
+  }
 
   async function refreshItems(listId: string) {
     const currentRequest = requestId.current
@@ -314,9 +344,10 @@ export default function App() {
               {!compact && listActions && <div className="heading-actions">{listActions}</div>}
             </section>
             {!compact && <div className={`usage-guide ${canEdit ? 'own-list-guide' : ''}`}>
-              <p>{canEdit ? <>Hier hängen deine Geschenkideen. Über <strong>„Wunsch hinzufügen“</strong> fügst du einen Shop-Link ein.</> : <>Öffne <strong>„Zum Shop“</strong>, um dir ein Geschenk anzusehen. Einkäufe werden hier nicht reserviert.</>}</p>
+              <p>{canEdit ? <>Hier hängen deine Geschenkideen. Über <strong>„Wunsch hinzufügen“</strong> fügst du einen Shop-Link ein.</> : <>Öffne <strong>„Zum Shop“</strong>, um dir ein Geschenk anzusehen. Markiere ein gekauftes Geschenk anschließend als gekauft – ohne Anmeldung. Der Besitzer sieht diese Markierung nicht.</>}</p>
               <button className="text-button" onClick={() => setModal('help')}><CircleHelp size={17} /> So funktioniert’s</button>
             </div>}
+            {route && canPurchase && <p className="guest-gift-guide"><Gift size={17} /><span>Schon gekauft? Markiere das Geschenk hier, damit es niemand doppelt kauft. Ohne Anmeldung und für den Besitzer verborgen.</span></p>}
             {!loading && items.length === 0 ? <section className="list-empty">
               <span className="empty-icon"><WishMark /></span>
               <h2>Noch keine Wünsche</h2>
@@ -338,7 +369,7 @@ export default function App() {
               </div>}
               {items.length > 0 && <p className={`status-explanation ${compact ? 'screen-reader-only' : ''}`} id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
               {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
-              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
+              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
               {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
             </>}
             {items.length > 0 && <footer className="list-footer"><span key={`${openItems.length}:${items.length}`}>{openItems.length} offen <span className="meta-dot">·</span> {items.length - openItems.length} erfüllt</span>{total > 0 && <span>Offene Wünsche: ca. {money.format(total)}</span>}</footer>}
@@ -373,6 +404,12 @@ export default function App() {
     {modal === 'install' && <Dialog title="App auf dem Handy installieren" onClose={closeModal}><p className="dialog-intro">Gib Wunschnagel einen festen Platz auf deinem Startbildschirm. So öffnet sich die Web-App wie eine eigene App.</p><div className="install-step"><span>1</span><div><strong>Auf dem iPhone</strong><p>Öffne die veröffentlichte App in Safari, tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.</p><p>Öffne Wunschnagel danach über das neue App-Symbol und melde dich dort einmal an. App und Browser speichern die Anmeldung getrennt. Mit demselben Google-Konto erreichst du in beiden dieselben Listen.</p></div></div><div className="install-step"><span>2</span><div><strong>Auf Android</strong><p>Öffne die veröffentlichte App in Chrome. Wähle im Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div><div className="hint"><Info size={17} /><span>Für die Installation brauchst du eine HTTPS-Adresse. Gemeinsame Listen und Shop-Vorschauen benötigen Internet.</span></div></Dialog>}
     {deleteTarget && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete(); setNotice(deleteTarget.kind === 'list' ? 'Wunschliste gelöscht. Platz für nagelneue Ideen.' : 'Wunsch gelöscht. Platz für nagelneue Ideen.') })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
     {compact && listActions && createPortal(<nav className="mobile-action-bar" aria-label="Aktionen für die Wunschliste">{listActions}</nav>, document.body)}
+    {modal === 'gift' && route && selected && giftTarget && canPurchase && <GiftDialog key={`${selected.id}:${giftTarget.itemId}`} item={items.find(item => item.id === giftTarget.itemId) || null} listId={selected.id} route={route} repo={cloudRepository('')} destination={giftTarget.url} destinationLabel={giftTarget.label} onClose={closeModal} onRefresh={async () => {
+      const version = requestId.current
+      const data = await cloudRepository('').shared(route.kind, route.value)
+      if (version !== requestId.current) return
+      setItems(data.items); setSharedList(data.list); setCanPurchase(data.can_purchase === true)
+    }} />}
     <MotionToast message={notice} onClose={() => setNotice('')} />
   </div>
 }
@@ -404,8 +441,13 @@ function WishMark() {
   return <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 10h19l7 8v19H8z" stroke="currentColor" strokeWidth="2" /><path d="M27 10v8h7M8 32h26" stroke="currentColor" strokeWidth="2" /><path d="M21 29s-7-4.2-7-8a3.5 3.5 0 0 1 7-1 3.5 3.5 0 0 1 7 1c0 3.8-7 8-7 8Z" fill="currentColor" /><path d="M20 3v12m-4-12h8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
 }
 
-function WishCard({ item, number, canEdit, busy, onEdit, onDelete, onFulfill }: { item: Wish; number: number; canEdit: boolean; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void }) {
+function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void }) {
   const offers = offerSearch(item)
+  function followGift(event: MouseEvent<HTMLAnchorElement>, url: string, label: string) {
+    if (!canPurchase) return
+    event.preventDefault()
+    onOpenGift(url, label)
+  }
   const [imageFailed, setImageFailed] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [notesOverflow, setNotesOverflow] = useState(false)
@@ -434,11 +476,12 @@ function WishCard({ item, number, canEdit, busy, onEdit, onDelete, onFulfill }: 
   return <article data-wish-id={item.id} className={`wish-card ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
       <span className="wish-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
-      <a className="wish-image-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Zum Shop: ${item.title}`}>
+      <a className="wish-image-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Zum Shop: ${item.title}`} onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>
         {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
       </a>
       {celebrate && <span className="completion-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--burst-angle': `${index * 45}deg` } as CSSProperties} />)}</span>}
       {item.fulfilled && <span className="fulfilled-badge"><Check size={13} /> Erfüllt</span>}
+      {canPurchase && item.purchased && !item.fulfilled && <span className="gift-badge"><CheckCheck size={14} /> Bereits gekauft</span>}
     </div>
     <div className="wish-body">
       <span className="shop-name"><span className="shop-dot" />{hostname(item.url)}<ArrowUpRight size={12} /></span>
@@ -447,10 +490,13 @@ function WishCard({ item, number, canEdit, busy, onEdit, onDelete, onFulfill }: 
       {(notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
       <div className="wish-bottom">
         <span className={`price ${item.price === null ? 'empty-price' : ''}`}>{item.price !== null ? money.format(item.price) : 'Kein Preis angegeben'}{item.price !== null && <small>ca.</small>}</span>
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link">Zum Shop <ExternalLink size={13} /></a>
-        {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offers.label} bei ${offers.provider} für ${item.title}`} title={`${offers.provider}: ${offers.term}`}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
+        <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>
+        {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offers.label} bei ${offers.provider} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
       </div>
     </div>
+    {canPurchase && !item.fulfilled && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
+      {item.purchased ? <><p><CheckCheck size={16} /><strong>Bereits gekauft</strong></p><small>Bitte nicht noch einmal schenken.</small>{giftReceipt(item.id) && <button className="text-button" onClick={() => onOpenGift()}>Kaufmarkierung verwalten</button>}</> : <button className="button secondary" onClick={() => onOpenGift()}><Gift size={16} /> Als gekauft markieren</button>}
+    </div>}
     {canEdit && <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
       <summary aria-label={`Optionen für ${item.title}`}><Pencil size={13} /><span>Bearbeiten</span></summary>
       <div onClick={e => { const details = e.currentTarget.closest('details'); if (details) void closeDetails(details) }}>
@@ -461,6 +507,72 @@ function WishCard({ item, number, canEdit, busy, onEdit, onDelete, onFulfill }: 
       </div>
     </details>}
   </article>
+}
+
+function GiftDialog({ item, listId, route, repo, destination, destinationLabel, onClose, onRefresh }: { item: Wish | null; listId: string; route: ShareRoute; repo: Repository; destination?: string; destinationLabel?: string; onClose: () => Promise<void>; onRefresh: () => Promise<void> }) {
+  const [checking, setChecking] = useState(true)
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
+  const [receipt, setReceipt] = useState(() => item ? giftReceipt(item.id) : null)
+  const refresh = useRef(onRefresh)
+  refresh.current = onRefresh
+  async function check() {
+    setChecking(true); setError('')
+    try { await refresh.current() } catch { setError('Der aktuelle Kaufstatus konnte nicht geladen werden. Bitte versuche es erneut.') }
+    finally { setChecking(false) }
+  }
+  useEffect(() => { void check() }, [])
+  useEffect(() => {
+    const onFocus = () => { if (document.visibilityState !== 'hidden') void check() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus) }
+  }, [])
+  async function mark() {
+    if (!item) return
+    setWorking(true); setError(''); setStatus('')
+    try {
+      const proof = ensureGiftReceipt(item.id)
+      const result = await repo.purchase(listId, item.id, route, proof)
+      if (result === 'already_purchased') {
+        forgetGiftReceipt(item.id); setReceipt(null)
+        setStatus('Jemand anderes hat dieses Geschenk bereits als gekauft markiert. Bitte stimmt euch ab, falls du es ebenfalls gekauft hast.')
+      } else {
+        setReceipt(proof)
+        setStatus('Festgenagelt! Andere Gäste sehen jetzt „Bereits gekauft“. Für den Besitzer bleibt alles unverändert.')
+      }
+      await refresh.current()
+    } catch (e) { setError(message(e)) }
+    finally { setWorking(false) }
+  }
+  async function undo() {
+    if (!item || !receipt) return
+    setWorking(true); setError(''); setStatus('')
+    try {
+      const removed = await repo.undoPurchase(listId, item.id, route, receipt)
+      forgetGiftReceipt(item.id); setReceipt(null)
+      setStatus(removed ? 'Kaufmarkierung aufgehoben. Andere können dieses Geschenk wieder auswählen.' : 'Diese Markierung wurde nicht von diesem Browser gesetzt oder ist schon aufgehoben.')
+      await refresh.current()
+    } catch (e) { setError(message(e)) }
+    finally { setWorking(false) }
+  }
+  const blocked = checking || working || !!error || !item || item.fulfilled
+  return <Dialog title={item?.purchased ? 'Dieses Geschenk ist schon gekauft' : destination ? 'Denk nach dem Kauf daran' : 'Geschenk gekauft?'} onClose={() => working ? Promise.resolve() : onClose()}>
+    <p className="gift-dialog-product">{item?.title || 'Dieser Wunsch ist nicht mehr verfügbar.'}</p>
+    <p className="dialog-intro">{item?.purchased ? 'Andere Gäste sehen dieses Geschenk bereits als gekauft. Bitte schenke es nicht doppelt.' : 'Wenn du dieses Geschenk kaufst, komm danach hierher zurück und wähle „Als gekauft markieren“.'}</p>
+    <p className="gift-privacy"><LockKeyhole size={16} /><span>Ohne Anmeldung. Für den angemeldeten Listenbesitzer verborgen.</span></p>
+    {!item?.purchased && <p className="input-help">Öffnen markiert noch nichts. Erst nach dem Kauf bestätigen.</p>}
+    {checking && <p className="input-help" role="status"><LoaderCircle size={15} className="spin" /> Kaufstatus wird geprüft …</p>}
+    {status && <p className="gift-feedback" role="status">{status}</p>}
+    {error && <div className="form-error" role="alert"><p>{error}</p><button className="text-button" disabled={working || checking} onClick={() => void check()}>Erneut prüfen</button></div>}
+    {item?.fulfilled && <p className="input-help">Dieser Wunsch wurde bereits erfüllt.</p>}
+    <div className="dialog-actions gift-dialog-actions">
+      {destination && !checking && !error && item && <a className={`button ${item.purchased ? 'secondary' : 'primary'}`} href={destination} target="_blank" rel="noopener noreferrer">{item.purchased ? 'Trotzdem ansehen' : destinationLabel || 'Zum Shop'}<ExternalLink size={16} /></a>}
+      {item?.purchased ? receipt && <button className="button secondary" disabled={blocked} onClick={() => void undo()}><RotateCcw size={15} /> Meine Markierung aufheben</button> : <button className={`button ${destination ? 'secondary' : 'primary'}`} disabled={blocked} onClick={() => void mark()}><CheckCheck size={16} /> Als gekauft markieren</button>}
+      <button className="text-button" disabled={working} onClick={() => void onClose()}>Zurück zur Liste</button>
+    </div>
+  </Dialog>
 }
 
 function Dialog({ title, children, onClose, formLayout = false }: { title: string; children: ReactNode; onClose: () => void; formLayout?: boolean }) {
@@ -515,14 +627,14 @@ function HelpDialog({ guest, demo, onClose }: { guest: boolean; demo: boolean; o
       {guest ? <>
         <li><strong>Wünsche ansehen</strong><p>Lies die Hinweise zu Größe, Farbe oder Ausführung. „Offen“ zeigt, was sich die Person noch wünscht.</p></li>
         <li><strong>Im Shop öffnen</strong><p>„Zum Shop“ öffnet die Produktseite in einem neuen Tab. Ein Kauf findet direkt beim jeweiligen Shop statt.</p></li>
-        <li><strong>Geschenke absprechen</strong><p>Hier kannst du nichts reservieren. Sprich dich mit anderen Schenkenden ab, damit nichts doppelt gekauft wird.</p></li>
+        <li><strong>Geschenke absprechen</strong><p>Wenn du das Geschenk gekauft hast, wähle „Als gekauft markieren“. Andere Gäste sehen dann „Bereits gekauft“, der angemeldete Besitzer sieht keinen Kaufstatus. Dafür brauchst du kein Konto. Eine eigene Markierung kannst du in diesem Browser wieder aufheben.</p></li>
       </> : <>
         <li><strong>Liste auswählen oder anlegen</strong><p>Öffne auf dem Handy oben „Listen“. Dort kannst du eine Liste auswählen oder mit „Neue Wunschliste“ eine anlegen, zum Beispiel für Geburtstag oder Weihnachten. Am Computer findest du deine Listen links.</p></li>
         <li><strong>Wünsche festhalten</strong><p>Öffne ein Produkt im Shop und kopiere seinen Link. Tippe unten auf „+ Wunsch“ oder am Computer auf „Wunsch hinzufügen“. Füge den Link ein, prüfe den Titel, ergänze bei Bedarf Hinweise und speichere.</p></li>
         <li><strong>Mit Freunden und Familie teilen</strong><p>{demo ? 'In der lokalen Demo ist Teilen noch nicht möglich. Deine Listen bleiben in diesem Browser.' : 'Wähle „Teilen“ oder am Computer „Liste teilen“. „Nur ansehen“ erstellt einen Ansichtslink ohne Anmeldung. Über „Gemeinsam bearbeiten“ lädst du Personen zum Bearbeiten der Wünsche ein. Sie melden sich an und nehmen die Einladung an; die Liste erscheint dann auch bei ihnen. Als Mitbearbeiter findest du deine Rolle und die Option zum Verlassen unter „Gemeinsam“.'}</p></li>
       </>}
     </ol>
-    {!guest && <div className="help-note"><strong>Schon bekommen?</strong><p>Öffne bei einem Wunsch „Bearbeiten“ und wähle „Als erfüllt markieren“. „Erfüllt“ bedeutet, dass du den Wunsch bereits bekommen hast. Es ist keine Reservierung für Schenkende.</p></div>}
+    {!guest && <div className="help-note"><strong>Schon bekommen?</strong><p>Öffne bei einem Wunsch „Bearbeiten“ und wähle „Als erfüllt markieren“. „Erfüllt“ bedeutet, dass du den Wunsch bereits bekommen hast. Kaufmarkierungen der Schenkenden sind davon getrennt und bleiben für dich verborgen.</p></div>}
     <div className="dialog-actions"><button className="button primary" onClick={onClose}><Check size={16} /> Verstanden</button></div>
   </Dialog>
 }

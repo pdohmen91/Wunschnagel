@@ -14,7 +14,7 @@ test('returning users can reopen a short guide and continue from the same place'
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('listitem')).toHaveCount(3)
   await expect(dialog).toContainText('kopiere seinen Link')
-  await expect(dialog).toContainText('keine Reservierung')
+  await expect(dialog).toContainText('Kaufmarkierungen der Schenkenden sind davon getrennt')
   const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   expect(audit.violations).toEqual([])
   await dialog.screenshot({ path: `test-results/${info.project.name}-quick-guide.png` })

@@ -1,6 +1,6 @@
 import { supabase } from './client'
 import { PreviewCache, previewRequestError } from './previewCache'
-import type { Collaboration, ListInvitation, ListInput, Wishlist, Wish, WishInput, Preview, SharedList } from '../domain'
+import type { Collaboration, ListInvitation, ListInput, Wishlist, Wish, WishInput, Preview, SharedList, ShareRoute } from '../domain'
 
 export interface Repository {
   lists(): Promise<Wishlist[]>
@@ -14,6 +14,8 @@ export interface Repository {
   fulfillItem(id: string, fulfilled: boolean): Promise<void>
   preview(url: string, signal?: AbortSignal, refresh?: boolean): Promise<Preview>
   shared(kind: 'token' | 'public', value: string): Promise<SharedList>
+  purchase(listId: string, itemId: string, route: ShareRoute, receipt: string): Promise<'purchased' | 'already_purchased'>
+  undoPurchase(listId: string, itemId: string, route: ShareRoute, receipt: string): Promise<boolean>
   collaboration(listId: string): Promise<Collaboration>
   createInvite(listId: string): Promise<void>
   revokeInvite(listId: string): Promise<void>
@@ -81,6 +83,8 @@ export function demoRepository(): Repository {
       return data as Preview
     },
     shared: async () => { throw new Error('Diese Demo speichert nur auf deinem Gerät. Geräteübergreifendes Teilen ist nach der Supabase-Einrichtung verfügbar.') },
+    purchase: async () => { throw new Error('Kaufmarkierungen benötigen eine geteilte Online-Liste.') },
+    undoPurchase: async () => { throw new Error('Kaufmarkierungen benötigen eine geteilte Online-Liste.') },
     collaboration: async () => { throw new Error('Gemeinsames Bearbeiten ist in der lokalen Vorschau nicht möglich.') },
     createInvite: async () => { throw new Error('Bitte melde dich zuerst an.') },
     revokeInvite: async () => { throw new Error('Bitte melde dich zuerst an.') },
@@ -129,6 +133,16 @@ export function cloudRepository(userId: string): Repository {
       if (error) throw error
       if (!data) throw new Error('Diese Liste ist nicht öffentlich oder wurde gelöscht.')
       return data as SharedList
+    },
+    purchase: async (listId, itemId, route, receipt) => {
+      const { data, error } = await db.rpc('purchase_wish', { list_id: listId, item_id: itemId, read_token: route.kind === 'token' ? route.value : null, receipt })
+      if (error) throw error
+      return data as 'purchased' | 'already_purchased'
+    },
+    undoPurchase: async (listId, itemId, route, receipt) => {
+      const { data, error } = await db.rpc('undo_wish_purchase', { list_id: listId, item_id: itemId, read_token: route.kind === 'token' ? route.value : null, receipt })
+      if (error) throw error
+      return data === true
     },
     collaboration: async listId => { const { data, error } = await db.rpc('get_collaboration', { list_id: listId }); if (error) throw error; return data as Collaboration },
     createInvite: async listId => { const { error } = await db.rpc('create_wishlist_invite', { list_id: listId }); if (error) throw error },

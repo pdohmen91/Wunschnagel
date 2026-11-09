@@ -19,6 +19,8 @@ export type Wish = {
   image_url: string
   price: number | null
   fulfilled: boolean
+  /** Only included in guest share responses, never ordinary owner reads. */
+  purchased?: boolean
   created_at: string
   offer_source?: OfferSource
   search_term?: string
@@ -27,7 +29,8 @@ export type Wish = {
 export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visibility'>
 export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string; price?: number | null }
-export type SharedList = { list: Wishlist; items: Wish[] }
+export type ShareRoute = { kind: 'token' | 'public'; value: string }
+export type SharedList = { list: Wishlist; items: Wish[]; can_purchase?: boolean }
 export type Collaboration = { invite: { token: string; expires_at: string } | null; members: { user_id: string; display_name: string; email?: string | null; joined_at: string }[] }
 export type ListInvitation = { title: string; emoji: string; expires_at: string; already_joined: boolean }
 export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'

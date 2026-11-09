@@ -54,7 +54,7 @@ export function installInteractionMotion() {
   // mouse-up, so remembering the actual control is more reliable than focus.
   const rememberOpener = (event: MouseEvent) => {
     if (!(event.target instanceof Element)) return
-    const control = event.target.closest<HTMLElement>('button, summary')
+    const control = event.target.closest<HTMLElement>('button, summary, .wish-image-link, .shop-link, .offer-search-link')
     if (!control || control.matches(':disabled') || control.closest('dialog, [inert]')) return
     lastOpener = control.closest('.card-menu')?.querySelector('summary') ?? control
   }
