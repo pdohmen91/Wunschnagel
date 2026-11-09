@@ -22,3 +22,9 @@ Standardmäßig wird WebKit mit einem mobilen Viewport verwendet. `WUNSCHNAGEL_Q
 Geprüft werden Erstellen einer Einladung, minimaler Gastzugriff vor dem Beitritt, ausdrückliche Annahme, Speichern der gemeinsamen Liste im Konto, Hinzufügen und Ändern von Wünschen, Schutz der Besitzereinstellungen, Aktualisierung für den Besitzer, reine Lesezugriffe über Ansichtslinks, Widerruf ohne Verlust bestehender Mitgliedschaften, Entfernen mit gesperrtem Wiederbeitritt sowie Verlassen ohne Löschen der Wünsche. Der Google-Handoff wird abgefangen und mit einer gültigen Sitzung des isolierten Testkontos abgeschlossen; die eigentliche Google-Zustimmung ist ein gesonderter manueller Test.
 
 `npm test` führt zusätzlich die tatsächlichen Migrationen in PostgreSQL/PGlite aus. Die Tests prüfen unter anderem abgelaufene Einladungen, Schreibrechte auf fremde Listen, direkten Zugriff auf Mitgliedschaftstabellen und das kaskadierende Löschen von Mitgliedschaften.
+
+## Gemerkte Listen
+
+`tests/live/saved-lists.mjs` prüft mit zwei eigens angelegten und anschließend gelöschten QA-Konten die echten Merker-RPCs, private Kontotrennung, widerrufene Links, unveränderte Bearbeitungsrechte, anonymes Wiederfinden und Synchronisierung zwischen unabhängigen mobilen WebKit-Kontexten. E-Mail-Versand und bestehende Nutzerdaten werden nicht verwendet.
+
+Gleiche Umgebungsvariablen wie beim Geschenkstatus-Test: `WUNSCHNAGEL_QA_CONFIG`, `WUNSCHNAGEL_QA_SUPABASE`, optional `WUNSCHNAGEL_QA_BASE`; mit `WUNSCHNAGEL_QA_API_ONLY=1` ausschließlich API-Prüfung.

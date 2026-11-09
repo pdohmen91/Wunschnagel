@@ -695,3 +695,32 @@ html[data-occasion=christmas] .dialog { border-top-color: #d5b474; }
 @container app-viewport (min-width: 621px) and (max-width: 960px) {
   .christmas-nav-lights { top: auto; bottom: 0; height: 14px; }
 }
+
+/* Personal bookmarks: a small action on shared lists, a clear home in Listen. */
+.save-shared-list { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; }
+.save-shared-list[aria-pressed=true] { background: #eee5eb; border-color: #82687b; }
+.save-shared-list > svg { flex-shrink: 0; }
+.saved-library-trigger .count { margin-left: auto; }
+.library-section { margin-top: 22px; }
+.library-section h3 { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; font-size: 15px; font-weight: 650; }
+.library-section h3 .count { margin-left: auto; }
+.library-hint { margin: 6px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.library-empty { padding: 18px 12px; border: 1px dashed var(--line); border-radius: 3px; color: var(--muted); font-size: 13px; }
+.library-error { margin-block: 10px; color: #8a2944; font-size: 13px; line-height: 1.6; }
+.saved-list-options { display: grid; gap: 8px; }
+.saved-list-entry { min-width: 0; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); }
+.saved-list-row { display: flex; align-items: center; padding-right: 4px; }
+.saved-list-open { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; padding: 12px; min-height: 64px; color: var(--ink); text-decoration: none; }
+.saved-list-open:hover { background: var(--soft); }
+.saved-list-emoji { flex-shrink: 0; font-size: 22px; }
+.saved-list-open > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.saved-list-open strong { display: block; font-size: 15px; font-weight: 550; line-height: 1.4; }
+.saved-list-open small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 3px; }
+.saved-list-open > svg, .saved-list-remove { flex-shrink: 0; }
+.saved-list-remove { min-width: 44px; min-height: 44px; }
+.saved-list-adopt { margin: 0 10px 6px; font-size: 12px; min-height: 44px; }
+.library-footnote { margin-top: 12px; }
+html[data-occasion=christmas] .save-shared-list { background: #244b39; color: #fff3d9; border-color: #a99a73; }
+html[data-occasion=christmas] .save-shared-list[aria-pressed=true] { background: #f1d8a3; color: #183a2c; border-color: #f1d8a3; }
+.library-section h3 .count { color: var(--ink); border-color: var(--line); background: var(--soft); }
+.saved-list-open strong { hyphens: auto; }

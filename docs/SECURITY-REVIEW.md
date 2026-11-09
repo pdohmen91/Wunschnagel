@@ -189,3 +189,7 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
   – unveränderliche Action-Referenzen und minimale Workflow-Rechte.
 - [OWASP: SSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
   – Host-Freigaben und DNS-/Redirect-Grenzen.
+
+## Ergänzung 09.11.2026: persönliche gemerkte Listen
+
+Neue Merker sind private Verweise, keine Freigabe- oder Mitgliedschaftsrechte. Tabelle ohne Client-Rechte und drei eng begrenzte authentifizierte RPCs mit Identitätsprüfung, leerem Suchpfad und explizitem Kontofilter. Neue private Metadaten werden nach Freigabe-Widerruf nicht über Merker ausgegeben. Lokale Merker werden nur nach ausdrücklicher Einzelaktion ins Konto übertragen. Details und Prüfungen: [SAVED-LISTS.md](SAVED-LISTS.md).

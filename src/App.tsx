@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort, ShareRoute } from './domain'
 import { authCallbackWarning, supabase } from './lib/client'
@@ -17,6 +17,8 @@ import { useCompactLayout } from './lib/useCompactLayout'
 import { useInstallPrompt } from './lib/useInstallPrompt'
 import { FormFields } from './lib/FormFields'
 import { CollaborationPanel, Invitation } from './lib/Collaboration'
+import { useSavedLists } from './lib/useSavedLists'
+import { SavedListsPanel } from './lib/SavedListsPanel'
 
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
@@ -28,6 +30,8 @@ export default function App() {
   const iosWebApp = 'standalone' in navigator && navigator.standalone === true
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(!supabase)
+  const saved = useSavedLists(user?.id, authReady)
+  const [bookmarkBusy, setBookmarkBusy] = useState(false)
   const [demo, setDemo] = useState(!supabase)
   const [hash, setHash] = useState(window.location.hash)
   const route = useMemo(() => readShareRoute(hash), [hash])
@@ -54,6 +58,8 @@ export default function App() {
   activeList.current = selectedId
   const repo = useMemo(() => !supabase || demo && !invite ? demoRepository() : cloudRepository(user?.id || ''), [demo, user?.id, invite])
   const selected = invite ? null : route ? sharedList : lists.find(list => list.id === selectedId) || null
+  const remembered = selected ? saved.entries.find(entry => entry.list_id === selected.id) : undefined
+  const savedHere = !!(remembered && route && remembered.kind === route.kind && remembered.value === route.value && (!user || remembered.storage === 'account'))
   const occasion = selected ? listOccasion(selected.title, selected.visibility) : null
   const canEdit = !route && !invite && (demo || !!user)
   const isOwner = canEdit && (demo || selected?.owner_id === user?.id)
@@ -250,6 +256,21 @@ export default function App() {
     if (authError) throw authError
   }
 
+  async function toggleBookmark() {
+    if (!selected || !route || bookmarkBusy || !authReady) return
+    setBookmarkBusy(true)
+    try {
+      if (savedHere && remembered) {
+        await saved.remove(remembered)
+        setNotice('Aus deinen gemerkten Listen entfernt. Die Wunschliste bleibt bestehen.')
+      } else {
+        const storage = await saved.remember(selected, route)
+        setNotice(storage === 'account' ? 'Liste in deinem Konto gemerkt. Du findest sie unter „Listen“.' : 'Liste auf diesem Gerät gemerkt. Du findest sie unter „Listen“.')
+      }
+    } catch (err) { setNotice(message(err)) }
+    finally { setBookmarkBusy(false) }
+  }
+
   async function closeModal() {
     await dismissDialog(document.querySelector<HTMLDialogElement>('dialog[open]'))
     setModal(null)
@@ -292,6 +313,7 @@ export default function App() {
           {lists.map(list => <option key={list.id} value={list.id}>{list.emoji} {list.title}</option>)}
         </select></label>}
         {canEdit && !compact && <button className="new-list" onClick={() => setModal('list')}><Plus size={17} /> Neue Wunschliste</button>}
+        {!compact && <button className="new-list saved-library-trigger" onClick={() => setModal('lists')}><Bookmark size={17} /> Gemerkte Listen <span className="count">{saved.entries.length}</span></button>}
         {route && !compact && <a className="new-list" href={import.meta.env.BASE_URL}><ArrowLeft size={16} /> Meine Listen</a>}
       </div>
       <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> Auf dem Handy installieren</button>
@@ -307,9 +329,8 @@ export default function App() {
       <header className="topbar">
         <span>{invite ? 'Einladung zur Wunschliste' : route ? 'Geteilte Wunschliste' : 'Meine Wunschlisten'}</span>
         <div>
-          {compact && !route && !invite && (demo || user) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
-          {compact && !route && !demo && !user && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
-          {compact && route && <a className="mobile-list-trigger" href={import.meta.env.BASE_URL}>Meine Listen</a>}
+          {compact && !invite && (route || demo || user || saved.entries.length > 0) && <button className="mobile-list-trigger" onClick={() => setModal('lists')} aria-haspopup="dialog">Listen <ChevronDown size={16} /></button>}
+          {compact && !route && !demo && !user && saved.entries.length === 0 && !installation.installed && !installation.visible && <button className="icon-button mobile-list-trigger" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /></button>}
           {!compact && <button className="install-topbar" aria-label="App installieren" onClick={() => setModal('install')}><ArrowDownToLine size={18} /><span>App installieren</span></button>}
           {user && !demo && <button className="icon-button mobile-account" aria-label="Abmelden" disabled={busy} onClick={() => run(signOut)}><LogOut size={19} /></button>}
           {demo && supabase && <button className="icon-button mobile-account" aria-label="Zur Anmeldung" onClick={() => setDemo(false)}><LogIn size={19} /></button>}
@@ -351,6 +372,7 @@ export default function App() {
                   {canEdit && !isOwner && <span className="collaboration-role">Mitbearbeiter</span>}
                   {!compact && <span>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</span>}
                   {compact && <button className="list-info-trigger" onClick={() => setModal('info')}><CircleHelp size={15} /> Details &amp; Hilfe</button>}
+                  {route && !loading && !error && <button className="save-shared-list" aria-pressed={savedHere} disabled={bookmarkBusy || !authReady} onClick={() => void toggleBookmark()} title={user ? 'In deinem Konto für später speichern' : 'Ohne Anmeldung auf diesem Gerät speichern'}>{bookmarkBusy ? <LoaderCircle className="spin" size={16} /> : savedHere ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}{savedHere ? 'Gemerkt' : remembered && (!user || remembered.storage === 'account') ? 'Link aktualisieren' : user && remembered ? 'Im Konto merken' : 'Liste merken'}</button>}
                   {isOwner && <button className={`edit-list ${compact ? 'compact-edit-list' : ''}`} aria-label="Liste bearbeiten" onClick={() => setModal('edit-list')}><Pencil size={compact ? 17 : 14} />{!compact && 'Liste bearbeiten'}</button>}
                 </div>
               </div>
@@ -392,11 +414,13 @@ export default function App() {
     </main>
 
     {modal === 'lists' && <Dialog title="Meine Wunschlisten" onClose={closeModal}>
-      <p className="dialog-intro">Alle deine Wunschzettel an einem Platz. Wähle eine Liste oder lege eine neue an.</p>
+      <p className="dialog-intro">Deine Wunschzettel und die Listen deiner Lieblingsmenschen – an einem Platz.</p>
       {!installation.installed && <button className="button secondary list-install" onClick={async () => { await closeModal(); setModal('install') }}><ArrowDownToLine size={17} /> App installieren <ArrowRight size={15} /></button>}
-      <div className="list-picker-options">{lists.map(list => <button key={list.id} className={selectedId === list.id ? 'selected' : ''} onClick={async () => { await closeModal(); setSelectedId(list.id); setQuery(''); setFilter('all') }}><span aria-hidden="true">{list.emoji}</span><span>{list.title}<small>{!demo && list.owner_id !== user?.id ? 'Gemeinsam · Mitbearbeiter' : visibilityLabels[list.visibility]}</small></span>{selectedId === list.id && <Check size={18} aria-label="Ausgewählt" />}</button>)}</div>
+      <SavedListsPanel key={user?.id || 'guest'} saved={saved} lists={lists} repo={repo} fetchOwned={!!user && !!route && !demo} userId={user?.id} selectedId={route ? null : selectedId} demo={demo}
+        onOwn={async id => { await closeModal(); setSelectedId(id); setQuery(''); setFilter('all'); window.location.hash = '' }}
+        onOpen={async url => { await closeModal(); setQuery(''); setFilter('all'); window.location.hash = new URL(url).hash }} />
       {canEdit && <button className="button primary list-create" onClick={async () => { await closeModal(); setModal('list') }}><Plus size={17} /> Neue Wunschliste</button>}
-      <div className="list-picker-footer"><button className="text-button" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={17} /> So funktioniert’s</button></div>
+      <div className="list-picker-footer">{route && <a className="text-button" href={import.meta.env.BASE_URL}><ArrowLeft size={17} /> {user ? 'Zu meinen Wunschlisten' : 'Eigene Listen & Anmeldung'}</a>}<button className="text-button" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={17} /> So funktioniert’s</button></div>
     </Dialog>}
     {modal === 'info' && selected && <Dialog title="Über diese Liste" onClose={closeModal}>
       <p className="info-list-name">{selected.emoji} {selected.title}</p>
