@@ -22,6 +22,7 @@ body { margin: 0; }
 /* Keep the wordmark below iOS's system-drawn status-bar edge effect. */
 html[data-ios-standalone=true] { background: var(--ink); --safe-top: max(24px, env(safe-area-inset-top, 0px)); }
 html[data-ios-standalone=true] body { background: var(--ink); }
+html[data-ios-standalone=true] .app-shell { background: var(--paper); }
 #root { width: var(--app-visible-width, 100%); max-width: 100%; container: app-viewport / inline-size; }
 button, input, textarea, select { font: inherit; }
 button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }

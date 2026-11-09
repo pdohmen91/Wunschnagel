@@ -48,6 +48,7 @@ test('the installed iPhone header reserves a solid band above its controls', asy
   await expect(page.locator('html')).toHaveAttribute('data-ios-standalone', 'true')
   await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content', 'black')
   expect(await page.locator('html').evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(53, 35, 52)')
+  expect(await page.locator('.app-shell').evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(246, 241, 232)')
   const wordmark = await page.locator('.brand-wordmark').boundingBox()
   const controls = await page.getByRole('button', { name: 'Listen', exact: true }).boundingBox()
   expect(wordmark!.y).toBeGreaterThanOrEqual(24)
