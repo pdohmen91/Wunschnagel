@@ -11,8 +11,9 @@ Penetrationstest-Zertifizierung und keine Zusicherung vollständiger Sicherheit.
 
 Der gestufte Rollout ist abgeschlossen. Lokale Prüfungen, die Auth-Live-
 Vorprüfung und 62 Produktions-Zugriffstests nach Entzug der alten Rechte sind
-bestanden. **Offen bleibt die echte Google-Rückkehr in
-die installierte iPhone-App**; ein kontrollierter WebKit-Test ersetzt diese nicht.
+bestanden. **Auch die echte Google-Rückkehr in die installierte iPhone-App und
+die erhaltene Anmeldung nach vollständigem Schließen/Öffnen sind vom Nutzer
+bestätigt.**
 
 Bestehende persönliche Wünsche wurden für diese Prüfung nicht gelesen oder
 geändert. Produktionsprüfungen verwenden ausschließlich eigens angelegte
@@ -33,7 +34,7 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
 | Niedrig | Mitbearbeiternamen stammen aus veränderlichen Nutzer-Metadaten und können andere Personen imitieren. | Nur der Besitzer sieht zusätzlich die aus `auth.users` stammende bestätigte Konto-E-Mail-Adresse. Einladung erklärt diese Weitergabe. Metadaten entscheiden niemals über Rollen. |
 | Niedrig | Öffentliche E-Mail-Anmeldung aktiv, obwohl die App ausschließlich Google anbietet; Zugriffstokens bislang 1 h gültig. | Öffentlichen E-Mail-Provider geschlossen; vorhandene echte Konten waren Google-Konten. Neue JWTs 15 Minuten, Erneuerungstoken rotieren weiter. Google-Client-Secret bleibt ausschließlich im Backend. |
 | Mittel / zusätzliche Transportabsicherung | Direkte Postgres-/Pooler-Verbindungen konnten ohne TLS hergestellt werden. Die HTTP-APIs der App waren bereits verschlüsselt. | SSL Enforcement für direkte Datenbankverbindungen aktiviert und nach dem kurzen Supabase-Datenbankneustart bestätigt. |
-| Niedrig / Lieferkette | GitHub-Actions per veränderlichem Versions-Tag, keine Sicherheitsprüfungen als Deployment-Voraussetzung. | Actions an vollständige Commit-SHAs gebunden; Checkout ohne persistierte Git-Zugangsdaten; Audit, SQL-/Parser-/Auth-Tests und Browser-Sicherheitsprüfungen vor Produktionsbuild. Schreibrechte nur im Deployment-Job, keine PR-Deployments. Dependabot erstellt wöchentliche Update-PRs; kein Auto-Merge. |
+| Niedrig / Lieferkette | GitHub-Actions per veränderlichem Versions-Tag, keine Sicherheitsprüfungen als Deployment-Voraussetzung. | Direkte Action-Verweise an vollständige Commit-SHAs gebunden; Checkout ohne persistierte Git-Zugangsdaten; Audit, SQL-/Parser-/Auth-Tests und Browser-Sicherheitsprüfungen vor Produktionsbuild. Schreibrechte nur im Deployment-Job, keine PR-Deployments. Dependabot erstellt wöchentliche Update-PRs; kein Auto-Merge. |
 
 ## Verifizierte vorhandene Schutzmaßnahmen
 
@@ -109,9 +110,13 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
   Worker blockiert, damit Playwrights Netzwerk-Mock greift; Besitzer-/Gastkontext
   und der separate Preis-/Offline-Test verwenden den regulären PWA-Ablauf.
   Sämtliche QA-Konten einschließlich zugehöriger Daten wurden bereinigt.
+- Manueller Gerätetest: **installierte iPhone-App bestanden**, vom Nutzer nach
+  Ab-/Anmeldung mit Google und vollständigem Schließen/Öffnen bestätigt.
 - Bereitstellung des Sicherheitscodes: GitHub-Pages-Workflow **42615733260**
   erfolgreich; Live-HTML enthält die CSP und das veröffentlichte Bundle verwendet
-  PKCE sowie die neue öffentliche RPC. Datenbankmigrationen 003 und 004 sowie
+  PKCE sowie die neue öffentliche RPC. Auch der abschließende Workflow
+  **42617108382** für den protokollierten Stand ist erfolgreich.
+  Datenbankmigrationen 003 und 004 sowie
   die abgesicherte Edge Function sind angewendet. Deklarierte Auth-Einstellungen
   ohne Abweichung; Google aktiv, E-Mail/anonym aus. Datenbank-TLS verbindlich aktiv.
 
@@ -155,11 +160,16 @@ in einer lokalen PostgreSQL/WASM-Testdatenbank ausgeführt.
    bleiben Betreiberaufgaben. Sie wurden nicht durch Anmeldung in fremde
    Sicherheitsbereiche geprüft oder verändert. Der akzeptierte Supabase-Free-
    Pausenmechanismus bleibt bestehen. Ein unabhängiges externes Review wäre für
-   eine breite öffentliche Vermarktung sinnvoll.
-8. **Gerätetest offen:** Einmal direkt über das installierte iPhone-App-Symbol
-   abmelden, Google-Anmeldung erneut starten, App schließen und wieder öffnen.
-   Bei Rückkehr in einen anderen Browser-/Speicherkontext darf kein unsicherer
-   Token-Fallback eingeführt werden; dann muss der Rückweg gezielt korrigiert werden.
+   eine breite öffentliche Vermarktung sinnvoll. Die CI meldet ältere
+   Action-Major-Versionen, deren Ausführung GitHub bereits auf Node 24 erzwingt;
+   Dependabot-Update-PRs vor Übernahme prüfen. Die SHA-Bindung betrifft direkte
+   Workflow-Verweise; eingebettete Actions bleiben Teil der GitHub-Lieferkette.
+8. **Gerätetest bestanden:** Der Nutzer hat nach Veröffentlichung der
+   Sicherheitsversion direkt über das installierte iPhone-App-Symbol abgemeldet,
+   mit Google erneut angemeldet und das vollständige Schließen/Öffnen geprüft.
+   Rückkehr zu den Listen und gespeicherte Sitzung wurden am 9. November 2026
+   bestätigt. Bei späteren Änderungen an OAuth diesen Gerätetest wiederholen;
+   keinen unsicheren Token-Fallback für getrennte Speicherkontexte einführen.
 
 ## Primärquellen
 
