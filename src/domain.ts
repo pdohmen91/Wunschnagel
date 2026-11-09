@@ -71,8 +71,8 @@ export function sortWishes(items: readonly Wish[], order: WishSort): Wish[] {
   return [...items].sort((a, b) => {
     if (order === 'name') return a.title.localeCompare(b.title, 'de')
     if (order === 'price-asc' || order === 'price-desc') {
-      if (a.price === null) return b.price === null ? 0 : 1
-      if (b.price === null) return -1
+      if (a.price === null) return b.price === null ? 0 : -1
+      if (b.price === null) return 1
       return order === 'price-asc' ? a.price - b.price : b.price - a.price
     }
     return order === 'newest' ? b.created_at.localeCompare(a.created_at) : a.created_at.localeCompare(b.created_at)

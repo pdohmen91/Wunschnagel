@@ -64,10 +64,10 @@ test('prices support German decimals without accepting negative or invalid value
   for (const value of ['-1', 'NaN', 'Infinity', '1.000.000', '1000000']) assert.throws(() => parsePrice(value))
 })
 
-test('sorting prices keeps unspecified prices at the end and does not change source data', () => {
+test('sorting prices keeps unspecified prices first in both directions and does not change source data', () => {
   const items = [{ title: 'Unbekannt', price: null }, { title: 'Teuer', price: 99 }, { title: 'Kostenlos', price: 0 }, { title: 'Günstig', price: 22 }] as Wish[]
-  assert.deepEqual(sortWishes(items, 'price-asc').map(item => item.title), ['Kostenlos', 'Günstig', 'Teuer', 'Unbekannt'])
-  assert.deepEqual(sortWishes(items, 'price-desc').map(item => item.title), ['Teuer', 'Günstig', 'Kostenlos', 'Unbekannt'])
+  assert.deepEqual(sortWishes(items, 'price-asc').map(item => item.title), ['Unbekannt', 'Kostenlos', 'Günstig', 'Teuer'])
+  assert.deepEqual(sortWishes(items, 'price-desc').map(item => item.title), ['Unbekannt', 'Teuer', 'Günstig', 'Kostenlos'])
   assert.equal(items[0].title, 'Unbekannt')
 })
 
