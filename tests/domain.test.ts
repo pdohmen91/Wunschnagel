@@ -1,9 +1,34 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parsePrice, readShareRoute, shareUrl, sortWishes, webUrl } from '../src/domain.ts'
+import { offerSearch, parsePrice, readShareRoute, shareUrl, sortWishes, webUrl } from '../src/domain.ts'
 import type { Wish, Wishlist } from '../src/domain.ts'
 
 const list = { id: '12345678-1234-4234-8234-123456789abc', share_token: 'a'.repeat(64), visibility: 'link' } as Wishlist
+
+test('offer searches use exact keywords, safe encoding and useful legacy defaults', () => {
+  const legacy = offerSearch({ title: 'Bialetti Moka Express' })
+  assert.equal(new URL(legacy.url).hostname, 'www.idealo.de')
+  assert.equal(new URL(legacy.url).searchParams.get('q'), 'Bialetti Moka Express')
+  const exact = offerSearch({ title: 'Mein Geschenk', search_term: '  Marke X & Größe + 2  ', offer_source: 'idealo' })
+  assert.equal(new URL(exact.url).searchParams.get('q'), 'Marke X & Größe + 2')
+  assert.equal(offerSearch({ title: ' ' }).url, '')
+})
+
+test('used and classified links open result lists rather than individual offers', () => {
+  const used = new URL(offerSearch({ title: 'Modell X123', offer_source: 'ebay' }).url)
+  assert.equal(used.pathname, '/sch/i.html')
+  assert.equal(used.searchParams.get('_nkw'), 'Modell X123')
+  assert.deepEqual(used.searchParams.get('LH_ItemCondition')?.split('|'), ['3000', '4000', '5000', '6000'])
+  const classifieds = new URL(offerSearch({ title: 'Modell X123', offer_source: 'kleinanzeigen' }).url)
+  assert.equal(classifieds.hostname, 'www.kleinanzeigen.de')
+  assert.equal(classifieds.searchParams.get('keywords'), 'Modell X123')
+})
+
+test('custom search links support saved filters and reject active URLs or credentials', () => {
+  const link = 'https://shop.de/suche?q=modell&max=100'
+  assert.equal(offerSearch({ title: 'Modell', offer_source: 'custom', search_url: link }).url, link)
+  for (const search_url of ['', 'javascript:alert(1)', 'data:text/html,evil', 'https://user:password@shop.de/']) assert.equal(offerSearch({ title: 'Modell', offer_source: 'custom', search_url }).url, '')
+})
 
 test('private lists cannot produce share links', () => {
   assert.throws(() => shareUrl({ ...list, visibility: 'private' }, 'https://example.org/Wunschnagel/'))

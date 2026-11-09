@@ -27,11 +27,11 @@ function seed(): DemoData {
   const birthday = list('Kleine & große Wünsche', '🌿', 'Ein paar Dinge, über die ich mich freuen würde. Das schönste Geschenk ist aber gemeinsame Zeit.', 'link')
   const christmas = list('Für Weihnachten', '🎄', 'Für gemütliche Tage und kleine Überraschungen.', 'private')
   const home = list('Unser Zuhause', '🏡', 'Schöne Dinge für unseren Lieblingsort.', 'public')
-  const item = (title: string, url: string, notes: string, price: number, image_url: string): Wish => ({ id: id(), wishlist_id: birthday.id, title, url, notes, price, image_url, fulfilled: false, created_at: now() })
+  const item = (title: string, url: string, notes: string, price: number, image_url: string, search_term: string): Wish => ({ id: id(), wishlist_id: birthday.id, title, url, notes, price, image_url, offer_source: 'idealo', search_term, search_url: '', fulfilled: false, created_at: now() })
   return { lists: [birthday, christmas, home], items: [
-    item('Ein guter Kaffee am Morgen', 'https://www.bialetti.com/', 'Eine kleine Espressokanne für zwei. Am liebsten der Klassiker in Silber.', 39.90, './illustrations/coffee.svg'),
-    item('Mehr Zeit für gute Geschichten', 'https://www.thalia.de/', 'Ein Buch, das du selbst gern gelesen hast. Eine persönliche Empfehlung wäre toll!', 22, './illustrations/books.svg'),
-    item('Musik für unterwegs', 'https://www.marshall.com/', 'Kabellose Kopfhörer, gerne in Braun oder Schwarz.', 99, './illustrations/headphones.svg'),
+    item('Ein guter Kaffee am Morgen', 'https://www.bialetti.com/', 'Eine kleine Espressokanne für zwei. Am liebsten der Klassiker in Silber.', 39.90, './illustrations/coffee.svg', 'Bialetti Moka Express 2 Tassen'),
+    item('Mehr Zeit für gute Geschichten', 'https://www.thalia.de/', 'Ein Buch, das du selbst gern gelesen hast. Eine persönliche Empfehlung wäre toll!', 22, './illustrations/books.svg', 'Buch'),
+    item('Musik für unterwegs', 'https://www.marshall.com/', 'Kabellose Kopfhörer, gerne in Braun oder Schwarz.', 99, './illustrations/headphones.svg', 'Marshall Kopfhörer kabellos'),
   ] }
 }
 

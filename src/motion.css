@@ -8,7 +8,7 @@
 
 /* Immediate feedback works with mouse, touch and keyboard. */
 .button, .icon-button, .new-list, .install-link, .install-topbar, .edit-list,
-.text-button, .shop-link, .tabs button, .list-link, .emoji-options button,
+.text-button, .shop-link, .offer-search-link, .tabs button, .list-link, .emoji-options button,
 .card-menu summary, .optional-fields summary {
   transition: background-color var(--motion-quick), color var(--motion-quick),
     border-color var(--motion-quick), box-shadow var(--motion-quick),

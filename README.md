@@ -9,6 +9,7 @@ Eine installierbare Wunschlisten-Web-App für Freunde und Familie. React und Typ
 - Mehrere Wunschlisten pro Person, jeweils mit Name, Beschreibung und Symbol.
 - Sichtbarkeit **Nur für mich**, **Mit Link** oder **Öffentlich**.
 - Wünsche mit Shop-Link, Titel, Notizen, optionalem Preis und Vorschaubild.
+- Direkter Angebotsbutton pro Wunsch: Preisvergleich über idealo, Gebrauchtangebote bei eBay, Kleinanzeigen oder ein eigener Suchlink. Ein genauer Suchbegriff kann unabhängig vom Wunschtitel festgelegt werden. Der Button ist auch in geteilten Listen verfügbar.
 - Listen und Wünsche erstellen, bearbeiten und löschen; Wünsche als erfüllt markieren.
 - Suche, Filter für offene und erfüllte Wünsche sowie Sortierung nach Preis, Name und Datum.
 - Gut lesbare Texte, große Bedienflächen, mobile Listenauswahl und vollständig aufklappbare Hinweise.
@@ -33,6 +34,10 @@ npm run dev
 Öffne die im Terminal angezeigte Adresse, normalerweise `http://127.0.0.1:5173/`. Für die Demo ist kein Account erforderlich.
 
 Beim Hinzufügen eines Wunsches genügt das Einfügen eines Shop-Links. Auch geteilter Text mit genau einem Produktlink und einem Produktnamen lässt sich einfügen: Die App trennt Name und Link. Nach 600 ms ohne weitere Linkänderung werden Titel und Bild angefragt. Du kannst während des Abrufs andere Felder bearbeiten oder abbrechen. Selbst eingegebene Titel und Bildadressen werden nicht überschrieben; abweichende Shop-Angaben lassen sich mit „Shop-Titel übernehmen“ bzw. „Shop-Bild übernehmen“ ausdrücklich auswählen. Eine verspätete Antwort für einen vorherigen Link wird verworfen. „Shop-Vorschau neu laden“ bleibt als manuelle Wiederholung verfügbar.
+
+Unter „Angebote finden“ wählst du das Ziel des zusätzlichen Kartenbuttons. Ohne eigenen Suchbegriff wird der Titel verwendet; für persönliche Wunschtitel empfiehlt sich eine genaue Modell-, ISBN- oder Setnummer im separaten Suchfeld. „Suchergebnisse testen“ öffnet die Suche bereits im Formular. Eigene Suchlinks können bestehende Filter wie Preis, Region oder Kategorie enthalten. Auf der Karte öffnet „Preisvergleich“, „Gebraucht suchen“ bzw. „Angebote finden“ die Ergebnisliste in einem neuen Tab. Der ursprüngliche Shop-Link bleibt daneben erreichbar.
+
+Die Suchlinks werden direkt aus den gespeicherten Angaben erzeugt. Der Suchbegriff wird beim Anklicken an den gewählten Anbieter übermittelt; der private Freigabelink wird durch `noopener noreferrer` nicht als Referrer mitgeschickt. Die eBay-Suche setzt Gebraucht-Zustände für allgemeine Produkte und Medien; die Zuordnung basiert auf [eBays Zustands-IDs](https://developer.ebay.com/api-docs/sell/static/metadata/condition-id-values.html). Preis und Verfügbarkeit beurteilt man in der geöffneten Ergebnisliste. Bestehende Wünsche erhalten standardmäßig den idealo-Preisvergleich und können beim Bearbeiten umgestellt werden.
 
 Auch lokal gelten die unterstützten Shop-Hosts sowie HTTPS-, DNS-, Zeit-, Größen- und Weiterleitungsgrenzen aus dem Abschnitt Shop-Vorschauen. Das Tagesbudget pro Nutzer wird im Online-Betrieb von Supabase geprüft. Zusätzliche vertrauenswürdige Hosts können für die Entwicklung über `PREVIEW_ALLOWED_HOSTS=shop.de,www.shop.de` in `.env` ergänzt werden. Der lokale Endpunkt `/__api/link-preview` akzeptiert nur Anfragen aus derselben lokalen App und wird nicht in den GitHub-Pages-Build eingebaut.
 
@@ -79,7 +84,7 @@ Alternative bei störenden Pausen: Cloudflare Workers Free + D1. Das wäre ein a
 Das Projekt [wunschnagel](https://supabase.com/dashboard/project/gjlvrtzsrecgmqdghhgj) ist angelegt. Migration, Zugriffsregeln, Site-URL, Rückleitungen, Google-Anbieter und die Edge Function `link-preview` sind eingerichtet. Die Datenzugriffe und Shop-Vorschau wurden live geprüft. Am 8. November 2026 hat der Betreiber die vollständige Google-Anmeldung und das Erstellen einer Wunschliste auf der veröffentlichten App mit seinem eigenen Konto bestätigt.
 
 1. Erstelle ein Supabase-Projekt im **Free-Tarif**, möglichst in einer passenden EU-Region. Die Supabase-Organisation braucht kein kostenpflichtiges Upgrade für diese App.
-2. Führe den Inhalt von `supabase/migrations/202611070001_initial.sql` einmal im Supabase SQL Editor aus. Mit Supabase CLI 3 kannst du nach `supabase login` auch `supabase db push --remote=gjlvrtzsrecgmqdghhgj --skip-vault` verwenden. Die bereits angewendete Migration wird dabei nicht erneut ausgeführt.
+2. Führe die SQL-Dateien unter `supabase/migrations/` einmal in Dateireihenfolge aus: zuerst `202611070001_initial.sql`, danach `202611090001_offer_search.sql`. Mit Supabase CLI 3 kannst du nach `supabase login` auch `supabase db push --remote=gjlvrtzsrecgmqdghhgj --skip-vault` verwenden. Bereits angewendete Migrationen werden dabei nicht erneut ausgeführt.
 3. Kopiere `.env.example` nach `.env`. Trage Projekt-URL und **Publishable Key** (alternativ den bisherigen `anon`-Key) ein. Einen `service_role`- oder Secret-Key niemals ins Frontend oder GitHub-Repository schreiben.
 4. Starte `npm run dev` neu. Mit Backend-Konfiguration erscheint die Anmeldung; über „Erst einmal ausprobieren“ bleibt die unabhängige lokale Demo erreichbar.
 5. Richte Google als Supabase-Anmeldeprovider ein, wie unten beschrieben.

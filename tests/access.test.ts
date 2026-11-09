@@ -38,13 +38,37 @@ before(async () => {
   itemId = wishes.rows[0].id
   await role(bob)
   bobListId = (await db.query<{ id: string }>("insert into public.wishlists(owner_id,title) values ($1,'Bob') returning id", [bob])).rows[0].id
+  await db.exec('reset role')
+  await db.exec(await readFile(new URL('../supabase/migrations/202611090001_offer_search.sql', import.meta.url), 'utf8'))
 })
 after(async () => { await db.close() })
+
+test('existing wishes receive offer-search defaults and only owners can change them', async () => {
+  await role(alice)
+  const row = (await db.query<{ offer_source: string; search_term: string; search_url: string }>('select offer_source,search_term,search_url from public.wishes where id=$1', [itemId])).rows[0]
+  assert.deepEqual(row, { offer_source: 'idealo', search_term: '', search_url: '' })
+  await db.query("update public.wishes set offer_source='ebay', search_term='Genaues Modell' where id=$1", [itemId])
+  await role(bob)
+  await db.query("update public.wishes set offer_source='custom',search_url='https://attacker.com/' where id=$1", [itemId])
+  await role(alice)
+  assert.equal((await db.query<{ offer_source: string }>('select offer_source from public.wishes where id=$1', [itemId])).rows[0].offer_source, 'ebay')
+  await assert.rejects(db.query("update public.wishes set offer_source='custom',search_url='' where id=$1", [itemId]), /check constraint/)
+  await assert.rejects(db.query("update public.wishes set offer_source='custom',search_url='javascript:alert(1)' where id=$1", [itemId]), /check constraint/)
+})
 
 test('owner can read all their lists and items', async () => {
   await role(alice)
   assert.equal(await count('wishlists'), 3)
   assert.equal(await count('wishes'), 3)
+})
+test('shared guests receive the offer-search settings without gaining write access', async () => {
+  await role(alice)
+  await db.query("update public.wishes set offer_source='kleinanzeigen',search_term='Modell X123' where wishlist_id=$1", [linkId])
+  await role()
+  const shared = (await db.query<{ data: { items: { offer_source: string; search_term: string }[] } }>('select public.get_shared_wishlist($1) as data', [token])).rows[0].data
+  assert.equal(shared.items[0].offer_source, 'kleinanzeigen')
+  assert.equal(shared.items[0].search_term, 'Modell X123')
+  await assert.rejects(db.query("update public.wishes set search_term='Changed' where wishlist_id=$1", [linkId]), /permission denied/)
 })
 test('anonymous users see only public lists and their items', async () => {
   await role()

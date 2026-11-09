@@ -1,4 +1,5 @@
 export type Visibility = 'private' | 'link' | 'public'
+export type OfferSource = 'idealo' | 'ebay' | 'kleinanzeigen' | 'custom'
 export type Wishlist = {
   id: string
   owner_id: string
@@ -19,12 +20,47 @@ export type Wish = {
   price: number | null
   fulfilled: boolean
   created_at: string
+  offer_source?: OfferSource
+  search_term?: string
+  search_url?: string
 }
 export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visibility'>
-export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price'>
+export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string }
 export type SharedList = { list: Wishlist; items: Wish[] }
 export type WishSort = 'added' | 'newest' | 'name' | 'price-asc' | 'price-desc'
+
+export const offerSources: Record<OfferSource, string> = {
+  idealo: 'Preisvergleich · idealo',
+  ebay: 'Gebrauchtangebote · eBay',
+  kleinanzeigen: 'Kleinanzeigen',
+  custom: 'Eigener Such- oder Preisvergleichslink',
+}
+
+export function offerSearch(wish: Pick<Wish, 'title' | 'offer_source' | 'search_term' | 'search_url'>): { url: string; label: string; provider: string; term: string } {
+  const term = (wish.search_term?.trim() || wish.title.trim()).replace(/\s+/g, ' ').slice(0, 200)
+  if (wish.offer_source === 'custom') {
+    let url = ''
+    try { url = webUrl(wish.search_url || '') } catch { /* Do not expose an invalid or active link. */ }
+    return { url, label: 'Angebote finden', provider: hostname(url), term }
+  }
+  if (!term) return { url: '', label: 'Angebote finden', provider: '', term: '' }
+  if (wish.offer_source === 'ebay') {
+    const url = new URL('https://www.ebay.de/sch/i.html')
+    url.searchParams.set('_nkw', term)
+    // Used condition IDs include books/media. Exclude broken/parts-only listings.
+    url.searchParams.set('LH_ItemCondition', '3000|4000|5000|6000')
+    return { url: url.href, label: 'Gebraucht suchen', provider: 'eBay', term }
+  }
+  if (wish.offer_source === 'kleinanzeigen') {
+    const url = new URL('https://www.kleinanzeigen.de/s-suchanfrage.html')
+    url.searchParams.set('keywords', term)
+    return { url: url.href, label: 'Angebote finden', provider: 'Kleinanzeigen', term }
+  }
+  const url = new URL('https://www.idealo.de/preisvergleich/MainSearchProductCategory.html')
+  url.searchParams.set('q', term)
+  return { url: url.href, label: 'Preisvergleich', provider: 'idealo', term }
+}
 
 export function sortWishes(items: readonly Wish[], order: WishSort): Wish[] {
   return [...items].sort((a, b) => {
