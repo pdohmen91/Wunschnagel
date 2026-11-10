@@ -285,6 +285,7 @@ h1, h2, h3, p { margin: 0; }
 .collaboration-members ul { list-style: none; margin: 8px 0 0; padding: 0; }
 .collaboration-members li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 12px; border-bottom: 1px solid #e4dbe0; padding-block: 4px; }
 .collaboration-members li > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.collaboration-members li > span small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .collaboration-confirm { flex-basis: 100%; padding: 12px; margin-block: 8px; background: var(--paper); border-left: 3px solid var(--accent); font-size: 14px; line-height: 1.6; }
 .collaboration-confirm .button { margin-top: 10px; }
 .collaboration-role { font-size: 12px; font-weight: 600; }

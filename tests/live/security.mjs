@@ -64,9 +64,13 @@ try {
     await ok(editor.client.from('wishes').insert({ wishlist_id: privateList.id, title: '[QA] Editor', url: 'https://example.com/qa' }))
     const members = (await ok(owner.client.rpc('get_collaboration', { list_id: privateList.id }))).members
     assert.equal(members.find(m => m.user_id === editor.id).email, editor.email); checks++
-    await denied(editor.client.rpc('get_collaboration', { list_id: privateList.id }))
-    await denied(editor.client.rpc('create_wishlist_invite', { list_id: privateList.id }))
-    assert.deepEqual(await ok(editor.client.from('wishlists').update({ visibility: 'public' }).eq('id', privateList.id).select('id')), [])
+    const editorView = await ok(editor.client.rpc('get_collaboration', { list_id: privateList.id }))
+    assert.equal(editorView.owner.user_id, owner.id); checks++
+    assert.equal(editorView.members.find(m => m.user_id === editor.id).email, editor.email); checks++
+    await ok(editor.client.rpc('create_wishlist_invite', { list_id: privateList.id }))
+    await denied(editor.client.rpc('remove_wishlist_member', { list_id: privateList.id, member_id: owner.id }))
+    await denied(editor.client.from('wishlists').update({ owner_id: editor.id }).eq('id', privateList.id))
+    assert.deepEqual(await ok(editor.client.from('wishlists').update({ visibility: 'private' }).eq('id', privateList.id).select('id')), [{ id: privateList.id }])
     await ok(owner.client.rpc('remove_wishlist_member', { list_id: privateList.id, member_id: editor.id }))
     assert.deepEqual(await ok(editor.client.from('wishes').select('id').eq('wishlist_id', privateList.id)), [])
     await denied(editor.client.rpc('accept_wishlist_invite', { invite_token: invite }))

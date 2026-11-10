@@ -9,6 +9,7 @@ export interface Repository {
   updateList(id: string, input: ListInput): Promise<void>
   deleteList(id: string): Promise<void>
   rotateLink(id: string): Promise<string>
+  enableSharing(id: string): Promise<void>
   saveItem(listId: string, input: WishInput, id?: string): Promise<void>
   deleteItem(id: string): Promise<void>
   fulfillItem(id: string, fulfilled: boolean): Promise<void>
@@ -73,6 +74,7 @@ export function demoRepository(): Repository {
     updateList: async (listId, input) => { Object.assign(data.lists.find(list => list.id === listId)!, input); persist() },
     deleteList: async listId => { data.lists = data.lists.filter(list => list.id !== listId); data.items = data.items.filter(item => item.wishlist_id !== listId); persist() },
     rotateLink: async listId => { const token = id() + id().replaceAll('-', ''); data.lists.find(list => list.id === listId)!.share_token = token; persist(); return token },
+    enableSharing: async () => { throw new Error('Teilen ist in der lokalen Vorschau nicht möglich.') },
     saveItem: async (listId, input, itemId) => {
       if (itemId) Object.assign(data.items.find(item => item.id === itemId)!, input)
       else data.items.push({ ...input, id: id(), wishlist_id: listId, fulfilled: false, created_at: now() })
@@ -117,9 +119,10 @@ export function cloudRepository(userId: string): Repository {
     lists: async () => { signedIn(); const { data, error } = await db.rpc('get_my_wishlists'); if (error) throw error; return data as Wishlist[] },
     items: async listId => { signedIn(); const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
     createList: async input => { signedIn(); const { data, error } = await db.from('wishlists').insert({ ...input, owner_id: userId }).select().single(); if (error) throw error; return data as Wishlist },
-    updateList: async (listId, input) => { signedIn(); const { error } = await db.from('wishlists').update(input).eq('id', listId).eq('owner_id', userId); if (error) throw error },
-    deleteList: async listId => { signedIn(); const { error } = await db.from('wishlists').delete().eq('id', listId).eq('owner_id', userId); if (error) throw error },
+    updateList: async (listId, input) => { signedIn(); const { error } = await db.from('wishlists').update(input).eq('id', listId).select('id').single(); if (error) throw error },
+    deleteList: async listId => { signedIn(); const { error } = await db.from('wishlists').delete().eq('id', listId).select('id').single(); if (error) throw error },
     rotateLink: async listId => { signedIn(); const { data, error } = await db.rpc('rotate_share_token', { list_id: listId }); if (error) throw error; return data as string },
+    enableSharing: async listId => { signedIn(); const { error } = await db.rpc('enable_wishlist_sharing', { list_id: listId }); if (error) throw error },
     saveItem: async (listId, input, itemId) => { signedIn();
       const result = itemId ? await db.from('wishes').update(input).eq('id', itemId).eq('wishlist_id', listId).select('id').single() : await db.from('wishes').insert({ ...input, wishlist_id: listId })
       if (result.error) throw result.error

@@ -21,6 +21,8 @@ Standardmäßig wird WebKit mit einem mobilen Viewport verwendet. `WUNSCHNAGEL_Q
 
 Geprüft werden Erstellen einer Einladung, minimaler Gastzugriff vor dem Beitritt, ausdrückliche Annahme, Speichern der gemeinsamen Liste im Konto, Hinzufügen und Ändern von Wünschen, Schutz der Besitzereinstellungen, Aktualisierung für den Besitzer, reine Lesezugriffe über Ansichtslinks, Widerruf ohne Verlust bestehender Mitgliedschaften, Entfernen mit gesperrtem Wiederbeitritt sowie Verlassen ohne Löschen der Wünsche. Der Google-Handoff wird abgefangen und mit einer gültigen Sitzung des isolierten Testkontos abgeschlossen; die eigentliche Google-Zustimmung ist ein gesonderter manueller Test.
 
+`collaboration.mjs` prüft außerdem die gleichen Verwaltungsrechte für Mitbearbeiter: Ansichtslink aktivieren und ersetzen, Einladungen weitergeben und deaktivieren, andere Mitbearbeiter entfernen, Listeneinstellungen ändern und die Liste löschen. Der Besitzer bleibt gegen Entfernung geschützt. Alle diese Schritte verwenden ausschließlich eigene QA-Listen und -Konten.
+
 `npm test` führt zusätzlich die tatsächlichen Migrationen in PostgreSQL/PGlite aus. Die Tests prüfen unter anderem abgelaufene Einladungen, Schreibrechte auf fremde Listen, direkten Zugriff auf Mitgliedschaftstabellen und das kaskadierende Löschen von Mitgliedschaften.
 
 ## Gemerkte Listen

@@ -27,7 +27,7 @@ before(async () => {
     grant usage on schema public, auth, extensions to anon, authenticated;
     -- Reproduce the broad platform table defaults observed in production.
     alter default privileges in schema public grant all on tables to anon, authenticated;
-    create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz);
+    create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz, raw_user_meta_data jsonb not null default '{}'::jsonb);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
     insert into auth.users(id) values ('${alice}'), ('${bob}');
@@ -50,6 +50,7 @@ before(async () => {
   await db.exec(await readFile(new URL('../supabase/migrations/202611090004_security_hardening.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090007_optional_offer_search.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090009_ebay_all_offers.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611100002_equal_editor_rights.sql', import.meta.url), 'utf8'))
 })
 
 test('browser roles have no whole-table operations or mutable security columns', async () => {
@@ -73,7 +74,7 @@ test('browser roles have no whole-table operations or mutable security columns',
   await db.exec('reset role; drop table public.future_private_fixture; drop function public.future_private_function()')
 })
 
-test('member metadata cannot spoof owner access or the verified account email', async () => {
+test('member metadata cannot change the owner identity or the verified account email', async () => {
   await role(alice)
   const listId = (await db.query<{ id: string }>("insert into public.wishlists(owner_id,title) values($1,'Identity check') returning id", [alice])).rows[0].id
   await db.query('select public.create_wishlist_invite($1)', [listId])
@@ -81,7 +82,10 @@ test('member metadata cannot spoof owner access or the verified account email', 
   await role(bob)
   await db.exec(`select set_config('request.jwt.claims','{"user_metadata":{"full_name":"Alice Besitzerin","email":"alice@example.invalid","role":"service_role","is_admin":true}}',false)`)
   await db.query('select public.accept_wishlist_invite($1)', [token])
-  await assert.rejects(db.query('select public.get_collaboration($1)', [listId]), /Nur der Besitzer/)
+  const memberView = (await db.query<{ data: { owner: { user_id: string }; members: { email: string }[] } }>('select public.get_collaboration($1) as data', [listId])).rows[0].data
+  assert.equal(memberView.owner.user_id, alice)
+  assert.equal(memberView.members[0].email, 'bob@example.invalid')
+  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [listId, alice]), /Besitzer kann nicht/)
   await role(alice)
   const member = (await db.query<{ data: { members: { display_name: string; email: string }[] } }>('select public.get_collaboration($1) as data', [listId])).rows[0].data.members[0]
   assert.equal(member.display_name, 'Alice Besitzerin') // Cosmetic, user-editable.
@@ -236,7 +240,7 @@ test('deleting a list also deletes its items', async () => {
   assert.equal((await db.query('select id from public.wishes where id=$1', [itemId])).rows.length, 0)
 })
 
-test('invitation acceptance grants wish editing while list administration stays with the owner', async () => {
+test('invitation acceptance grants editing and list administration while protecting the owner', async () => {
   await role(alice)
   const list = (await db.query<{ id: string; share_token: string }>("insert into public.wishlists(owner_id,title) values ($1,'Together') returning id,share_token", [alice])).rows[0]
   await db.query('select public.create_wishlist_invite($1)', [list.id])
@@ -254,8 +258,8 @@ test('invitation acceptance grants wish editing while list administration stays 
   assert.equal((await db.query('select id from public.wishlists where id=$1', [list.id])).rows.length, 0)
   const beforeLists = (await db.query<{ id: string }>('select id from public.get_my_wishlists()')).rows
   assert.deepEqual(beforeLists.map(l => l.id), [bobListId]) // Excludes Alice's readable public list.
-  await assert.rejects(db.query('select public.get_collaboration($1)', [list.id]), /Nur der Besitzer/)
-  await assert.rejects(db.query('select public.create_wishlist_invite($1)', [list.id]), /Nur der Besitzer/)
+  await assert.rejects(db.query('select public.get_collaboration($1)', [list.id]), /Nur Besitzer und Mitbearbeiter/)
+  await assert.rejects(db.query('select public.create_wishlist_invite($1)', [list.id]), /Nur Besitzer und Mitbearbeiter/)
   await assert.rejects(db.query('select public.accept_wishlist_invite($1)', ['f'.repeat(64)]), /abgelaufen/)
   await db.exec(`select set_config('request.jwt.claims', '{"user_metadata":{"full_name":"Bob Beispiel"}}', false)`)
   assert.equal((await db.query<{ id: string }>('select public.accept_wishlist_invite($1) as id', [invite])).rows[0].id, list.id)
@@ -264,13 +268,14 @@ test('invitation acceptance grants wish editing while list administration stays 
   const wish = (await db.query<{ id: string }>("insert into public.wishes(wishlist_id,title,url) values ($1,'Shared wish','https://example.com/item') returning id", [list.id])).rows[0]
   assert.equal((await db.query("update public.wishes set title='Edited together',fulfilled=true where id=$1 returning id", [wish.id])).rows.length, 1)
   await assert.rejects(db.query('update public.wishes set wishlist_id=$1 where id=$2', [linkId, wish.id]), /permission denied/)
-  assert.equal((await db.query("update public.wishlists set visibility='public',title='Hijacked' where id=$1 returning id", [list.id])).rows.length, 0)
-  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 0)
-  for (const fn of ['create_wishlist_invite', 'revoke_wishlist_invite', 'get_collaboration', 'rotate_share_token']) {
-    await assert.rejects(db.query(`select public.${fn}($1)`, [list.id]), /Nur der Besitzer|List unavailable/)
-  }
-  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [list.id, alice]), /Nur der Besitzer/)
+  assert.equal((await db.query("update public.wishlists set visibility='link',title='Renamed together' where id=$1 returning id", [list.id])).rows.length, 1)
+  assert.match((await db.query<{ token: string }>('select public.rotate_share_token($1) as token', [list.id])).rows[0].token, /^[a-f0-9]{64}$/)
+  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [list.id, alice]), /Besitzer kann nicht/)
   await assert.rejects(db.query('insert into public.wishlist_members(wishlist_id,user_id) values ($1,$2)', [linkId, bob]), /permission denied/)
+  await db.query('select public.create_wishlist_invite($1)', [list.id])
+  const forwarded = (await db.query<{ data: { invite: { token: string }; members: unknown[] } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data
+  assert.equal(forwarded.invite.token, invite)
+  assert.equal(forwarded.members.length, 1)
   await role(alice)
   const members = (await db.query<{ data: { members: { display_name: string }[] } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data.members
   assert.equal(members.length, 1)
@@ -292,6 +297,90 @@ test('invitation acceptance grants wish editing while list administration stays 
   await assert.rejects(db.query('select public.accept_wishlist_invite($1)', [renewed]), /abgelaufen/)
   await role(alice)
   await db.query('delete from public.wishlists where id=$1', [list.id])
+})
+
+test('members have equal list and sharing rights, can remove peers and delete the list, but cannot remove the owner', async () => {
+  const carol = '00000000-0000-4000-8000-000000000003'
+  await db.exec('reset role')
+  await db.query('insert into auth.users(id) values($1)', [carol])
+  await role(alice)
+  const list = (await db.query<{ id: string; share_token: string }>("insert into public.wishlists(owner_id,title,description,emoji) values($1,'Shared by everyone','Keep this description','🎄') returning id,share_token", [alice])).rows[0]
+  const get = async () => (await db.query<{ data: { invite: { token: string; expires_at: string } | null; members: unknown[] } }>('select public.get_collaboration($1) as data', [list.id])).rows[0].data
+  const enable = () => db.query('select public.enable_wishlist_sharing($1)', [list.id])
+  const invite = () => db.query('select public.create_wishlist_invite($1)', [list.id])
+  await invite()
+  const firstInvite = (await get()).invite!
+  await role(bob)
+  await db.query('select public.accept_wishlist_invite($1)', [firstInvite.token])
+  await role(alice)
+  await db.query('select public.revoke_wishlist_invite($1)', [list.id])
+
+  await role()
+  await assert.rejects(enable(), /permission denied/)
+  await assert.rejects(get(), /permission denied/)
+  await assert.rejects(invite(), /permission denied/)
+  await role(carol)
+  for (const action of [enable, get, invite]) await assert.rejects(action(), /Nur Besitzer und Mitbearbeiter/)
+
+  await role(bob)
+  assert.equal((await get()).invite, null)
+  await invite()
+  const memberInvite = (await get()).invite!
+  assert.notEqual(memberInvite.token, firstInvite.token)
+  assert.equal((await get()).members.length, 1)
+  await invite()
+  assert.deepEqual((await get()).invite, memberInvite) // Preserve already-forwarded links and their expiry.
+  await enable()
+  const enabledToken = (await db.query<{ share_token: string }>('select share_token from public.wishlists where id=$1', [list.id])).rows[0].share_token
+  assert.notEqual(enabledToken, list.share_token)
+  await enable()
+  const enabled = (await db.query<{ title: string; description: string; emoji: string; visibility: string; share_token: string }>('select title,description,emoji,visibility,share_token from public.wishlists where id=$1', [list.id])).rows[0]
+  assert.deepEqual(enabled, { title: 'Shared by everyone', description: 'Keep this description', emoji: '🎄', visibility: 'link', share_token: enabledToken })
+
+  await role(carol)
+  const viewed = (await db.query<{ data: { list: { id: string } } }>('select public.get_shared_wishlist($1) as data', [enabledToken])).rows[0].data
+  assert.equal(viewed.list.id, list.id)
+  for (const action of [enable, get, invite]) await assert.rejects(action(), /Nur Besitzer und Mitbearbeiter/)
+  assert.deepEqual((await db.query('select * from public.get_my_wishlists()')).rows, [])
+  assert.equal((await db.query<{ id: string }>('select public.accept_wishlist_invite($1) as id', [memberInvite.token])).rows[0].id, list.id)
+  await invite() // The newly invited person can forward the same invitation.
+  assert.deepEqual((await get()).invite, memberInvite)
+  assert.equal((await get()).members.length, 2)
+  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [list.id, alice]), /Besitzer kann nicht/)
+  await assert.rejects(db.query('update public.wishlists set owner_id=$1 where id=$2', [carol, list.id]), /permission denied/)
+  const rotated = (await db.query<{ token: string }>('select public.rotate_share_token($1) as token', [list.id])).rows[0].token
+  assert.notEqual(rotated, enabledToken)
+  await db.query('select public.revoke_wishlist_invite($1)', [list.id])
+  assert.equal((await get()).invite, null)
+  await invite()
+
+  await role(alice)
+  assert.equal((await get()).members.length, 2)
+  await db.query("update public.wishlists set visibility='public' where id=$1", [list.id])
+  await role(carol)
+  await enable()
+  assert.equal((await db.query<{ visibility: string }>('select visibility from public.wishlists where id=$1', [list.id])).rows[0].visibility, 'public')
+  assert.equal((await db.query("update public.wishlists set title='Updated by member',description='Together' where id=$1 returning id", [list.id])).rows.length, 1)
+  await db.query('select public.remove_wishlist_member($1,$2)', [list.id, bob])
+  await role(bob)
+  for (const action of [enable, get, invite]) await assert.rejects(action(), /Nur Besitzer und Mitbearbeiter/)
+  await role(carol)
+  await invite()
+  const renewed = (await get()).invite!
+  assert.notEqual(renewed.token, memberInvite.token)
+  await db.query('select public.leave_wishlist($1)', [list.id])
+  for (const action of [enable, get, invite]) await assert.rejects(action(), /Nur Besitzer und Mitbearbeiter/)
+  await role(alice)
+  await assert.rejects(db.query('select public.leave_wishlist($1)', [list.id]), /Besitzer kann nicht/)
+  await assert.rejects(db.query('select public.remove_wishlist_member($1,$2)', [list.id, alice]), /Besitzer kann nicht/)
+  await db.query('select public.accept_wishlist_invite($1)', [renewed.token])
+  await role(carol)
+  await db.query('select public.accept_wishlist_invite($1)', [renewed.token])
+  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 1)
+  await role(alice)
+  assert.equal((await db.query('select id from public.get_my_wishlists() where id=$1', [list.id])).rows.length, 0)
+  await db.exec('reset role')
+  await db.query('delete from auth.users where id=$1', [carol])
 })
 
 test('expired invitations grant no access, leaving preserves content, deletion cascades membership', async () => {

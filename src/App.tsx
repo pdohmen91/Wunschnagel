@@ -296,7 +296,7 @@ export default function App() {
   const name = user?.user_metadata?.full_name?.split(' ')[0] || 'Du'
 
   const listActions = canEdit && selected ? <>
-    <button className="button secondary" aria-label={isOwner ? 'Liste teilen' : 'Gemeinsame Liste verwalten'} onClick={openShare}><Share2 size={16} /> {isOwner ? compact ? 'Teilen' : 'Liste teilen' : 'Gemeinsam'}</button>
+    <button className="button secondary" aria-label="Liste teilen" onClick={openShare}><Share2 size={16} /> {compact ? 'Teilen' : 'Liste teilen'}</button>
     <button className="button primary" aria-label="Wunsch hinzufügen" onClick={() => { setEditItem(null); setModal('item') }}><Plus size={18} /> {compact ? 'Wunsch' : 'Wunsch hinzufügen'}</button>
   </> : null
 
@@ -373,7 +373,7 @@ export default function App() {
                   <button className="list-info-trigger" onClick={() => setModal('info')}><CircleHelp size={15} /> Details &amp; Hilfe</button>
                   {route && user && !demo && !loading && !error && <button className="save-shared-list" aria-pressed={savedHere} disabled={bookmarkBusy || !authReady} onClick={() => void toggleBookmark()} title="In deinem Konto für später speichern">{bookmarkBusy ? <LoaderCircle className="spin" size={16} /> : savedHere ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}{savedHere ? 'Gemerkt' : remembered ? 'Link aktualisieren' : 'Liste merken'}</button>}
                   {route && authReady && !user && !demo && !loading && !error && <a className="save-shared-list" href={import.meta.env.BASE_URL}><LogIn size={16} /> Zum Merken anmelden</a>}
-                  {isOwner && <button className={`edit-list ${compact ? 'compact-edit-list' : ''}`} aria-label="Liste bearbeiten" onClick={() => setModal('edit-list')}><Pencil size={compact ? 17 : 14} />{!compact && 'Liste bearbeiten'}</button>}
+                  {canEdit && <button className={`edit-list ${compact ? 'compact-edit-list' : ''}`} aria-label="Liste bearbeiten" onClick={() => setModal('edit-list')}><Pencil size={compact ? 17 : 14} />{!compact && 'Liste bearbeiten'}</button>}
                 </div>
               </div>
               {!compact && listActions && <div className="heading-actions">{listActions}</div>}
@@ -421,18 +421,18 @@ export default function App() {
       <p className="info-list-name">{selected.emoji} {selected.title}</p>
       <p className="share-explanation">{selected.description || 'Für diese Liste wurde noch keine Beschreibung ergänzt.'}</p>
       <div className="help-note"><strong>{visibilityLabels[selected.visibility]}</strong><p>{visibilityDescriptions[selected.visibility]}</p></div>
-      <div className="dialog-actions"><button className="button secondary" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={16} /> So funktioniert’s</button>{isOwner && <button className="button primary" onClick={async () => { await closeModal(); setModal('edit-list') }}><Pencil size={16} /> Liste bearbeiten</button>}</div>
+      <div className="dialog-actions"><button className="button secondary" onClick={async () => { await closeModal(); setModal('help') }}><CircleHelp size={16} /> So funktioniert’s</button>{canEdit && <button className="button primary" onClick={async () => { await closeModal(); setModal('edit-list') }}><Pencil size={16} /> Liste bearbeiten</button>}</div>
     </Dialog>}
     {demo && modal === 'preview' && <Dialog title="Lokale Vorschau" onClose={closeModal}><p className="dialog-intro">Probiere Wunschnagel aus: Ändere die Beispielwünsche oder halte nagelneue Ideen auf eigenen Listen fest.</p><div className="help-note"><strong>Nur in diesem Browser gespeichert</strong><p>Deine Änderungen bleiben auf diesem Gerät. Teilen mit anderen ist in dieser Vorschau noch nicht möglich.</p></div><div className="dialog-actions"><button className="button primary" onClick={closeModal}>Verstanden</button></div></Dialog>}
     {modal === 'tools' && <CollectionToolsDialog query={query} sort={sort} onClose={closeModal} onApply={async (nextQuery, nextSort) => { setQuery(nextQuery); setSort(nextSort); await closeModal() }} />}
-    {canEdit && (modal === 'list' || modal === 'edit-list' && isOwner) && <ListDialog list={modal === 'edit-list' ? selected : null} onClose={closeModal} onSave={async input => {
+    {canEdit && (modal === 'list' || modal === 'edit-list') && <ListDialog list={modal === 'edit-list' ? selected : null} onClose={closeModal} onSave={async input => {
       if (!canEdit) throw new Error('Bitte melde dich an, um eine Wunschliste zu erstellen.')
       if (modal === 'edit-list' && selected) await repo.updateList(selected.id, input)
       else { const created = await repo.createList(input); setSelectedId(created.id) }
       await reloadLists(); await closeModal(); setNotice(modal === 'edit-list' ? 'Wunschliste gespeichert. Alles sitzt.' : 'Deine nagelneue Wunschliste ist bereit.')
     }} onDelete={selected && modal === 'edit-list' ? async () => { await closeModal(); setDeleteTarget({ kind: 'list', id: selected.id, title: selected.title }) } : undefined} />}
     {canEdit && modal === 'item' && selected && <ItemDialog item={editItem} listTitle={selected.title} repo={repo} onClose={closeModal} onSave={async input => { await repo.saveItem(selected.id, input, editItem?.id); if (!editItem) { setQuery(''); setFilter('all') } await refreshItems(selected.id); await closeModal(); setNotice(editItem ? 'Wunsch aktualisiert. Sitzt jetzt genau richtig.' : 'Festgehalten! Dein Wunsch hängt an der Liste.') }} />}
-    {canEdit && modal === 'share' && selected && <ShareDialog demo={demo} owner={isOwner} repo={repo} onLeave={async () => { await closeModal(); setItems([]); await reloadLists(); setNotice('Du hast die gemeinsame Liste verlassen.') }} list={selected} onClose={closeModal} onUpdate={async input => { await repo.updateList(selected.id, input); await reloadLists() }} onRotate={async () => { await repo.rotateLink(selected.id); await reloadLists() }} />}
+    {canEdit && modal === 'share' && selected && <ShareDialog demo={demo} owner={isOwner} userId={user?.id || ''} repo={repo} onLeave={async () => { await closeModal(); setItems([]); await reloadLists(); setNotice('Du hast die gemeinsame Liste verlassen.') }} list={selected} onClose={closeModal} onEnableSharing={async () => { await repo.enableSharing(selected.id); await reloadLists() }} onRotate={async () => { await repo.rotateLink(selected.id); await reloadLists() }} />}
     {modal === 'help' && <HelpDialog guest={!!route} demo={demo} onClose={closeModal} />}
     {modal === 'install' && <Dialog title="App auf dem Handy installieren" onClose={closeModal}><p className="dialog-intro">Gib Wunschnagel einen festen Platz auf deinem Startbildschirm. So öffnet sich die Web-App wie eine eigene App.</p><div className="install-step"><span>1</span><div><strong>Auf dem iPhone</strong><p>Öffne die veröffentlichte App in Safari, tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.</p><p>Öffne Wunschnagel danach über das neue App-Symbol und melde dich dort einmal an. App und Browser speichern die Anmeldung getrennt. Mit demselben Google-Konto erreichst du in beiden dieselben Listen.</p></div></div><div className="install-step"><span>2</span><div><strong>Auf Android</strong><p>Öffne die veröffentlichte App in Chrome. Wähle im Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div><div className="hint"><Info size={17} /><span>Für die Installation brauchst du eine HTTPS-Adresse. Gemeinsame Listen und Shop-Vorschauen benötigen Internet.</span></div></Dialog>}
     {canEdit && deleteTarget && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete(); setNotice(deleteTarget.kind === 'list' ? 'Wunschliste gelöscht. Platz für nagelneue Ideen.' : 'Wunsch gelöscht. Platz für nagelneue Ideen.') })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
@@ -667,7 +667,7 @@ function HelpDialog({ guest, demo, onClose }: { guest: boolean; demo: boolean; o
       </> : <>
         <li><strong>Liste auswählen oder anlegen</strong><p>Öffne auf dem Handy oben „Listen“. Dort kannst du eine Liste auswählen oder mit „Neue Wunschliste“ eine anlegen, zum Beispiel für Geburtstag oder Weihnachten. Am Computer findest du deine Listen links.</p></li>
         <li><strong>Wünsche festhalten</strong><p>Öffne ein Produkt im Shop und kopiere seinen Link. Tippe unten auf „+ Wunsch“ oder am Computer auf „Wunsch hinzufügen“. Füge den Link ein, prüfe den Titel, ergänze bei Bedarf Hinweise und speichere.</p></li>
-        <li><strong>Mit Freunden und Familie teilen</strong><p>{demo ? 'In der lokalen Demo ist Teilen noch nicht möglich. Deine Listen bleiben in diesem Browser.' : 'Wähle „Teilen“ oder am Computer „Liste teilen“. „Nur ansehen“ erstellt einen Ansichtslink ohne Anmeldung. Über „Gemeinsam bearbeiten“ lädst du Personen zum Bearbeiten der Wünsche ein. Sie melden sich an und nehmen die Einladung an; die Liste erscheint dann auch bei ihnen. Als Mitbearbeiter findest du deine Rolle und die Option zum Verlassen unter „Gemeinsam“.'}</p></li>
+        <li><strong>Mit Freunden und Familie teilen</strong><p>{demo ? 'In der lokalen Demo ist Teilen noch nicht möglich. Deine Listen bleiben in diesem Browser.' : 'Wähle „Teilen“ oder am Computer „Liste teilen“. „Nur ansehen“ erstellt einen Ansichtslink ohne Anmeldung. Über „Gemeinsam bearbeiten“ lädst du Personen zum Bearbeiten der Wünsche ein. Sie melden sich an und nehmen die Einladung an; die Liste erscheint dann auch bei ihnen. Alle Mitbearbeiter können beide Links weitergeben und weitere Personen einladen. Die Option zum Verlassen findest du unter „Gemeinsam bearbeiten“.'}</p></li>
       </>}
     </ol>
     {!guest && <div className="help-note"><strong>Schon bekommen?</strong><p>Öffne bei einem Wunsch „Bearbeiten“ und wähle „Als erfüllt markieren“. „Erfüllt“ bedeutet, dass du den Wunsch bereits bekommen hast. Kaufmarkierungen der Schenkenden sind davon getrennt und bleiben für dich verborgen.</p></div>}
@@ -816,8 +816,8 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
   </Dialog>
 }
 
-function ShareDialog({ list, demo, owner, repo, onLeave, onClose, onUpdate, onRotate }: { list: Wishlist; demo: boolean; owner: boolean; repo: Repository; onLeave: () => Promise<void>; onClose: () => void; onUpdate: (input: ListInput) => Promise<void>; onRotate: () => Promise<void> }) {
-  const [view, setView] = useState<'read' | 'edit'>(owner ? 'read' : 'edit')
+function ShareDialog({ list, demo, owner, userId, repo, onLeave, onClose, onEnableSharing, onRotate }: { list: Wishlist; demo: boolean; owner: boolean; userId: string; repo: Repository; onLeave: () => Promise<void>; onClose: () => void; onEnableSharing: () => Promise<void>; onRotate: () => Promise<void> }) {
+  const [view, setView] = useState<'read' | 'edit'>('read')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [confirmRotate, setConfirmRotate] = useState(false)
@@ -829,13 +829,13 @@ function ShareDialog({ list, demo, owner, repo, onLeave, onClose, onUpdate, onRo
     <p className="share-explanation">In der gemeinsam nutzbaren Version kannst du einen Link weitergeben. Freunde und Familie können deine Wünsche dann ohne Anmeldung ansehen.</p>
     <div className="dialog-actions"><button className="button primary" onClick={onClose}>Zurück zur Liste</button></div>
   </Dialog>
-  return <Dialog formLayout={view === 'edit'} title={owner ? "Liste teilen" : "Gemeinsame Liste"} onClose={() => !busy && onClose()}>
-    {owner && <div className="share-mode" role="group" aria-label="Art der Freigabe"><button aria-pressed={view === 'read'} onClick={() => setView('read')}>Nur ansehen</button><button aria-pressed={view === 'edit'} onClick={() => setView('edit')}>Gemeinsam bearbeiten</button></div>}
-    {view === 'edit' ? <FormFields scrollLabel="Weitere Optionen · nach unten scrollen"><CollaborationPanel list={list} repo={repo} owner={owner} onLeave={onLeave} /></FormFields> : <>
+  return <Dialog formLayout={view === 'edit'} title="Liste teilen" onClose={() => !busy && onClose()}>
+    <div className="share-mode" role="group" aria-label="Art der Freigabe"><button aria-pressed={view === 'read'} onClick={() => setView('read')}>Nur ansehen</button><button aria-pressed={view === 'edit'} onClick={() => setView('edit')}>Gemeinsam bearbeiten</button></div>
+    {view === 'edit' ? <FormFields scrollLabel="Weitere Optionen · nach unten scrollen"><CollaborationPanel list={list} repo={repo} owner={owner} userId={userId} onLeave={onLeave} /></FormFields> : <>
     <p className="dialog-intro">{visibilityDescriptions[list.visibility]}</p>
     {list.visibility === 'private' ? <>
       <p className="share-explanation">Erstelle einen Link, damit Freunde und Familie deine Wünsche ansehen können. Damit wird die Liste auf „Mit Link“ umgestellt. Dieser Ansichtslink gibt keine Bearbeitungsrechte. Mitbearbeiter lädst du separat unter „Gemeinsam bearbeiten“ ein.</p>
-      <button className="button primary" disabled={busy} onClick={() => act(async () => { await onUpdate({ title: list.title, description: list.description, emoji: list.emoji, visibility: 'link' }) })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Link2 size={16} />} {busy ? 'Link wird erstellt …' : 'Link zum Teilen erstellen'}</button>
+      <button className="button primary" disabled={busy} onClick={() => act(onEnableSharing)}>{busy ? <LoaderCircle className="spin" size={16} /> : <Link2 size={16} />} {busy ? 'Link wird erstellt …' : 'Link zum Teilen erstellen'}</button>
     </> : <>
       <label className="field">Dein Link zum Weitergeben<input aria-describedby="share-link-help" readOnly value={link} onFocus={e => e.currentTarget.select()} /></label>
       <p className="input-help" id="share-link-help">Kopiere den Link und schicke ihn zum Beispiel per WhatsApp oder E-Mail. Die Empfänger brauchen kein Konto.</p>

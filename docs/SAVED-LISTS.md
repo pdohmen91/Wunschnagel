@@ -7,7 +7,7 @@ Angemeldete Nutzer können geteilte Listen mit „Liste merken“ in ihrem Konto
 - Der Name des Listenbesitzers steht als kräftige erste Zeile („Von …“) über dem kleineren Listentitel. So lassen sich auch gleichnamige Listen schnell zuordnen. Ohne Profilnamen bleibt der Titel sichtbar, ergänzt um „Name nicht verfügbar“.
 - Alte Gast-Merker im Schlüssel `wunschnagel-saved-lists-v1` werden beim Laden entfernt, ohne ihren Inhalt zu lesen oder hochzuladen. Bereits gespeicherte Konto-Merker bleiben bestehen.
 - Entfernen löscht nur den Merker. Eigentümer, Mitglieder, Wünsche und Geschenkmarkierungen bleiben unberührt.
-- Erneuerte Links ersetzen beim Merken den alten Verweis derselben Liste. Eine erneute Freigabe muss zunächst vom Besitzer geteilt werden; Merker umgehen keine Sperre.
+- Erneuerte Links ersetzen beim Merken den alten Verweis derselben Liste. Eine erneute Freigabe muss zunächst vom Besitzer oder einem Mitbearbeiter geteilt werden; Merker umgehen keine Sperre.
 
 ## Zugriff und gespeicherte Daten
 

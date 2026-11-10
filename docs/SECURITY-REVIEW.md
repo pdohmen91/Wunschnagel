@@ -203,3 +203,11 @@ Die lokale Datenquelle bleibt ausschließlich für den ausdrücklich konfigurier
 ## Ergänzung: Wunsch-Hervorhebung
 
 `highlighted` ist ein boolesches Feld mit Standard `false`. Nur authentifizierte Rollen erhalten die zusätzlichen Spaltenrechte; bestehende Eigentümer-/Mitbearbeiter-RLS bleibt maßgeblich. Die sichere geteilte Projektion ergänzt ausschließlich diese Markierung. Ihre private Hilfsfunktion bleibt gesperrt und verborgene Kaufmarkierungen bleiben für Besitzer unsichtbar. Ein Hervorheben setzt Kaufmarkierungen nicht zurück. SQL- und Live-Prüfungen decken Besitzer, eingeladene Mitbearbeiter, Außenstehende, Gäste und widerrufene Freigaben ab.
+
+## Gleichberechtigte Mitbearbeiter (10. November 2026)
+
+Die Migration `202611100002_equal_editor_rights.sql` erweitert die bisherigen Besitzerprüfungen auf authentifizierte Besitzer und beigetretene Mitbearbeiter. Beide dürfen Listen bearbeiten und löschen, Ansichtslinks aktivieren oder ersetzen, Einladungen erstellen oder deaktivieren und andere Mitbearbeiter entfernen. Der Besitzer ist ausdrücklich gegen Entfernung und Verlassen geschützt. Seine ID, Listen-IDs, Zeitstempel und direkte Token-Schreibzugriffe bleiben durch Spaltenrechte unveränderlich. Gäste, Außenstehende und reine Konto-Merker erhalten keine dieser Verwaltungsrechte.
+
+Die Mitgliederverwaltung liefert Namen und bestätigte Konto-E-Mail-Adressen an alle Mitbearbeiter; die Einladung erklärt diese Weitergabe. Metadaten legen keine Rechte fest. Besitzer und Mitbearbeiter können die ganze Liste löschen; der Schutz des Besitzers betrifft seine Entfernung aus einer weiterhin bestehenden Liste. Frühere Aussagen dieses Berichts zu ausschließlich dem Besitzer erlaubter Verwaltung beschreiben den Stand vor dieser Migration.
+
+PostgreSQL-Tests prüfen gleiche Rechte, den geschützten Besitzer, das Entfernen anderer Mitglieder, entzogene Rechte nach Entfernen oder Verlassen und Listenlöschung durch Mitbearbeiter. Browserprüfungen decken beide Freigabearten, Linkverwaltung, Mitgliederverwaltung, Listenbearbeitung und Löschung in Chrome und mobilem WebKit ab.
