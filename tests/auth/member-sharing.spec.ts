@@ -93,6 +93,7 @@ test('members enable and forward read-only links, then create and forward edit i
 })
 
 test('members can retry invitation loading and creation without a false success state', async ({ page }) => {
+  await page.clock.install()
   const state: State = { visibility: 'public', failRead: true, failInvite: true }
   const dialog = await setup(page, state)
   await expect(dialog.getByRole('textbox', { name: 'Dein Link zum Weitergeben', exact: true })).toHaveValue(new RegExp('#/p/' + listId + '$'))
@@ -103,6 +104,10 @@ test('members can retry invitation loading and creation without a false success 
   await dialog.getByRole('button', { name: 'Einladungslink erstellen', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('nicht erstellt')
   await expect(dialog.getByRole('textbox', { name: 'Einladungslink zum Mitbearbeiten', exact: true })).toHaveCount(0)
+  const refreshed = page.waitForResponse(response => response.url().endsWith('/get_collaboration') && response.ok())
+  await page.clock.fastForward(10000)
+  await refreshed
+  await expect(dialog.getByRole('alert')).toContainText('nicht erstellt')
   state.failInvite = false
   await dialog.getByRole('button', { name: 'Einladungslink erstellen', exact: true }).click()
   await expect(dialog.getByRole('textbox', { name: 'Einladungslink zum Mitbearbeiten', exact: true })).toBeVisible()

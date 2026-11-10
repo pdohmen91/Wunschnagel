@@ -39,6 +39,7 @@ export function Invitation({ token, repo, signedIn, onLogin, onAccept }: { token
 
 export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { list: Wishlist; repo: Repository; owner: boolean; userId: string; onLeave: () => Promise<void> }) {
   const [data, setData] = useState<Collaboration | null>(null)
+  const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
@@ -50,8 +51,8 @@ export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { lis
     async function refresh() {
       if (pending || document.visibilityState === 'hidden') return
       pending = true
-      try { const next = await repo.collaboration(list.id); if (active) { setData(next); setError('') } }
-      catch (e) { if (active) setError(message(e)) } finally { pending = false }
+      try { const next = await repo.collaboration(list.id); if (active) { setData(next); setLoadError('') } }
+      catch (e) { if (active) setLoadError(message(e)) } finally { pending = false }
     }
     void refresh()
     const timer = window.setInterval(() => void refresh(), 10000)
@@ -59,14 +60,14 @@ export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { lis
   }, [repo, list.id, owner, busy])
   async function act(action: () => Promise<void>, success = '', refresh = true) {
     setBusy(true); setError(''); setStatus('')
-    try { await action(); if (refresh) setData(await repo.collaboration(list.id)); setConfirm(null); setStatus(success) }
+    try { await action(); if (refresh) { setData(await repo.collaboration(list.id)); setLoadError('') } setConfirm(null); setStatus(success) }
     catch (e) { setError(message(e)) } finally { setBusy(false) }
   }
   const link = data?.invite ? inviteUrl(data.invite.token, window.location.href) : ''
   return <section className="collaboration-panel" aria-label="Gemeinsam bearbeiten">
     <p className="dialog-intro">Alle Mitbearbeiter können Wünsche und Listeneinstellungen ändern, beide Links teilen, Personen einladen oder entfernen und die ganze Liste löschen.</p>
     <div className="help-note"><strong>{owner ? 'Du bleibst Besitzer dieser Liste.' : 'Du hast die gleichen Rechte wie der Besitzer.'}</strong><p>Der Besitzer kann nicht aus der Liste entfernt werden.</p></div>
-      {!data && !error && <p className="input-help" role="status">Einladungen werden geladen …</p>}
+      {!data && !error && !loadError && <p className="input-help" role="status">Einladungen werden geladen …</p>}
       {data && (data.invite ? <>
         <label className="field">Einladungslink zum Mitbearbeiten<input readOnly value={link} onFocus={e => e.currentTarget.select()} /></label>
         <p className="input-help">Gültig bis {new Date(data.invite.expires_at).toLocaleDateString('de-DE')}. Alle mit diesem Link können nach der Anmeldung beitreten. Schicke ihn nur an die gewünschten Personen.</p>
@@ -89,7 +90,7 @@ export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { lis
       <button className="text-button" disabled={busy} onClick={() => setConfirm('leave')}>Gemeinsame Liste verlassen</button>
       {confirm === 'leave' && <div className="collaboration-confirm"><p>Die Liste verschwindet aus deinen Listen. Die Wünsche bleiben für die anderen erhalten. Zum erneuten Beitreten brauchst du eine gültige Einladung.</p><button className="button danger" disabled={busy} onClick={() => void act(async () => { await repo.leaveList(list.id); await onLeave() }, '', false)}>Liste verlassen</button><button className="text-button" onClick={() => setConfirm(null)}>Abbrechen</button></div>}
     </>}
-    {error && <div role="alert" className="form-error"><p>{error}</p>{!data && <button className="text-button" disabled={busy} onClick={() => void act(async () => {})}>Erneut laden</button>}</div>}
+    {(error || loadError) && <div role="alert" className="form-error"><p>{error || loadError}</p>{!data && <button className="text-button" disabled={busy} onClick={() => void act(async () => {})}>Erneut laden</button>}</div>}
     {status && <p className="preview-hint" role="status">{status}</p>}
   </section>
 }
