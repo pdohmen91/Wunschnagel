@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 
 const backend = 'https://security-test.supabase.co', token = 'c'.repeat(64)
 const listId = '00000000-0000-4000-8000-000000000001', itemId = '00000000-0000-4000-8000-000000000002'
-type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean; offerSource?: 'ebay'; highlighted?: boolean }
+type State = { purchased: boolean; canPurchase: boolean; receipt: string | null; writes: number; fail?: boolean; offerSource?: 'ebay' | 'ebay_all'; highlighted?: boolean }
 async function mock(page: Page, state: State) {
   await page.route(backend + '/**', async route => {
     const request = route.request(), path = new URL(request.url()).pathname
@@ -75,6 +75,26 @@ test('product image and explicit used-offer search also use the small interstiti
   await page.evaluate(async () => { await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))) })
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([])
   await page.screenshot({ path: test.info().outputPath('gift-dialog.png') })
+})
+
+test('all-offer eBay wishes hide original shop links and route the image through the eBay gift flow', async ({ page }) => {
+  const state: State = { purchased: false, canPurchase: true, receipt: null, writes: 0, offerSource: 'ebay_all' }
+  await mock(page, state)
+  const wish = page.getByRole('article')
+  await expect(wish.locator('a[href="https://shop.example/product"]')).toHaveCount(0)
+  await expect(wish.locator('.shop-name')).toHaveText('eBay')
+  const searchUrl = await wish.locator('.offer-search-link').getAttribute('href')
+  await expect(wish.locator('.wish-image-link')).toHaveAttribute('href', searchUrl!)
+  await wish.getByRole('link', { name: 'Bei eBay suchen: Eine besondere Espressokanne', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('link', { name: 'Bei eBay suchen', exact: true })).toHaveAttribute('href', searchUrl!)
+  await expect(dialog.getByRole('button', { name: 'Als gekauft markieren', exact: true })).toBeVisible()
+  expect(state.writes).toBe(0)
+  state.canPurchase = false
+  await page.reload()
+  await expect(wish.locator('a[href="https://shop.example/product"]')).toHaveCount(0)
+  await expect(wish.locator('.wish-image-link')).toHaveAttribute('href', searchUrl!)
+  await expect(page.locator('.gift-purchase-status')).toHaveCount(0)
 })
 
 test('another guest sees the bought warning without undo rights; the owner projection shows no purchase UI', async ({ page }) => {

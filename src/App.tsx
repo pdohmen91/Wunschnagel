@@ -477,6 +477,9 @@ function WishMark() {
 function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill, onHighlight }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void; onHighlight: () => void }) {
   const offers = offerSearch(item)
   const offerLabel = offers.label.includes(offers.provider) ? offers.label : `${offers.label} bei ${offers.provider}`
+  const ebayOnly = item.offer_source === 'ebay_all'
+  const imageUrl = ebayOnly ? offers.url : item.url
+  const imageLabel = ebayOnly ? offers.label : 'Zum Shop'
   const hasNotes = !!item.notes?.trim()
   function followGift(event: MouseEvent<HTMLAnchorElement>, url: string, label: string) {
     if (!canPurchase) return
@@ -511,7 +514,7 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
   return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
       <span className="wish-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
-      <a className="wish-image-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Zum Shop: ${item.title}`} onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>
+      <a className="wish-image-link" href={imageUrl} target="_blank" rel="noopener noreferrer" aria-label={`${imageLabel}: ${item.title}`} onClick={event => followGift(event, imageUrl, imageLabel)} onAuxClick={event => { if (event.button === 1) followGift(event, imageUrl, imageLabel) }}>
         {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
       </a>
       {celebrate && <span className="completion-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--burst-angle': `${index * 45}deg` } as CSSProperties} />)}</span>}
@@ -520,13 +523,13 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     </div>
     <div className="wish-body">
       {item.highlighted && <span className="wish-highlight-label"><Heart size={12} fill="currentColor" aria-hidden="true" /> Herzenswunsch</span>}
-      <span className="shop-name"><span className="shop-dot" />{hostname(item.url)}<ArrowUpRight size={12} /></span>
+      <span className="shop-name"><span className="shop-dot" />{ebayOnly ? offers.provider : hostname(item.url)}<ArrowUpRight size={12} /></span>
       <h2>{item.title}</h2>
       {hasNotes && <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${expanded ? 'expanded' : ''}`}>{item.notes}</p>}
       {hasNotes && (notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
       <div className="wish-bottom">
         <span className={`price ${item.price === null ? 'empty-price' : ''}`}>{item.price !== null ? money.format(item.price) : 'Kein Preis angegeben'}{item.price !== null && <small>ca.</small>}</span>
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>
+        {!ebayOnly && <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>}
         {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offerLabel} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
       </div>
     </div>
@@ -790,7 +793,7 @@ function ItemDialog({ item, listTitle, repo, onClose, onSave }: { item: Wish | n
 
         <section className="offer-search-settings" aria-label="Angebote finden">
           <label className="field">Angebote finden<span className="select-wrapper"><select aria-label="Angebote suchen bei" aria-describedby="offer-source-help" value={offerSource} onChange={event => setOfferSource(event.target.value as OfferSource)}>{Object.entries(offerSources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><ChevronDown size={16} /></span></label>
-          <p className="input-help" id="offer-source-help">Optional kannst du eine Angebotsliste oder eigene Suche verlinken. Mit „Nur Shop-Link“ erscheint kein zusätzlicher Button.</p>
+          <p className="input-help" id="offer-source-help">{offerSource === 'ebay_all' ? 'Auf der Wunschkarte führt auch das Bild zur eBay-Suche. Der ursprüngliche Shoplink wird dort ausgeblendet.' : 'Optional kannst du eine Angebotsliste oder eigene Suche verlinken. Mit „Nur Shop-Link“ erscheint kein zusätzlicher Button.'}</p>
           {offerSource !== 'none' && (offerSource === 'custom' ? <label className="field">Such- oder Preisvergleichslink<input required type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" value={searchUrl} maxLength={2000} onChange={event => setSearchUrl(event.target.value)} placeholder="https://…" /></label> : <>
             <label className="field">Suchbegriff <span>optional</span><input value={searchTerm} maxLength={200} onChange={event => setSearchTerm(event.target.value)} placeholder={title.trim() || 'Marke und genaue Modellnummer'} aria-describedby="offer-term-help" /></label>
             <p className="input-help" id="offer-term-help">Ohne eigenen Suchbegriff verwenden wir den Titel. Mit Modellnummer, Ausgabe oder Setnummer finden andere leichter das Richtige.</p>
