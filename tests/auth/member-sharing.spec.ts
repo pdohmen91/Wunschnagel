@@ -8,7 +8,7 @@ const ownerId = '00000000-0000-4000-8000-000000000072'
 const listId = '00000000-0000-4000-8000-000000000073'
 const peerId = '00000000-0000-4000-8000-000000000074'
 const token = 'a'.repeat(64), inviteToken = 'b'.repeat(64)
-type State = { owner?: boolean; visibility?: 'private' | 'link' | 'public'; failInvite?: boolean; activeInvite?: boolean; failRead?: boolean; removed?: boolean; deleted?: boolean; updated?: boolean }
+type State = { owner?: boolean; visibility?: 'private' | 'link'; failInvite?: boolean; activeInvite?: boolean; failRead?: boolean; removed?: boolean; deleted?: boolean; updated?: boolean }
 
 async function setup(page: Page, state: State) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -48,7 +48,7 @@ async function setup(page: Page, state: State) {
     if (path.endsWith('/revoke_wishlist_invite')) { state.activeInvite = false; await route.fulfill({ headers, status: 204 }); return }
     if (path.endsWith('/rotate_share_token')) { list.share_token = 'c'.repeat(64); await route.fulfill({ headers, json: list.share_token }); return }
     if (path === '/rest/v1/wishlists') {
-      expect(new URL(request.url()).searchParams.has('owner_id')).toBe(false)
+      expect(new URL(request.url()).searchParams.get('owner_id')).toBe(request.method() === 'DELETE' ? `eq.${uid}` : null)
       if (request.method() === 'PATCH') { Object.assign(list, request.postDataJSON()); state.updated = true }
       else if (request.method() === 'DELETE') state.deleted = true
       else throw new Error('Unexpected list request')
@@ -94,9 +94,9 @@ test('members enable and forward read-only links, then create and forward edit i
 
 test('members can retry invitation loading and creation without a false success state', async ({ page }) => {
   await page.clock.install()
-  const state: State = { visibility: 'public', failRead: true, failInvite: true }
+  const state: State = { visibility: 'link', failRead: true, failInvite: true }
   const dialog = await setup(page, state)
-  await expect(dialog.getByRole('textbox', { name: 'Dein Link zum Weitergeben', exact: true })).toHaveValue(new RegExp('#/p/' + listId + '$'))
+  await expect(dialog.getByRole('textbox', { name: 'Dein Link zum Weitergeben', exact: true })).toHaveValue(new RegExp('#/s/' + token + '$'))
   await dialog.getByRole('button', { name: 'Gemeinsam bearbeiten', exact: true }).click()
   await expect(dialog.getByRole('alert')).toContainText('nicht geladen')
   state.failRead = false
@@ -132,7 +132,7 @@ test('members manage read links and invitations, remove peers and cannot remove 
   await expect(dialog.getByText('Besitzer · kann nicht entfernt werden', { exact: true })).toBeVisible()
 })
 
-test('members change list settings and can delete the whole list', async ({ page }) => {
+test('members change list settings without a list deletion action', async ({ page }) => {
   const state: State = {}
   const dialog = await setup(page, state)
   await dialog.getByRole('button', { name: 'Schließen', exact: true }).click()
@@ -142,6 +142,15 @@ test('members change list settings and can delete the whole list', async ({ page
   await edit.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Gemeinsam geändert', exact: true })).toBeVisible()
   expect(state.updated).toBe(true)
+  await page.getByRole('button', { name: 'Liste bearbeiten', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Liste löschen', exact: true })).toHaveCount(0)
+  expect(state.deleted).not.toBe(true)
+})
+
+test('only owners have the list deletion action and can delete the list', async ({ page }) => {
+  const state: State = { owner: true }
+  const dialog = await setup(page, state)
+  await dialog.getByRole('button', { name: 'Schließen', exact: true }).click()
   await page.getByRole('button', { name: 'Liste bearbeiten', exact: true }).click()
   await page.getByRole('button', { name: 'Liste löschen', exact: true }).click()
   await page.getByRole('dialog', { name: 'Wunschliste löschen?', exact: true }).getByRole('button', { name: 'Löschen', exact: true }).click()

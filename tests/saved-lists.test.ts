@@ -7,6 +7,7 @@ import { clearLegacySavedLists, savedList, savedListUrl, validSavedList } from '
 
 const owner = '00000000-0000-4000-8000-000000000021', guest = '00000000-0000-4000-8000-000000000022'
 let legacyAccessible: string, legacyRevoked: string
+let migratedPublic: { id: string; share_token: string }, revokedPublic: { id: string; share_token: string }, migratedSavedAt: unknown
 const db = new PGlite({ extensions: { pgcrypto } })
 async function role(id?: string) {
   await db.exec('reset role')
@@ -36,6 +37,17 @@ before(async () => {
       await role(owner); await db.query("update public.wishlists set visibility='private' where id=$1", [revoked.id])
       await db.exec('reset role')
     }
+    if (name === '202611100004_link_only_sharing.sql') {
+      migratedPublic = await fixture('public'); revokedPublic = await fixture('public')
+      await role(guest)
+      for (const list of [migratedPublic, revokedPublic]) {
+        const result = (await db.query<{ data: { saved_at: string } }>("select public.save_wishlist_bookmark('public',$1,$2) as data", [list.id, guest])).rows[0].data
+        if (list.id === migratedPublic.id) migratedSavedAt = result.saved_at
+      }
+      await role(owner)
+      await db.query("update public.wishlists set visibility='private',title='NEW PRIVATE TITLE' where id=$1", [revokedPublic.id])
+      await db.exec('reset role')
+    }
     await db.exec(await readFile(new URL(name, root), 'utf8'))
   }
 })
@@ -48,6 +60,7 @@ test('account references validate safe routes and retire guest storage without r
   for (const value of [null, {}, { ...entry, value: 'javascript:alert(1)' }, { ...entry, list_id: 'invalid' }, ...[42, {}, '', '   ', 'a'.repeat(101)].map(owner_name => ({ ...entry, owner_name }))]) assert.equal(validSavedList(value), false)
   assert.equal(savedListUrl(entry, 'https://example.com/Wunschnagel/?code=private#/p/test'), 'https://example.com/Wunschnagel/#/s/' + 'a'.repeat(64))
   assert.throws(() => savedListUrl({ kind: 'public', value: 'https://evil.example' }, 'https://example.com/'), /Ungültig/)
+  assert.throws(() => savedList({ id: owner, title: 'Alt', emoji: '🎁' }, { kind: 'public', value: owner }), /Öffentliche Links/)
   const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage'), removed: string[] = []
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
     removeItem(key: string) { removed.push(key) },
@@ -94,6 +107,31 @@ test('existing accessible bookmarks gain owner names without exposing names thro
   assert.equal(entries.find(row => row.list_id === legacyRevoked)!.owner_name, null)
 })
 
+test('formerly public lists gain secret links and existing valid bookmarks migrate without reviving revoked access', async () => {
+  await role(owner)
+  const converted = (await db.query<{ visibility: string; share_token: string }>('select visibility,share_token from public.wishlists where id=$1', [migratedPublic.id])).rows[0]
+  assert.equal(converted.visibility, 'link')
+  assert.notEqual(converted.share_token, migratedPublic.share_token)
+  await assert.rejects(db.query("insert into public.wishlists(owner_id,title,visibility) values($1,'No public mode','public')", [owner]), /wishlists_visibility_check/)
+  await assert.rejects(db.query("update public.wishlists set visibility='public' where id=$1", [migratedPublic.id]), /wishlists_visibility_check/)
+  await role(guest)
+  const entries = await bookmarks()
+  const migrated = entries.find(row => row.list_id === migratedPublic.id)!
+  assert.equal(migrated.kind, 'token'); assert.equal(migrated.value, converted.share_token)
+  assert.equal(migrated.available, true); assert.equal(migrated.saved_at, migratedSavedAt)
+  const revoked = entries.find(row => row.list_id === revokedPublic.id)!
+  assert.equal(revoked.kind, 'public'); assert.equal(revoked.available, false)
+  assert.equal(revoked.title, 'Geteilte Ideen')
+  await assert.rejects(db.query("select public.save_wishlist_bookmark('public',$1,$2)", [migratedPublic.id, guest]), /nicht mehr freigegeben/)
+  for (const user of [undefined, guest, owner]) {
+    await role(user)
+    assert.equal((await db.query<{ value: unknown }>('select public.get_public_wishlist($1) as value', [migratedPublic.id])).rows[0].value, null)
+  }
+  await role()
+  assert.equal((await db.query<{ value: unknown }>('select public.get_shared_wishlist($1) as value', [migratedPublic.share_token])).rows[0].value, null)
+  assert.equal((await db.query<{ value: { list: { id: string } } }>('select public.get_shared_wishlist($1) as value', [converted.share_token])).rows[0].value.list.id, migratedPublic.id)
+})
+
 test('owner names refresh only through valid routes and retain their saved snapshot after revocation', async () => {
   const list = await fixture()
   await role(guest)
@@ -114,9 +152,9 @@ test('owner names refresh only through valid routes and retain their saved snaps
   assert.equal((await bookmarks()).find(row => row.list_id === list.id)!.owner_name, 'Alexandra')
   await db.exec('reset role')
   await db.query('update auth.users set raw_user_meta_data=$1 where id=$2', [{ email: 'private@example.com' }, owner])
-  const nameless = await fixture('public')
+  const nameless = await fixture()
   await role(guest)
-  const empty = (await db.query<{ value: Record<string, unknown> }>("select public.save_wishlist_bookmark('public',$1,$2) as value", [nameless.id, guest])).rows[0].value
+  const empty = await save(nameless)
   assert.equal(empty.owner_name, null)
   assert.equal((await bookmarks()).find(row => row.list_id === nameless.id)!.owner_name, null)
   await db.exec('reset role')
@@ -148,18 +186,19 @@ test('revocation keeps only the old snapshot; new token refreshes one bookmark a
   assert.equal((await bookmarks()).some(row => row.list_id === list.id), false)
 })
 
-test('public list references require public visibility, enforce a per-account bound and permit updates at the limit', async () => {
-  const list = await fixture('public'), privateList = await fixture('private')
+test('only shared tokens can be saved; per-account limits permit updates at the limit', async () => {
+  const list = await fixture(), privateList = await fixture('private')
   await role(guest)
-  await db.query("select public.save_wishlist_bookmark('public',$1,$2)", [list.id, guest])
-  await assert.rejects(db.query("select public.save_wishlist_bookmark('public',$1,$2)", [privateList.id, guest]), /nicht mehr freigegeben/)
+  await save(list)
+  await assert.rejects(db.query("select public.save_wishlist_bookmark('public',$1,$2)", [list.id, guest]), /nicht mehr freigegeben/)
+  await assert.rejects(save(privateList), /nicht mehr freigegeben/)
   await assert.rejects(db.query("select public.save_wishlist_bookmark('public','invalid',$1)", [guest]), /nicht mehr freigegeben/)
   await db.exec('reset role')
   await db.query(`insert into public.wishlist_bookmarks(user_id,list_id,route_kind,route_value,title,emoji)
     select $1, gen_random_uuid(), 'token', repeat('f',64), 'Old reference','🎁' from generate_series(1,100-(select count(*)::int from public.wishlist_bookmarks where user_id=$1))`, [guest])
   await role(guest)
   assert.equal((await bookmarks()).length, 100)
-  await db.query("select public.save_wishlist_bookmark('public',$1,$2)", [list.id, guest])
+  await save(list)
   const extra = await fixture(); await role(guest)
   await assert.rejects(save(extra), /bis zu 100/)
 })

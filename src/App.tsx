@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Bookmark, BookmarkCheck, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Heart, Cake, TreePine, Globe2, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, Copy, ExternalLink, Gift, Heart, Cake, TreePine, CircleHelp, Info, Link2, LoaderCircle, LockKeyhole, LogIn, LogOut, Pencil, Plus, RotateCcw, Search, Share2, Trash2, WifiOff, X } from 'lucide-react'
 import { hostname, offerSearch, offerSources, parsePrice, readInviteRoute, readShareRoute, sharedProduct, shareUrl, sortWishes, visibilityDescriptions, visibilityLabels, webUrl } from './domain'
 import type { ListInput, OfferSource, Visibility, Wish, Wishlist, WishInput, WishSort, ShareRoute } from './domain'
 import { authCallbackWarning, supabase } from './lib/client'
@@ -18,12 +18,13 @@ import { useInstallPrompt } from './lib/useInstallPrompt'
 import { FormFields } from './lib/FormFields'
 import { CollaborationPanel, Invitation } from './lib/Collaboration'
 import { useSavedLists } from './lib/useSavedLists'
-import { SavedListsPanel } from './lib/SavedListsPanel'
+import { SavedListsMenu, SavedListsPanel } from './lib/SavedListsPanel'
+import { EmojiPicker } from './lib/EmojiPicker'
 
 const defaultSort: WishSort = 'newest'
 const money = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 const message = (error: unknown) => error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
-const PrivacyIcon = ({ value, size = 14 }: { value: Visibility; size?: number }) => value === 'private' ? <LockKeyhole size={size} /> : value === 'public' ? <Globe2 size={size} /> : <Link2 size={size} />
+const PrivacyIcon = ({ value, size = 14 }: { value: Visibility; size?: number }) => value === 'private' ? <LockKeyhole size={size} /> : <Link2 size={size} />
 
 export default function App() {
   const compact = useCompactLayout()
@@ -318,7 +319,7 @@ export default function App() {
           {lists.map(list => <option key={list.id} value={list.id}>{list.emoji} {list.title}</option>)}
         </select></label>}
         {canEdit && !compact && <button className="new-list" onClick={() => setModal('list')}><Plus size={17} /> Neue Wunschliste</button>}
-        {!compact && user && !demo && <button className="new-list saved-library-trigger" onClick={() => setModal('lists')}><Bookmark size={17} /> Gemerkte Listen <span className="count">{saved.entries.length}</span></button>}
+        {!compact && user && !demo && <SavedListsMenu key={user.id} saved={saved} route={route} onOpen={url => { setQuery(''); setFilter('all'); window.location.hash = new URL(url).hash }} onManage={() => setModal('lists')} />}
         {route && !compact && <a className="new-list" href={import.meta.env.BASE_URL}><ArrowLeft size={16} /> Meine Listen</a>}
       </div>
       {!installation.installed && <button className="install-link" onClick={() => setModal('install')}><ArrowDownToLine size={17} /> App installieren</button>}
@@ -400,7 +401,7 @@ export default function App() {
               </div>}
               {items.length > 0 && <p className="screen-reader-only" id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
               {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
-              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} number={items.indexOf(item) + 1} canEdit={canEdit} onHighlight={() => run(async () => { await repo.highlightItem(item.id, !item.highlighted); await refreshItems(selected.id); setNotice(item.highlighted ? 'Markierung entfernt.' : 'Als Herzenswunsch hervorgehoben.') })} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
+              {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} canEdit={canEdit} onHighlight={() => run(async () => { await repo.highlightItem(item.id, !item.highlighted); await refreshItems(selected.id); setNotice(item.highlighted ? 'Markierung entfernt.' : 'Als Herzenswunsch hervorgehoben.') })} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
               {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
             </>}
           </div> : !loading && !error ? <section className="empty-state first-list"><span className="empty-icon"><WishMark /></span><h1>Deine erste Wunschliste</h1><p>Ein Nagel, ein Zettel, deine Wünsche. Erstelle eine Liste für einen Anlass oder sammle deine Ideen für später.</p>{canEdit && <button className="button primary" onClick={() => setModal('list')}><Plus size={18} /> Wunschliste erstellen</button>}</section> : loading ? <Loading /> : null}
@@ -430,12 +431,12 @@ export default function App() {
       if (modal === 'edit-list' && selected) await repo.updateList(selected.id, input)
       else { const created = await repo.createList(input); setSelectedId(created.id) }
       await reloadLists(); await closeModal(); setNotice(modal === 'edit-list' ? 'Wunschliste gespeichert. Alles sitzt.' : 'Deine nagelneue Wunschliste ist bereit.')
-    }} onDelete={selected && modal === 'edit-list' ? async () => { await closeModal(); setDeleteTarget({ kind: 'list', id: selected.id, title: selected.title }) } : undefined} />}
+    }} onDelete={isOwner && selected && modal === 'edit-list' ? async () => { await closeModal(); setDeleteTarget({ kind: 'list', id: selected.id, title: selected.title }) } : undefined} />}
     {canEdit && modal === 'item' && selected && <ItemDialog item={editItem} listTitle={selected.title} repo={repo} onClose={closeModal} onSave={async input => { await repo.saveItem(selected.id, input, editItem?.id); if (!editItem) { setQuery(''); setFilter('all') } await refreshItems(selected.id); await closeModal(); setNotice(editItem ? 'Wunsch aktualisiert. Sitzt jetzt genau richtig.' : 'Festgehalten! Dein Wunsch hängt an der Liste.') }} />}
     {canEdit && modal === 'share' && selected && <ShareDialog demo={demo} owner={isOwner} userId={user?.id || ''} repo={repo} onLeave={async () => { await closeModal(); setItems([]); await reloadLists(); setNotice('Du hast die gemeinsame Liste verlassen.') }} list={selected} onClose={closeModal} onEnableSharing={async () => { await repo.enableSharing(selected.id); await reloadLists() }} onRotate={async () => { await repo.rotateLink(selected.id); await reloadLists() }} />}
     {modal === 'help' && <HelpDialog guest={!!route} demo={demo} onClose={closeModal} />}
     {modal === 'install' && <Dialog title="App auf dem Handy installieren" onClose={closeModal}><p className="dialog-intro">Gib Wunschnagel einen festen Platz auf deinem Startbildschirm. So öffnet sich die Web-App wie eine eigene App.</p><div className="install-step"><span>1</span><div><strong>Auf dem iPhone</strong><p>Öffne die veröffentlichte App in Safari, tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.</p><p>Öffne Wunschnagel danach über das neue App-Symbol und melde dich dort einmal an. App und Browser speichern die Anmeldung getrennt. Mit demselben Google-Konto erreichst du in beiden dieselben Listen.</p></div></div><div className="install-step"><span>2</span><div><strong>Auf Android</strong><p>Öffne die veröffentlichte App in Chrome. Wähle im Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div><div className="hint"><Info size={17} /><span>Für die Installation brauchst du eine HTTPS-Adresse. Gemeinsame Listen und Shop-Vorschauen benötigen Internet.</span></div></Dialog>}
-    {canEdit && deleteTarget && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete(); setNotice(deleteTarget.kind === 'list' ? 'Wunschliste gelöscht. Platz für nagelneue Ideen.' : 'Wunsch gelöscht. Platz für nagelneue Ideen.') })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
+    {canEdit && deleteTarget && (deleteTarget.kind === 'item' || isOwner) && <Dialog title={deleteTarget.kind === 'list' ? 'Wunschliste löschen?' : 'Wunsch löschen?'} onClose={() => { if (!busy) void closeDelete() }}><p className="dialog-intro">„{deleteTarget.title}“ wird gelöscht.{deleteTarget.kind === 'list' && ' Dabei werden auch alle Wünsche in dieser Liste und der geteilte Link entfernt.'}</p><div className="dialog-actions"><button className="button secondary" disabled={busy} onClick={() => void closeDelete()}>Behalten</button><button className="button danger" disabled={busy} onClick={() => run(async () => { if (deleteTarget.kind === 'list') { await repo.deleteList(deleteTarget.id); await reloadLists() } else { await repo.deleteItem(deleteTarget.id); if (selected) await refreshItems(selected.id) } await closeDelete(); setNotice(deleteTarget.kind === 'list' ? 'Wunschliste gelöscht. Platz für nagelneue Ideen.' : 'Wunsch gelöscht. Platz für nagelneue Ideen.') })}>{busy ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Löschen</button></div></Dialog>}
     {compact && listActions && createPortal(<nav className="mobile-action-bar" aria-label="Aktionen für die Wunschliste">{listActions}</nav>, document.body)}
     {modal === 'gift' && route && selected && giftTarget && canPurchase && <GiftDialog key={`${selected.id}:${giftTarget.itemId}`} item={items.find(item => item.id === giftTarget.itemId) || null} listId={selected.id} route={route} repo={cloudRepository('')} destination={giftTarget.url} destinationLabel={giftTarget.label} onClose={closeModal} onRefresh={async () => {
       const version = requestId.current
@@ -474,7 +475,7 @@ function WishMark() {
   return <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M8 10h19l7 8v19H8z" stroke="currentColor" strokeWidth="2" /><path d="M27 10v8h7M8 32h26" stroke="currentColor" strokeWidth="2" /><path d="M21 29s-7-4.2-7-8a3.5 3.5 0 0 1 7-1 3.5 3.5 0 0 1 7 1c0 3.8-7 8-7 8Z" fill="currentColor" /><path d="M20 3v12m-4-12h8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
 }
 
-function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill, onHighlight }: { item: Wish; number: number; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void; onHighlight: () => void }) {
+function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDelete, onFulfill, onHighlight }: { item: Wish; canEdit: boolean; canPurchase: boolean; onOpenGift: (url?: string, label?: string) => void; busy: boolean; onEdit: () => void; onDelete: () => void; onFulfill: () => void; onHighlight: () => void }) {
   const offers = offerSearch(item)
   const offerLabel = offers.label.includes(offers.provider) ? offers.label : `${offers.label} bei ${offers.provider}`
   const ebayOnly = item.offer_source === 'ebay_all'
@@ -513,9 +514,8 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
   }, [item.notes, expanded])
   return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
-      <span className="wish-number" aria-hidden="true">{String(number).padStart(2, '0')}</span>
       <a className="wish-image-link" href={imageUrl} target="_blank" rel="noopener noreferrer" aria-label={`${imageLabel}: ${item.title}`} onClick={event => followGift(event, imageUrl, imageLabel)} onAuxClick={event => { if (event.button === 1) followGift(event, imageUrl, imageLabel) }}>
-        {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
+        {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
       </a>
       {celebrate && <span className="completion-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--burst-angle': `${index * 45}deg` } as CSSProperties} />)}</span>}
       {item.fulfilled && <span className="fulfilled-badge"><Check size={13} /> Erfüllt</span>}
@@ -523,7 +523,18 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     </div>
     <div className="wish-body">
       {item.highlighted && <span className="wish-highlight-label"><Heart size={12} fill="currentColor" aria-hidden="true" /> Herzenswunsch</span>}
-      <span className="shop-name"><span className="shop-dot" />{ebayOnly ? offers.provider : hostname(item.url)}<ArrowUpRight size={12} /></span>
+      <div className="wish-card-meta">
+        <span className="shop-name"><span className="shop-dot" />{ebayOnly ? offers.provider : hostname(item.url)}<ArrowUpRight size={12} /></span>
+        {canEdit && <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
+          <summary aria-label={`Optionen für ${item.title}`}><Pencil size={13} /><span>Bearbeiten</span></summary>
+          <div onClick={e => { const details = e.currentTarget.closest('details'); if (details) void closeDetails(details) }}>
+            <button onClick={onEdit}><Pencil size={14} /> Bearbeiten</button>
+            <button disabled={busy} onClick={onHighlight}><Heart size={14} />{item.highlighted ? 'Hervorhebung entfernen' : 'Hervorheben'}</button>
+            <button disabled={busy} onClick={onFulfill}><CheckCheck size={14} />{item.fulfilled ? 'Wieder offen' : 'Als erfüllt markieren'}</button>
+            <button className="danger-text" disabled={busy} onClick={onDelete}><Trash2 size={14} /> Löschen</button>
+          </div>
+        </details>}
+      </div>
       <h2>{item.title}</h2>
       {hasNotes && <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${expanded ? 'expanded' : ''}`}>{item.notes}</p>}
       {hasNotes && (notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
@@ -536,15 +547,6 @@ function WishCard({ item, number, canEdit, canPurchase, onOpenGift, busy, onEdit
     {canPurchase && !item.fulfilled && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
       {item.purchased ? <><p><CheckCheck size={16} /><strong>Bereits gekauft</strong></p><small>Bitte nicht noch einmal schenken.</small>{giftReceipt(item.id) && <button className="text-button" onClick={() => onOpenGift()}>Kaufmarkierung verwalten</button>}</> : <button className="button secondary" onClick={() => onOpenGift()}><Gift size={16} /> Als gekauft markieren</button>}
     </div>}
-    {canEdit && <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
-      <summary aria-label={`Optionen für ${item.title}`}><Pencil size={13} /><span>Bearbeiten</span></summary>
-      <div onClick={e => { const details = e.currentTarget.closest('details'); if (details) void closeDetails(details) }}>
-        <button onClick={onEdit}><Pencil size={14} /> Bearbeiten</button>
-        <button disabled={busy} onClick={onHighlight}><Heart size={14} />{item.highlighted ? 'Hervorhebung entfernen' : 'Hervorheben'}</button>
-        <button disabled={busy} onClick={onFulfill}><CheckCheck size={14} />{item.fulfilled ? 'Wieder offen' : 'Als erfüllt markieren'}</button>
-        <button className="danger-text" disabled={busy} onClick={onDelete}><Trash2 size={14} /> Löschen</button>
-      </div>
-    </details>}
   </article>
 }
 
@@ -692,7 +694,7 @@ function ListDialog({ list, onClose, onSave, onDelete }: { list: Wishlist | null
       <label className="field">Name deiner Liste<input autoFocus required maxLength={100} value={title} onChange={e => setTitle(e.target.value)} placeholder="Zum Beispiel: Zum Geburtstag" pattern=".*\S.*" /></label>
       <label className="field">Beschreibung <span>optional</span><textarea aria-describedby="list-description-help" maxLength={1000} rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="Zum Beispiel: Ideen für meinen Geburtstag" /></label>
       <p className="input-help" id="list-description-help">Die Beschreibung sehen auch die Personen, mit denen du die Liste teilst.</p>
-      <div className="field">Symbol für die Liste <span>optional</span><div className="emoji-options">{['🌿', '🎂', '🎄', '🏡', '✨', '🎒', '💛', '🎁'].map(value => <button type="button" key={value} aria-label={`Symbol ${value}`} aria-pressed={emoji === value} className={emoji === value ? 'selected' : ''} onClick={() => setEmoji(value)}>{value}</button>)}</div></div>
+      <EmojiPicker value={emoji} onChange={setEmoji} />
       <label className="field">Wer darf deine Liste sehen?<span className="select-wrapper"><select aria-describedby="list-visibility-help" value={visibility} onChange={e => setVisibility(e.target.value as Visibility)}>{Object.entries(visibilityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select><ChevronDown size={16} /></span></label>
       <p key={visibility} className="field-help" id="list-visibility-help"><PrivacyIcon value={visibility} />{visibilityDescriptions[visibility]}</p>
       {list && list.visibility !== 'private' && visibility === 'private' && <p className="hint">Bestehende Freigabelinks funktionieren dann nicht mehr. Beim späteren Freigeben wird ein neuer Link erstellt.</p>}

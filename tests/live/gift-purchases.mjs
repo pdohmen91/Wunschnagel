@@ -49,15 +49,18 @@ try {
   phase = 'two independent guests marking simultaneously'
   const raced = await Promise.all([ok(a.rpc('purchase_wish', params(secondWish, first))), ok(b.rpc('purchase_wish', params(secondWish, second)))])
   assert.deepEqual([...raced].sort(), ['already_purchased', 'purchased']); checks++
-  phase = 'private and public scopes'
+  phase = 'private and secret-link scopes'
   const privateList = await ok(owner.from('wishlists').insert({ owner_id: userId, title: '[QA] Private', visibility: 'private' }).select().single())
   const privateWish = await ok(owner.from('wishes').insert({ wishlist_id: privateList.id, title: '[QA] Private gift', url: 'https://example.com/qa-private' }).select().single())
   await denied(a.rpc('purchase_wish', { list_id: privateList.id, item_id: privateWish.id, read_token: privateList.share_token, receipt: first }))
   await denied(a.rpc('purchase_wish', params(privateWish, first)))
-  await ok(owner.from('wishlists').update({ visibility: 'public' }).eq('id', privateList.id))
-  assert.equal(await ok(a.rpc('purchase_wish', { list_id: privateList.id, item_id: privateWish.id, read_token: null, receipt: first })), 'purchased')
-  assert.equal((await ok(b.rpc('get_public_wishlist', { list_id: privateList.id }))).items[0].purchased, true)
-  assert.equal('purchased' in (await ok(owner.rpc('get_public_wishlist', { list_id: privateList.id }))).items[0], false)
+  await denied(owner.from('wishlists').update({ visibility: 'public' }).eq('id', privateList.id))
+  const sharedList = await ok(owner.from('wishlists').update({ visibility: 'link' }).eq('id', privateList.id).select().single())
+  await denied(a.rpc('purchase_wish', { list_id: privateList.id, item_id: privateWish.id, read_token: null, receipt: first }))
+  assert.equal(await ok(a.rpc('purchase_wish', { list_id: privateList.id, item_id: privateWish.id, read_token: sharedList.share_token, receipt: first })), 'purchased')
+  assert.equal((await ok(b.rpc('get_shared_wishlist', { token: sharedList.share_token }))).items[0].purchased, true)
+  assert.equal('purchased' in (await ok(owner.rpc('get_shared_wishlist', { token: sharedList.share_token }))).items[0], false)
+  assert.equal(await ok(b.rpc('get_public_wishlist', { list_id: privateList.id })), null)
   if (process.env.WUNSCHNAGEL_QA_API_ONLY !== '1') {
     phase = 'mobile guests and unchanged owner UI'
     browser = await webkit.launch()

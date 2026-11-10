@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Bookmark, Check, ChevronRight, LoaderCircle, Trash2 } from 'lucide-react'
-import type { Wishlist } from '../domain'
+import { Bookmark, Check, ChevronDown, ChevronRight, LoaderCircle, Trash2 } from 'lucide-react'
+import type { ShareRoute, Wishlist } from '../domain'
 import { visibilityLabels } from '../domain'
 import type { Repository } from './repository'
 import { savedListUrl } from './savedLists'
@@ -8,6 +8,25 @@ import type { SavedList } from './savedLists'
 import type { SavedListsController } from './useSavedLists'
 
 const errorText = (error: unknown) => error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Das hat gerade nicht geklappt. Bitte versuche es erneut.'
+
+export function SavedListsMenu({ saved, route, onOpen, onManage }: {
+  saved: SavedListsController; route: ShareRoute | null; onOpen: (url: string) => void; onManage: () => void;
+}) {
+  return <details className="saved-library-menu">
+    <summary className="new-list saved-library-trigger"><Bookmark size={17} /><span>Gemerkte Listen</span><span className="count">{saved.entries.length}</span><ChevronDown size={15} className="saved-menu-chevron" aria-hidden="true" /></summary>
+    <nav className="saved-menu-options" aria-label="Gemerkte Wunschlisten">
+      {saved.loading && <p className="saved-menu-hint" role="status">Gemerkte Listen werden geladen …</p>}
+      {saved.error && <div className="saved-menu-hint" role="alert"><p>{saved.error}</p><button className="text-button" onClick={() => void saved.refresh()}>Erneut versuchen</button></div>}
+      {saved.entries.map(entry => <a key={entry.list_id} className="saved-menu-entry" href={savedListUrl(entry, window.location.href)} aria-current={route?.kind === entry.kind && route.value === entry.value ? 'page' : undefined}
+        onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); onOpen(event.currentTarget.href) }}>
+        <span className="saved-menu-emoji" aria-hidden="true">{entry.emoji}</span>
+        <span className="saved-menu-details"><strong>{entry.owner_name ? `Von ${entry.owner_name}` : entry.title}</strong><small>{entry.owner_name ? entry.title : 'Name nicht verfügbar'}</small>{entry.available === false && <small className="saved-menu-unavailable">Link nicht mehr verfügbar</small>}</span>
+      </a>)}
+      {!saved.loading && !saved.error && !saved.entries.length && <p className="saved-menu-hint">Noch keine Liste gemerkt. Öffne eine geteilte Liste und tippe auf „Liste merken“.</p>}
+      <button className="text-button saved-menu-manage" onClick={onManage}>Merker verwalten</button>
+    </nav>
+  </details>
+}
 
 export function SavedListsPanel({ saved, lists, repo, fetchOwned, userId, selectedId, demo, onOwn, onOpen }: {
   saved: SavedListsController; lists: Wishlist[]; repo: Repository; fetchOwned: boolean; userId?: string;

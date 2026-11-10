@@ -28,7 +28,7 @@ export function Invitation({ token, repo, signedIn, onLogin, onAccept }: { token
     <h1>{invitation ? <>{invitation.emoji} {invitation.title}</> : 'Einladung zur Wunschliste'}</h1>
     {invitation ? <>
       <p>{invitation.already_joined ? 'Diese Liste gehört bereits zu deinen Listen.' : 'Du bist zum Mitbearbeiten eingeladen. Zusammen könnt ihr Wünsche hinzufügen, ändern, abhaken und löschen.'}</p>
-      {!invitation.already_joined && <p className="input-help">Mitbearbeiter haben die gleichen Rechte wie der Besitzer: Sie können die Liste teilen, Einstellungen ändern, Personen entfernen und die Liste löschen. Der Besitzer selbst kann nicht entfernt werden. Nimm die Einladung nur an, wenn du die Person kennst. Die anderen Mitbearbeiter sehen deinen Namen und deine bestätigte E-Mail-Adresse, um den Zugriff zuzuordnen.</p>}
+      {!invitation.already_joined && <p className="input-help">Mitbearbeiter können die Liste teilen, Einstellungen ändern und andere Mitbearbeiter entfernen. Nur der Besitzer darf die ganze Liste löschen; der Besitzer selbst kann nicht entfernt werden. Nimm die Einladung nur an, wenn du die Person kennst. Die anderen Mitbearbeiter sehen deinen Namen und deine bestätigte E-Mail-Adresse, um den Zugriff zuzuordnen.</p>}
       <button className="button primary" disabled={busy} onClick={() => void accept()}>{busy ? <LoaderCircle size={17} className="spin" /> : signedIn ? <ArrowRight size={17} /> : <LogIn size={17} />}{signedIn ? invitation.already_joined ? 'Liste öffnen' : 'Einladung annehmen' : 'Mit Google anmelden'}</button>
       {!signedIn && <p className="input-help">Melde dich zuerst an. Danach kannst du die Einladung annehmen.</p>}
     </> : !error && <p role="status"><LoaderCircle className="spin" size={18} /> Einladung wird geprüft …</p>}
@@ -65,8 +65,8 @@ export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { lis
   }
   const link = data?.invite ? inviteUrl(data.invite.token, window.location.href) : ''
   return <section className="collaboration-panel" aria-label="Gemeinsam bearbeiten">
-    <p className="dialog-intro">Alle Mitbearbeiter können Wünsche und Listeneinstellungen ändern, beide Links teilen, Personen einladen oder entfernen und die ganze Liste löschen.</p>
-    <div className="help-note"><strong>{owner ? 'Du bleibst Besitzer dieser Liste.' : 'Du hast die gleichen Rechte wie der Besitzer.'}</strong><p>Der Besitzer kann nicht aus der Liste entfernt werden.</p></div>
+    <p className="dialog-intro">Alle Mitbearbeiter können Wünsche und Listeneinstellungen ändern, beide Links teilen und andere Mitbearbeiter einladen oder entfernen.</p>
+    <div className="help-note"><strong>{owner ? 'Du bleibst Besitzer dieser Liste.' : 'Du verwaltest diese Liste mit.'}</strong><p>Nur der Besitzer darf die ganze Liste löschen. Der Besitzer kann nicht aus der Liste entfernt werden.</p></div>
       {!data && !error && !loadError && <p className="input-help" role="status">Einladungen werden geladen …</p>}
       {data && (data.invite ? <>
         <label className="field">Einladungslink zum Mitbearbeiten<input readOnly value={link} onFocus={e => e.currentTarget.select()} /></label>
@@ -82,7 +82,7 @@ export function CollaborationPanel({ list, repo, owner, userId, onLeave }: { lis
           {data.members.filter(member => member.user_id !== list.owner_id).map(member => <li key={member.user_id}>
             <span>{member.display_name}{member.user_id === userId && <small>Du</small>}{member.email && <small className="member-email">{member.email}</small>}</span>
             {member.user_id !== userId && <button className="text-button" disabled={busy} aria-label={`${member.display_name} entfernen`} onClick={() => setConfirm(member.user_id)}>Entfernen</button>}
-            {confirm === member.user_id && <div className="collaboration-confirm"><p>{member.display_name} verliert die Bearbeitungsrechte. Ein bestehender Einladungslink wird ebenfalls deaktiviert, damit die Person nicht erneut beitreten kann. Öffentlich oder per Ansichtslink bleibt die Liste weiterhin lesbar.</p><button className="button danger" disabled={busy} onClick={() => void act(() => repo.removeMember(list.id, member.user_id), 'Person entfernt. Andere bestehende Mitglieder behalten ihren Zugriff.')}>Person entfernen</button><button className="text-button" onClick={() => setConfirm(null)}>Abbrechen</button></div>}
+            {confirm === member.user_id && <div className="collaboration-confirm"><p>{member.display_name} verliert die Bearbeitungsrechte. Ein bestehender Einladungslink wird ebenfalls deaktiviert, damit die Person nicht erneut beitreten kann. Mit einem weiterhin gültigen Ansichtslink bleibt die Liste lesbar.</p><button className="button danger" disabled={busy} onClick={() => void act(() => repo.removeMember(list.id, member.user_id), 'Person entfernt. Andere bestehende Mitglieder behalten ihren Zugriff.')}>Person entfernen</button><button className="text-button" onClick={() => setConfirm(null)}>Abbrechen</button></div>}
           </li>)}
         </ul>
       </div>}

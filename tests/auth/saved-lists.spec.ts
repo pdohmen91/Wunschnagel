@@ -33,7 +33,14 @@ async function mock(page: Page, state: State) {
 async function library(page: Page) {
   // Auth restoration can finish after navigation; wait for either layout's
   // actual trigger rather than choosing a layout from an instantaneous check.
-  await page.getByRole('button', { name: 'Listen', exact: true }).or(page.getByRole('button', { name: /Gemerkte Listen/ })).click()
+  const mobile = page.getByRole('button', { name: 'Listen', exact: true })
+  const menu = page.locator('.saved-library-trigger')
+  await expect(mobile.or(menu)).toBeVisible()
+  if (await mobile.isVisible()) await mobile.click()
+  else {
+    if (await page.locator('.saved-library-menu').getAttribute('open') === null) await menu.click()
+    await page.getByRole('button', { name: 'Merker verwalten', exact: true }).click()
+  }
   return page.getByRole('dialog', { name: 'Meine Wunschlisten' })
 }
 async function audit(page: Page) {
@@ -53,6 +60,52 @@ async function legacy(page: Page) {
     localStorage.setItem(storageKey, JSON.stringify([entry])); sessionStorage.setItem('qa-legacy-seeded', '1')
   }, { entry, storageKey })
 }
+
+test('desktop saved lists expand inline, open directly and remain collapsible by keyboard', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const longName = 'Alexandra-Marie Winter Sommerfeld mit einem langen Familiennamen'
+  const state: State = { entries: [entry, { ...entry, list_id: '00000000-0000-4000-8000-000000000063', value: 'e'.repeat(64), owner_name: longName, available: false }], writes: 0 }
+  await mock(page, state); await signIn(page); await page.goto('/')
+  const menu = page.locator('.saved-library-menu'), trigger = menu.locator('summary')
+  const links = page.getByRole('navigation', { name: 'Gemerkte Wunschlisten', exact: true })
+  await expect(trigger.locator('.count')).toHaveText('2')
+  await expect(links).toBeHidden()
+  await trigger.focus(); await trigger.press('Enter')
+  await expect(links).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(links.getByRole('link', { name: `Von ${longName} ${entry.title} Link nicht mehr verfügbar`, exact: true })).toBeVisible()
+  const direct = links.getByRole('link', { name: `Von Alex Winter ${entry.title}`, exact: true })
+  await expect(direct).toHaveAttribute('href', new RegExp('#/s/' + token + '$'))
+  await direct.click()
+  await expect(page.getByRole('heading', { name: shared.title, exact: true })).toBeVisible()
+  await expect(direct).toHaveAttribute('aria-current', 'page')
+  await expect(links).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await audit(page)
+  await menu.screenshot({ path: info.outputPath('saved-lists-menu-expanded.png') })
+  await trigger.focus(); await trigger.press('Space')
+  await expect(links).toBeHidden()
+  await expect(page).toHaveURL(new RegExp('#/s/' + token + '$'))
+  await trigger.press('Enter')
+  await links.getByRole('button', { name: 'Merker verwalten', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Meine Wunschlisten', exact: true })).toBeVisible()
+})
+
+test('the inline menu explains empty bookmarks and retries load errors', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const state: State = { entries: [], writes: 0, failRead: true }
+  await mock(page, state); await signIn(page); await page.goto('/')
+  const menu = page.locator('.saved-library-menu')
+  await menu.locator('summary').click()
+  await expect(menu.getByRole('alert')).toContainText('nicht geladen')
+  state.failRead = false
+  await menu.getByRole('button', { name: 'Erneut versuchen', exact: true }).click()
+  await expect(menu).toContainText('Noch keine Liste gemerkt.')
+  await expect(menu.locator('.count')).toHaveText('0')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.locator('.profile').getByRole('button', { name: 'Abmelden', exact: true }).click()
+  await expect(menu).toHaveCount(0)
+})
 
 test('guests cannot save or access bookmarks, including old local references', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })

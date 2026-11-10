@@ -3,14 +3,14 @@ import type { Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 const backend = 'https://security-test.supabase.co', id = '00000000-0000-4000-8000-000000000001', token = 'c'.repeat(64)
-type List = { title: string; visibility: 'public' | 'link' | 'private' }
+type List = { title: string; visibility: 'link' | 'private' }
 async function fixture(page: Page, lists: List[]) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route(backend + '/**', async route => {
     const path = new URL(route.request().url()).pathname
     const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST,GET,OPTIONS' }
     if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
-    if (path.endsWith('/get_public_wishlist') || path.endsWith('/get_shared_wishlist')) {
+    if (path.endsWith('/get_shared_wishlist')) {
       const state = lists[0]
       await route.fulfill({ headers, json: { list: { ...state, id, emoji: '🌿', description: 'Geschenkideen für meine Lieblingsmenschen.', created_at: new Date().toISOString() }, can_purchase: true, items: [{ id: '00000000-0000-4000-8000-000000000002', wishlist_id: id, title: 'Eine besondere Espressokanne', notes: 'Bitte das kleine Modell in Silber.', image_url: '', price: 39.9, url: 'https://shop.example/product', fulfilled: false, purchased: false, created_at: new Date().toISOString() }] } }); return
     }
@@ -22,10 +22,10 @@ async function audit(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 }
 
-test('public birthday list uses subtle rose accents with readable compact mobile controls', async ({ page }, info) => {
+test('shared birthday list uses subtle rose accents with readable compact mobile controls', async ({ page }, info) => {
   if (info.project.name === 'auth-webkit') await page.setViewportSize({ width: 320, height: 650 })
-  await fixture(page, [{ title: 'Zum 30. GEBURTSTAG', visibility: 'public' }])
-  await page.goto('/#/p/' + id)
+  await fixture(page, [{ title: 'Zum 30. GEBURTSTAG', visibility: 'link' }])
+  await page.goto('/#/s/' + token)
   await expect(page.getByRole('heading', { name: 'Zum 30. GEBURTSTAG', exact: true })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-occasion', 'birthday')
   await expect(page.locator('.list-cover svg')).toBeVisible()
@@ -98,8 +98,8 @@ test('ordinary and private lists stay neutral and changing the open list clears 
   await fixture(page, lists)
   await page.goto('/#/s/' + token)
   await expect(page.locator('html')).toHaveAttribute('data-occasion', 'birthday')
-  lists[0] = { title: 'Kleine & große Wünsche', visibility: 'public' }
-  await page.goto('/#/p/' + id)
+  lists[0] = { title: 'Kleine & große Wünsche', visibility: 'link' }
+  await page.goto('/#/s/' + 'd'.repeat(64))
   await expect(page.getByRole('heading', { name: 'Kleine & große Wünsche', exact: true })).toBeVisible()
   await expect(page.locator('html')).not.toHaveAttribute('data-occasion')
   await expect(page.locator('.christmas-atmosphere')).toHaveCount(0)
@@ -111,8 +111,19 @@ test('ordinary and private lists stay neutral and changing the open list clears 
   await expect(page.locator('html')).not.toHaveAttribute('data-occasion')
   await expect(page.locator('.christmas-atmosphere')).toHaveCount(0)
   lists[0] = { title: 'Geburtstag & Weihnachten', visibility: 'link' }
-  await page.goto('/#/p/' + id)
+  await page.goto('/#/s/' + 'e'.repeat(64))
   await expect(page.getByRole('heading', { name: 'Geburtstag & Weihnachten', exact: true })).toBeVisible()
   await expect(page.locator('html')).not.toHaveAttribute('data-occasion')
   await expect(page.locator('.christmas-atmosphere')).toHaveCount(0)
+})
+
+
+test('retired public links show a closed route without requesting list data', async ({ page }) => {
+  await fixture(page, [{ title: 'Nicht über eine ID erreichbar', visibility: 'link' }])
+  const reads: string[] = []
+  page.on('request', request => { if (/get_(public|shared)_wishlist/.test(request.url())) reads.push(request.url()) })
+  await page.goto('/#/p/' + id)
+  await expect(page.getByRole('alert')).toContainText('öffentliche Link ist nicht mehr gültig')
+  await expect(page.getByRole('article')).toHaveCount(0)
+  expect(reads).toEqual([])
 })

@@ -18,7 +18,8 @@ export function clearLegacySavedLists(): void {
   try { localStorage.removeItem('wunschnagel-saved-lists-v1') } catch { /* Never use a local fallback. */ }
 }
 export function savedList(list: Pick<Wishlist, 'id' | 'title' | 'emoji'>, route: ShareRoute): SavedList {
-  const result = { kind: route.kind, value: route.kind === 'public' ? list.id : route.value, list_id: list.id, title: list.title, emoji: list.emoji, saved_at: new Date().toISOString() }
+  if (route.kind !== 'token') throw new Error('Öffentliche Links können nicht mehr gemerkt werden. Bitte frage nach einem Ansichtslink.')
+  const result = { kind: route.kind, value: route.value, list_id: list.id, title: list.title, emoji: list.emoji, saved_at: new Date().toISOString() }
   if (!validSavedList(result)) throw new Error('Dieser Freigabelink kann nicht gemerkt werden.')
   return result
 }

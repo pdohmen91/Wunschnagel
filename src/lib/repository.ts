@@ -38,7 +38,7 @@ function seed(): DemoData {
   const list = (title: string, emoji: string, description: string, visibility: Wishlist['visibility']): Wishlist => ({ id: id(), owner_id: 'demo', title, emoji, description, visibility, share_token: id() + id().replaceAll('-', ''), created_at: createdAt })
   const birthday = list('Kleine & große Wünsche', '🌿', 'Ein paar Dinge, über die ich mich freuen würde. Das schönste Geschenk ist aber gemeinsame Zeit.', 'link')
   const christmas = list('Für Weihnachten', '🎄', 'Für gemütliche Tage und kleine Überraschungen.', 'private')
-  const home = list('Unser Zuhause', '🏡', 'Schöne Dinge für unseren Lieblingsort.', 'public')
+  const home = list('Unser Zuhause', '🏡', 'Schöne Dinge für unseren Lieblingsort.', 'link')
   const item = (title: string, url: string, notes: string, price: number, image_url: string, search_term: string): Wish => ({ id: id(), wishlist_id: birthday.id, title, url, notes, price, image_url, offer_source: 'idealo', search_term, search_url: '', fulfilled: false, created_at: createdAt })
   return { lists: [birthday, christmas, home], items: [
     item('Ein guter Kaffee am Morgen', 'https://www.bialetti.com/', 'Eine kleine Espressokanne für zwei. Am liebsten der Klassiker in Silber.', 39.90, './illustrations/coffee.svg', 'Bialetti Moka Express 2 Tassen'),
@@ -52,7 +52,7 @@ function loadDemo(): DemoData {
     const value = localStorage.getItem(STORAGE)
     if (value) {
       const parsed = JSON.parse(value) as DemoData
-      if (Array.isArray(parsed.lists) && Array.isArray(parsed.items)) return parsed
+      if (Array.isArray(parsed.lists) && Array.isArray(parsed.items)) return { ...parsed, lists: parsed.lists.map(list => ({ ...list, visibility: list.visibility === 'private' ? 'private' : 'link' })) }
     }
   } catch { /* A fresh demo is safe when storage is unavailable or outdated. */ }
   return seed()
@@ -120,7 +120,7 @@ export function cloudRepository(userId: string): Repository {
     items: async listId => { signedIn(); const { data, error } = await db.from('wishes').select('*').eq('wishlist_id', listId).order('created_at'); if (error) throw error; return data as Wish[] },
     createList: async input => { signedIn(); const { data, error } = await db.from('wishlists').insert({ ...input, owner_id: userId }).select().single(); if (error) throw error; return data as Wishlist },
     updateList: async (listId, input) => { signedIn(); const { error } = await db.from('wishlists').update(input).eq('id', listId).select('id').single(); if (error) throw error },
-    deleteList: async listId => { signedIn(); const { error } = await db.from('wishlists').delete().eq('id', listId).select('id').single(); if (error) throw error },
+    deleteList: async listId => { signedIn(); const { error } = await db.from('wishlists').delete().eq('id', listId).eq('owner_id', userId).select('id').single(); if (error) throw error },
     rotateLink: async listId => { signedIn(); const { data, error } = await db.rpc('rotate_share_token', { list_id: listId }); if (error) throw error; return data as string },
     enableSharing: async listId => { signedIn(); const { error } = await db.rpc('enable_wishlist_sharing', { list_id: listId }); if (error) throw error },
     saveItem: async (listId, input, itemId) => { signedIn();
@@ -142,15 +142,10 @@ export function cloudRepository(userId: string): Repository {
       return data as Preview
     },
     shared: async (kind, value) => { configured();
-      if (kind === 'token') {
-        const { data, error } = await db.rpc('get_shared_wishlist', { token: value })
-        if (error) throw error
-        if (!data) throw new Error('Diese Liste ist privat, wurde gelöscht oder der Link wurde erneuert.')
-        return data as SharedList
-      }
-      const { data, error } = await db.rpc('get_public_wishlist', { list_id: value })
+      if (kind !== 'token') throw new Error('Dieser öffentliche Link ist nicht mehr gültig. Bitte frage nach einem neuen Ansichtslink.')
+      const { data, error } = await db.rpc('get_shared_wishlist', { token: value })
       if (error) throw error
-      if (!data) throw new Error('Diese Liste ist nicht öffentlich oder wurde gelöscht.')
+      if (!data) throw new Error('Diese Liste ist privat, wurde gelöscht oder der Link wurde erneuert.')
       return data as SharedList
     },
     purchase: async (listId, itemId, route, receipt) => { configured();

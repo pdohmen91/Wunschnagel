@@ -1,6 +1,6 @@
 # Gemerkte Wunschlisten
 
-Angemeldete Nutzer können geteilte Listen mit „Liste merken“ in ihrem Konto speichern. Gäste sehen stattdessen „Zum Merken anmelden“. Der Eintrag erscheint im Bereich „Gemerkte Listen“ des Listen-Dialogs. Mobil öffnet ihn „Listen“ im Kopfbereich; am Desktop gibt es zusätzlich einen direkten Navigationseintrag.
+Angemeldete Nutzer können geteilte Listen mit „Liste merken“ in ihrem Konto speichern. Gäste sehen stattdessen „Zum Merken anmelden“. Mobil erscheinen die Einträge im Bereich „Gemerkte Listen“ des Listen-Dialogs, den „Listen“ im Kopfbereich öffnet. Am Desktop klappt „Gemerkte Listen“ im Seitenmenü die Einträge direkt auf. Ein Klick auf eine Liste öffnet sie ohne zusätzlichen Dialog; „Merker verwalten“ öffnet die Übersicht mit Entfernen-Funktion. Das Menü lässt sich auch per Tastatur öffnen und schließen.
 
 - Merken und der Bereich „Gemerkte Listen“ erfordern eine Anmeldung. Es gibt keine anonyme oder lokale Ersatzspeicherung.
 - Konto-Merker sind nach der Anmeldung auch auf anderen Geräten verfügbar.
@@ -32,3 +32,7 @@ Nach der Veröffentlichung die App neu laden und mit einem zweiten Konto prüfen
 `tests/auth/saved-lists.spec.ts`: Chrome und iPhone-WebKit; Gastzugriff gesperrt, Merken/Wiederöffnen/Entfernen im Konto, 320-px-Ansicht mit Barrierefreiheitsprüfung, keine Übernahme alter Gast-Merker, Kontopersistenz/Abmeldung, Schreib- und Ladefehler.
 
 `tests/live/saved-lists.mjs`: optionaler Test mit ausschließlich neu erstellten QA-Konten und Listen; echte RPCs sowie zwei unabhängige Browserkontexte, Aufräumen im `finally`. Keine echten Nutzerlisten, E-Mails oder Shopzugriffe.
+
+## Ausschließlich geheime Ansichtslinks
+
+Neue Merker sind nur mit gültigem Freigabetoken möglich. `202611100004_link_only_sharing.sql` wandelt noch öffentliche Listen in „Mit Link“ um und aktualisiert deren bestehende öffentliche Merker auf den neuen Token. Private, gelöschte oder zuvor widerrufene Verweise werden nicht wieder freigegeben. Alte öffentliche Merker ohne weiterhin zugängliche Liste bleiben als entfernbare, nicht verfügbare Einträge erhalten. Alte ID-basierte öffentliche URLs werden im Frontend mit einem Hinweis auf einen neuen Ansichtslink abgewiesen und liefern über die frühere RPC keine Daten.

@@ -55,9 +55,10 @@ try {
   await denied(save()); await ok(save(viewer, renewed))
   assert.equal((await get(viewer)).length, 1); assert.equal((await get(viewer))[0].value, renewed)
   list.share_token = renewed
-  phase = 'deleted references remain removable and public visibility is checked'
-  const temporary = await ok(owner.from('wishlists').insert({ owner_id: ownerId, title: '[QA] Temporary public reference', visibility: 'public' }).select().single())
-  await ok(save(viewer, temporary.id, 'public'))
+  phase = 'deleted references remain removable and only secret links are accepted'
+  const temporary = await ok(owner.from('wishlists').insert({ owner_id: ownerId, title: '[QA] Temporary shared reference', visibility: 'link' }).select().single())
+  await denied(save(viewer, temporary.id, 'public'))
+  await ok(save(viewer, temporary.share_token))
   await ok(owner.from('wishlists').delete().eq('id', temporary.id))
   assert.equal((await get(viewer)).find(row => row.list_id === temporary.id).available, false)
   await remove(temporary.id); await remove(list.id)
@@ -99,6 +100,18 @@ try {
     await expect(pb.getByRole('button', { name: 'Liste bearbeiten', exact: true })).toHaveCount(0)
     await expect.poll(() => pb.locator('.christmas-header-art img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
     await pb.screenshot({ path: '/private/tmp/wunschnagel-bookmark-live-mobile.png', fullPage: true })
+    phase = 'saved-list menu expands and opens entries directly on desktop'
+    await pb.setViewportSize({ width: 1440, height: 1000 })
+    const menu = pb.locator('.saved-library-menu')
+    await menu.locator('summary').click()
+    const menuEntry = menu.getByRole('link', { name: `Von QA Besitzer ${list.title}`, exact: true })
+    await expect(menuEntry).toBeVisible()
+    await menuEntry.click()
+    await expect(menuEntry).toHaveAttribute('aria-current', 'page')
+    await expect(pb.getByRole('dialog')).toHaveCount(0)
+    await menu.locator('summary').click()
+    await expect(menuEntry).toBeHidden()
+    await pb.setViewportSize({ width: 390, height: 844 })
     phase = 'own-list navigation and removal do not change the shared source'
     dialog = await library(pb)
     await dialog.locator('.list-picker-options').getByRole('button', { name: new RegExp(mine.title.replace(/[\[\]]/g, '\\$&')) }).click()

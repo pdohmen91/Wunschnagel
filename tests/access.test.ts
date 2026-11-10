@@ -50,7 +50,11 @@ before(async () => {
   await db.exec(await readFile(new URL('../supabase/migrations/202611090004_security_hardening.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090007_optional_offer_search.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611090009_ebay_all_offers.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611090006_saved_wishlists.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611100001_saved_list_owner_names.sql', import.meta.url), 'utf8'))
   await db.exec(await readFile(new URL('../supabase/migrations/202611100002_equal_editor_rights.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611100003_owner_only_list_deletion.sql', import.meta.url), 'utf8'))
+  await db.exec(await readFile(new URL('../supabase/migrations/202611100004_link_only_sharing.sql', import.meta.url), 'utf8'))
 })
 
 test('browser roles have no whole-table operations or mutable security columns', async () => {
@@ -166,18 +170,15 @@ test('shared guests receive the offer-search settings without gaining write acce
   assert.equal(shared.items[0].search_term, 'Modell X123')
   await assert.rejects(db.query("update public.wishes set search_term='Changed' where wishlist_id=$1", [linkId]), /permission denied/)
 })
-test('anonymous users read public lists only through a safe RPC projection', async () => {
+test('anonymous users cannot read lists by ID and require a shared secret', async () => {
   await role()
   await assert.rejects(count('wishlists'), /permission denied/)
   await assert.rejects(count('wishes'), /permission denied/)
   await assert.rejects(db.query("insert into public.wishlists(owner_id,title) values($1,'Anonymous list')", [alice]), /permission denied/)
   await assert.rejects(db.query("insert into public.wishes(wishlist_id,title,url) values($1,'Anonymous wish','https://example.com')", [publicId]), /permission denied/)
 
-  const result = (await db.query<{ data: { list: Record<string, unknown>; items: unknown[] } }>('select public.get_public_wishlist($1) as data', [publicId])).rows[0].data
-  assert.equal(result.list.title, 'Public')
-  assert.equal(result.items.length, 1)
-  assert.equal('owner_id' in result.list, false)
-  assert.equal('share_token' in result.list, false)
+  assert.equal((await db.query<{ data: unknown }>('select public.get_public_wishlist($1) as data', [publicId])).rows[0].data, null)
+  assert.equal((await db.query<{ data: unknown }>('select public.get_shared_wishlist($1) as data', [publicId])).rows[0].data, null)
   assert.equal((await db.query<{ data: unknown }>('select public.get_public_wishlist($1) as data', [linkId])).rows[0].data, null)
 })
 test('a second user cannot read, change or delete private or unlisted data', async () => {
@@ -299,7 +300,7 @@ test('invitation acceptance grants editing and list administration while protect
   await db.query('delete from public.wishlists where id=$1', [list.id])
 })
 
-test('members have equal list and sharing rights, can remove peers and delete the list, but cannot remove the owner', async () => {
+test('members edit, share and remove peers, but cannot delete the list or remove the owner', async () => {
   const carol = '00000000-0000-4000-8000-000000000003'
   await db.exec('reset role')
   await db.query('insert into auth.users(id) values($1)', [carol])
@@ -356,10 +357,10 @@ test('members have equal list and sharing rights, can remove peers and delete th
 
   await role(alice)
   assert.equal((await get()).members.length, 2)
-  await db.query("update public.wishlists set visibility='public' where id=$1", [list.id])
+  await assert.rejects(db.query("update public.wishlists set visibility='public' where id=$1", [list.id]), /wishlists_visibility_check/)
   await role(carol)
   await enable()
-  assert.equal((await db.query<{ visibility: string }>('select visibility from public.wishlists where id=$1', [list.id])).rows[0].visibility, 'public')
+  assert.equal((await db.query<{ visibility: string }>('select visibility from public.wishlists where id=$1', [list.id])).rows[0].visibility, 'link')
   assert.equal((await db.query("update public.wishlists set title='Updated by member',description='Together' where id=$1 returning id", [list.id])).rows.length, 1)
   await db.query('select public.remove_wishlist_member($1,$2)', [list.id, bob])
   await role(bob)
@@ -376,8 +377,10 @@ test('members have equal list and sharing rights, can remove peers and delete th
   await db.query('select public.accept_wishlist_invite($1)', [renewed.token])
   await role(carol)
   await db.query('select public.accept_wishlist_invite($1)', [renewed.token])
-  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 1)
+  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 0)
+  assert.equal((await db.query('select id from public.get_my_wishlists() where id=$1', [list.id])).rows.length, 1)
   await role(alice)
+  assert.equal((await db.query('delete from public.wishlists where id=$1 returning id', [list.id])).rows.length, 1)
   assert.equal((await db.query('select id from public.get_my_wishlists() where id=$1', [list.id])).rows.length, 0)
   await db.exec('reset role')
   await db.query('delete from auth.users where id=$1', [carol])

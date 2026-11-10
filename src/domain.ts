@@ -1,4 +1,4 @@
-export type Visibility = 'private' | 'link' | 'public'
+export type Visibility = 'private' | 'link'
 export type OfferSource = 'none' | 'idealo' | 'ebay_all' | 'ebay' | 'kleinanzeigen' | 'custom'
 export type Wishlist = {
   id: string
@@ -30,6 +30,7 @@ export type Wish = {
 export type ListInput = Pick<Wishlist, 'title' | 'description' | 'emoji' | 'visibility'>
 export type WishInput = Pick<Wish, 'title' | 'url' | 'notes' | 'image_url' | 'price' | 'highlighted' | 'offer_source' | 'search_term' | 'search_url'>
 export type Preview = { title: string; image_url: string; description: string; price?: number | null }
+// Recognize retired public routes only to show an explicit invalid-link message.
 export type ShareRoute = { kind: 'token' | 'public'; value: string }
 export type SharedList = { list: Wishlist; items: Wish[]; can_purchase?: boolean }
 export type Collaboration = { owner?: { user_id: string; display_name: string; email?: string | null }; invite: { token: string; expires_at: string } | null; members: { user_id: string; display_name: string; email?: string | null; joined_at: string }[] }
@@ -80,11 +81,10 @@ export function sortWishes(items: readonly Wish[], order: WishSort): Wish[] {
   })
 }
 
-export const visibilityLabels: Record<Visibility, string> = { private: 'Privat', link: 'Mit Link', public: 'Öffentlich' }
+export const visibilityLabels: Record<Visibility, string> = { private: 'Privat', link: 'Mit Link' }
 export const visibilityDescriptions: Record<Visibility, string> = {
   private: 'Nur du und ausdrücklich eingeladene Mitbearbeiter können diese Liste sehen.',
   link: 'Alle mit dem Link können die Liste ohne Anmeldung ansehen. Das gilt auch, wenn jemand den Link weitergibt.',
-  public: 'Diese Liste ist öffentlich. Auch Personen außerhalb deiner Freunde und Familie dürfen sie ansehen.',
 }
 
 export function webUrl(value: string, required = true): string {
@@ -128,10 +128,10 @@ export function parsePrice(value: string): number | null {
 }
 
 export function shareUrl(list: Wishlist, location: string): string {
-  if (list.visibility === 'private') throw new Error('Private Listen können nicht geteilt werden.')
+  if (list.visibility !== 'link' || !/^[a-f0-9]{64}$/.test(list.share_token)) throw new Error('Zum Teilen wird ein gültiger Ansichtslink benötigt.')
   const url = new URL(location)
   url.search = ''
-  url.hash = list.visibility === 'link' ? `/s/${list.share_token}` : `/p/${list.id}`
+  url.hash = `/s/${list.share_token}`
   return url.href
 }
 

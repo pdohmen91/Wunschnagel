@@ -53,7 +53,7 @@ test('share links preserve GitHub Pages base path and strip previous query/hash'
   const url = shareUrl(list, 'https://example.org/Wunschnagel/?old=value#old')
   assert.equal(url, `https://example.org/Wunschnagel/#/s/${list.share_token}`)
   assert.deepEqual(readShareRoute(new URL(url).hash), { kind: 'token', value: list.share_token })
-  assert.equal(shareUrl({ ...list, visibility: 'public' }, 'https://example.org/'), `https://example.org/#/p/${list.id}`)
+  assert.throws(() => shareUrl({ ...list, visibility: 'public' } as unknown as Wishlist, 'https://example.org/'))
   assert.equal(readShareRoute('#access_token=not-a-list'), null)
 })
 test('product URLs reject active content and embedded credentials', () => {

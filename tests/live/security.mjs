@@ -44,9 +44,9 @@ try {
     await denied(anon.from('wishlists').select('id'))
     await denied(anon.from('wishes').select('id'))
     assert.deepEqual(await ok(outsider.client.from('wishlists').select('id').eq('id', list.id)), [])
-    await ok(owner.client.from('wishlists').update({ visibility: 'public' }).eq('id', list.id))
-    safe(await ok(anon.rpc('get_public_wishlist', { list_id: list.id })))
-    assert.equal(await ok(anon.rpc('get_shared_wishlist', { token: list.share_token })), null)
+    await denied(owner.client.from('wishlists').update({ visibility: 'public' }).eq('id', list.id))
+    assert.equal(await ok(anon.rpc('get_public_wishlist', { list_id: list.id })), null)
+    safe(await ok(anon.rpc('get_shared_wishlist', { token: list.share_token })))
     phase = 'immutable ownership, tokens and item parents; RLS independent of UI'
     for (const changes of [{ owner_id: outsider.id }, { id: privateList.id }, { share_token: 'a'.repeat(64) }, { created_at: new Date().toISOString() }]) await denied(owner.client.from('wishlists').update(changes).eq('id', list.id))
     await denied(owner.client.from('wishlists').insert({ owner_id: owner.id, title: '[QA] Weak', share_token: 'a'.repeat(64) }))

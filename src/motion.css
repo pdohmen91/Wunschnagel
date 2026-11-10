@@ -40,7 +40,6 @@
 .wish-card { transition: border-color var(--motion-quick), box-shadow var(--motion-normal), translate var(--motion-normal) var(--motion-ease), background-color var(--motion-normal); }
 .wish-image-link { overflow: hidden; }
 .wish-image-link > img { transition: scale 500ms var(--motion-ease), opacity var(--motion-layout); }
-.wish-number { transform-origin: 15% 0; transition: rotate var(--motion-layout) var(--motion-ease), background-color var(--motion-normal); }
 .wish-card:focus-within { border-color: #9b7f92; }
 .card-menu > div { transform-origin: top right; }
 @container app-viewport (max-width: 620px) {
@@ -101,7 +100,6 @@
 @media (hover: hover) and (pointer: fine) {
   .brand:hover .brand-icon { transform: rotate(-8deg); }
   .wish-card:hover { translate: 0 -3px; }
-  .wish-card:hover .wish-number { rotate: -5deg; background: #fff7ed; }
   .wish-image-link:hover > img { scale: 1.045; }
   .button:hover > .lucide-plus, .new-list:hover > svg { transform: rotate(90deg); }
   .shop-link:hover > svg, .text-button:hover > svg { transform: translate(2px, -2px); }
@@ -134,5 +132,5 @@
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition: none !important; scroll-behavior: auto !important; }
   .completion-burst, .toast-lifetime { display: none; }
   .wish-card:hover, .button:active, .icon-button:active, .new-list:active, .tabs button:active, .emoji-options button:active, summary:active { translate: none; }
-  .brand:hover .brand-icon, .wish-number, .wish-image-link > img, button:hover > svg, a:hover > svg { transform: none !important; rotate: none !important; scale: none !important; }
+  .brand:hover .brand-icon, .wish-image-link > img, button:hover > svg, a:hover > svg { transform: none !important; rotate: none !important; scale: none !important; }
 }

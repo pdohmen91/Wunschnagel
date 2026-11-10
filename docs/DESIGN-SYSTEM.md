@@ -46,7 +46,9 @@ Einfarbige Linien ordnen Bereiche. Die gestrichelte Linie trennt die Beschreibun
 
 - Die dunkle Navigation rahmt die eigenen Listen. Die aktive Liste erscheint als heller Eintrag mit orangefarbener Kante.
 - Der Listenkopf kombiniert Index, persönliches Symbol, Titel und Beschreibung. Die Freigabe bleibt neben Anzahl und Bearbeitung sichtbar.
-- Wunschkarten tragen einen kleinen nummerierten Anhänger. Beim Suchen und Sortieren bleibt die Nummer der ursprünglichen Listenreihenfolge erhalten.
+- Wunschkarten zeigen keine laufenden Nummern oder internen IDs. Titel, Bild und Hinweise kennzeichnen den Wunsch.
+- Produktbilder stehen vollständig und zentriert auf einer neutralen weißen Fläche. Die größeren Bildflächen behalten unabhängig vom Bildformat dieselbe Höhe. Auf großen Karten liegt „Bearbeiten“ unterhalb des Bildes; auf dem Handy bleiben die kompakten Vorschaubilder erhalten.
+- Listensymbole werden in einem ausklappbaren Picker mit 128 Symbolen, acht Kategorien und deutscher Suche gewählt. Das aktuelle Symbol bleibt im geschlossenen Picker sichtbar. Auswahl per Tastatur und Escape schließen nur den Picker; gespeichert wird mit dem Listenformular.
 - Hauptaktionen sind orange, Nebenaktionen hell mit Tintenrand. Auswahlzustände erhalten eine Fläche und eine klare Kante.
 - Dialoge verwenden dieselbe Typografie, Papierfläche und Form. Kopf und Aktionen bleiben von scrollbaren Formularfeldern getrennt.
 - Hinweise erhalten eine linke Markierung und erklärenden Text. Die Benachrichtigung verwendet die dunkle Tinte der Navigation.
