@@ -4,6 +4,7 @@ Angemeldete Nutzer können geteilte Listen mit „Liste merken“ in ihrem Konto
 
 - Merken und der Bereich „Gemerkte Listen“ erfordern eine Anmeldung. Es gibt keine anonyme oder lokale Ersatzspeicherung.
 - Konto-Merker sind nach der Anmeldung auch auf anderen Geräten verfügbar.
+- Der Name des Listenbesitzers steht als kräftige erste Zeile („Von …“) über dem kleineren Listentitel. So lassen sich auch gleichnamige Listen schnell zuordnen. Ohne Profilnamen bleibt der Titel sichtbar, ergänzt um „Name nicht verfügbar“.
 - Alte Gast-Merker im Schlüssel `wunschnagel-saved-lists-v1` werden beim Laden entfernt, ohne ihren Inhalt zu lesen oder hochzuladen. Bereits gespeicherte Konto-Merker bleiben bestehen.
 - Entfernen löscht nur den Merker. Eigentümer, Mitglieder, Wünsche und Geschenkmarkierungen bleiben unberührt.
 - Erneuerte Links ersetzen beim Merken den alten Verweis derselben Liste. Eine erneute Freigabe muss zunächst vom Besitzer geteilt werden; Merker umgehen keine Sperre.
@@ -12,11 +13,17 @@ Angemeldete Nutzer können geteilte Listen mit „Liste merken“ in ihrem Konto
 
 Die Tabelle `wishlist_bookmarks` hat RLS, keinerlei Client-Tabellenrechte und drei ausschließlich authentifizierten Rollen zugängliche RPCs. Jede Funktion prüft die aktuelle Benutzer-ID gegen `expected_user`; damit darf auch ein verspäteter Auftrag nach einem Kontowechsel nicht in einem anderen Konto ausgeführt werden. Alle Definer-Funktionen verwenden einen leeren `search_path` und explizite Benutzerfilter.
 
-Gespeichert werden Listen-ID, Freigabeart und -verweis, zuletzt gemerkter Titel/Emoji und Zeitpunkt. Keine Wünsche, Notizen, Preise, Käuferinformationen oder Bearbeitungsrechte. Freigabetokens sind Zugangsdaten und bleiben im persönlichen Speicher, niemals in öffentlichen Tabellenprojektionen oder dem Service-Worker-Cache.
+Gespeichert werden Listen-ID, Freigabeart und -verweis, zuletzt gemerkter Titel/Emoji, Profilname des Besitzers und Zeitpunkt. Der Name kommt aus `full_name`, ersatzweise `name`, in den Kontometadaten und ist auf 100 Zeichen begrenzt. E-Mail-Adressen und übrige Kontometadaten werden nicht übertragen. Keine Wünsche, Notizen, Preise, Käuferinformationen oder Bearbeitungsrechte. Freigabetokens sind Zugangsdaten und bleiben im persönlichen Speicher, niemals in öffentlichen Tabellenprojektionen oder dem Service-Worker-Cache.
 
-Beim Abrufen werden aktuelle Titel/Emoji nur für weiterhin über genau diesen Verweis zugängliche Listen ergänzt. Nach Linkwechsel, Privatschaltung oder Löschung erscheint der alte Merker mit „Link nicht mehr verfügbar“; neue private Titel/Emoji werden nicht übertragen. Auch das Öffnen prüft die Freigabe erneut über die bestehenden geteilten RPCs. Geteilte Verweise werden vor dem Anzeigen validiert. Merker machen die Liste nicht offline zugänglich.
+Beim Abrufen werden aktuelle Titel/Emoji und Profilnamen nur für weiterhin über genau diesen Verweis zugängliche Listen ergänzt. Die Migration `202611100001_saved_list_owner_names.sql` ergänzt Namen für bestehende, weiterhin zugängliche Merker. Nach Linkwechsel, Privatschaltung oder Löschung erscheint der alte Merker mit „Link nicht mehr verfügbar“; neue private Titel/Emoji/Namen werden nicht übertragen. Der beim Merken gespeicherte Name bleibt erkennbar. Auch das Öffnen prüft die Freigabe erneut über die bestehenden geteilten RPCs. Geteilte Verweise werden vor dem Anzeigen validiert. Merker machen die Liste nicht offline zugänglich.
 
 Die Anzahl ist auf 100 pro Konto begrenzt. Der Server serialisiert neue Einträge pro Konto; Updates bleiben am Limit möglich. Kontoantworten werden bei Abmeldung oder Kontowechsel verworfen. Konto-Merker gelangen nicht als lokale Backups in den Browser. Schreibfehler werden angezeigt, ohne einen falschen Erfolgsstatus zu setzen.
+
+## Namensanzeige veröffentlichen
+
+Für „Von …“ sind sowohl die Datenbankmigration `202611100001_saved_list_owner_names.sql` als auch der neue Frontend-Build erforderlich. Zuerst die Migration anwenden, danach das Frontend veröffentlichen. Ein Frontend-Update allein ergänzt keine Namen in den Serverantworten. Bestehende, weiterhin zugängliche Konto-Merker erhalten den Namen automatisch; erneutes Merken ist nicht erforderlich.
+
+Nach der Veröffentlichung die App neu laden und mit einem zweiten Konto prüfen, dass eine bereits gemerkte Liste den Namen ihres Besitzers über dem Listentitel zeigt. Bei installierter PWA auch die aktivierte App-Version prüfen. Der Test mit simulierten Serverantworten bestätigt die Darstellung, ersetzt aber keine Prüfung der produktiven Migration.
 
 ## Prüfungen
 

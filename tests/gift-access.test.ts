@@ -27,7 +27,7 @@ before(async () => {
   await db.exec(`create role anon nologin; create role authenticated nologin; create schema auth; create schema extensions;
     grant usage on schema public,auth,extensions to anon,authenticated;
     alter default privileges in schema public grant all on tables to anon,authenticated;
-    create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
+    create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb not null default '{}'::jsonb);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     create function auth.jwt() returns jsonb language sql stable as $$select '{}'::jsonb$$;
     insert into auth.users(id) values('${owner}'),('${guest}');`)

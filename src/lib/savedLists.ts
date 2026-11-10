@@ -1,6 +1,6 @@
 import type { ShareRoute, Wishlist } from '../domain'
 
-export type SavedList = ShareRoute & { list_id: string; title: string; emoji: string; saved_at: string; available?: boolean }
+export type SavedList = ShareRoute & { list_id: string; title: string; emoji: string; owner_name?: string | null; saved_at: string; available?: boolean }
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
 export function validSavedList(input: unknown): input is SavedList {
   if (!input || typeof input !== 'object') return false
@@ -8,6 +8,7 @@ export function validSavedList(input: unknown): input is SavedList {
   return typeof value.list_id === 'string' && uuid.test(value.list_id)
     && typeof value.title === 'string' && value.title.trim().length > 0 && value.title.length <= 100
     && typeof value.emoji === 'string' && value.emoji.length > 0 && value.emoji.length <= 64
+    && (value.owner_name == null || typeof value.owner_name === 'string' && value.owner_name.trim().length > 0 && value.owner_name.length <= 100)
     && typeof value.value === 'string'
     && typeof value.saved_at === 'string' && Number.isFinite(Date.parse(value.saved_at))
     && (value.kind === 'token' && /^[a-f0-9]{64}$/.test(value.value) || value.kind === 'public' && value.value === value.list_id)

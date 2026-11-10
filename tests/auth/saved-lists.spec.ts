@@ -4,7 +4,7 @@ import AxeBuilder from '@axe-core/playwright'
 const backend = 'https://security-test.supabase.co', id = '00000000-0000-4000-8000-000000000061', uid = '00000000-0000-4000-8000-000000000062'
 const token = 'd'.repeat(64), storageKey = 'wunschnagel-saved-lists-v1'
 const shared = { id, title: 'Weihnachtswünsche für Alex', description: '', emoji: '🎄', visibility: 'link', created_at: new Date().toISOString() }
-const entry = { list_id: id, kind: 'token', value: token, title: shared.title, emoji: shared.emoji, saved_at: new Date().toISOString() }
+const entry = { list_id: id, kind: 'token', value: token, title: shared.title, emoji: shared.emoji, owner_name: 'Alex Winter', saved_at: new Date().toISOString() }
 type State = { entries: unknown[]; writes: number; reads?: number; failRead?: boolean; failWrite?: boolean }
 function session() {
   const now = Math.floor(Date.now() / 1000)
@@ -82,7 +82,7 @@ test('signed-in users save, reopen and remove account references on a narrow pho
   await page.goto('/')
   const dialog = await library(page)
   await expect(dialog.locator('.saved-list-entry')).toContainText(shared.title)
-  await expect(dialog.locator('.saved-list-entry')).toContainText('In deinem Konto')
+  await expect(dialog.locator('.saved-list-entry strong')).toHaveText('Von Alex Winter')
   await audit(page)
   await dialog.screenshot({ path: info.outputPath('gemerkte-listen-320.png') })
   await dialog.getByRole('link', { name: new RegExp(shared.title) }).click()
@@ -110,7 +110,7 @@ test('legacy guest entries never enter an account and sign-out hides all account
   await dialog.getByRole('button', { name: 'Schließen', exact: true }).click()
   await page.getByRole('button', { name: 'Liste merken', exact: true }).click()
   await page.reload(); dialog = await library(page)
-  await expect(dialog.locator('.saved-list-entry')).toContainText('In deinem Konto')
+  await expect(dialog.locator('.saved-list-entry strong')).toHaveText('Von Alex Winter')
   await dialog.getByRole('button', { name: 'Schließen', exact: true }).click()
   await page.locator('.app-shell[data-compact=true] .topbar, .app-shell[data-compact=false] .profile').getByRole('button', { name: 'Abmelden', exact: true }).click()
   await expect(page.getByRole('link', { name: 'Zum Merken anmelden', exact: true })).toBeVisible()
@@ -143,6 +143,41 @@ test('account load and write failures are visible and can be retried without fal
   state.failRead = false; state.entries = [{ ...entry, available: false }]
   await dialog.getByRole('button', { name: 'Erneut versuchen', exact: true }).click()
   await expect(dialog.locator('.saved-list-entry')).toContainText('Link nicht mehr verfügbar')
+  await expect(dialog.locator('.saved-list-entry strong')).toHaveText('Von Alex Winter')
   await dialog.getByRole('button', { name: /nicht mehr merken/ }).click()
   await expect(dialog.locator('.saved-list-entry')).toHaveCount(0)
+})
+
+test('people distinguish identical list titles and long names wrap on phones and desktop', async ({ page }, info) => {
+  const longName = 'Alexandra-Marie Winter Sommerfeld mit einem sehr langen Familiennamen'
+  const state: State = { entries: [
+    { ...entry, title: 'Wunschliste' },
+    { ...entry, list_id: '00000000-0000-4000-8000-000000000063', title: 'Wunschliste', owner_name: longName },
+    { ...entry, list_id: '00000000-0000-4000-8000-000000000064', title: 'Ältere Liste', owner_name: null },
+  ], writes: 0 }
+  await mock(page, state); await signIn(page)
+  await page.goto('/')
+  const dialog = await library(page)
+  await expect(dialog.getByRole('link', { name: 'Von Alex Winter Wunschliste', exact: true })).toBeVisible()
+  await expect(dialog.getByRole('link', { name: `Von ${longName} Wunschliste`, exact: true })).toBeVisible()
+  await expect(dialog.getByRole('link', { name: 'Ältere Liste Name nicht verfügbar', exact: true })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '„Wunschliste“ von Alex Winter nicht mehr merken', exact: true })).toBeVisible()
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    const layout = await dialog.locator('.saved-list-open').nth(1).evaluate(link => {
+      const name = link.querySelector('strong')!, title = link.querySelector('.saved-list-title')!
+      return {
+        nameSize: parseFloat(getComputedStyle(name).fontSize), titleSize: parseFloat(getComputedStyle(title).fontSize),
+        nameWeight: Number(getComputedStyle(name).fontWeight), titleWeight: Number(getComputedStyle(title).fontWeight),
+        nameBottom: name.getBoundingClientRect().bottom, titleTop: title.getBoundingClientRect().top,
+        fits: link.scrollWidth <= link.clientWidth,
+      }
+    })
+    expect(layout.nameSize).toBeGreaterThan(layout.titleSize)
+    expect(layout.nameWeight).toBeGreaterThan(layout.titleWeight)
+    expect(layout.nameBottom).toBeLessThanOrEqual(layout.titleTop)
+    expect(layout.fits).toBe(true)
+    await audit(page)
+    await dialog.screenshot({ path: info.outputPath(`gemerkte-personen-${width}.png`) })
+  }
 })

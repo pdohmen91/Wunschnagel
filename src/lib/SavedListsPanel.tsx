@@ -47,9 +47,13 @@ export function SavedListsPanel({ saved, lists, repo, fetchOwned, userId, select
       <div className="saved-list-options">{saved.entries.map(entry => <article className="saved-list-entry" key={entry.list_id}>
         <div className="saved-list-row">
           <a href={savedListUrl(entry, window.location.href)} className="saved-list-open" onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); void onOpen(event.currentTarget.href) }}>
-            <span className="saved-list-emoji" aria-hidden="true">{entry.emoji}</span><span><strong>{entry.title}</strong><small>{entry.available === false ? 'Link nicht mehr verfügbar' : 'In deinem Konto'}</small></span><ChevronRight size={17} />
+            <span className="saved-list-emoji" aria-hidden="true">{entry.emoji}</span><span className="saved-list-details">
+              <strong>{entry.owner_name ? `Von ${entry.owner_name}` : entry.title}</strong>
+              {entry.owner_name ? <span className="saved-list-title">{entry.title}</span> : <small>Name nicht verfügbar</small>}
+              {entry.available === false && <small>Link nicht mehr verfügbar</small>}
+            </span><ChevronRight size={17} />
           </a>
-          <button className="icon-button saved-list-remove" aria-label={`„${entry.title}“ nicht mehr merken`} title="Nur aus gemerkten Listen entfernen" disabled={!!busy} onClick={() => void remove(entry)}>{busy === entry.list_id ? <LoaderCircle size={18} className="spin" /> : <Trash2 size={18} />}</button>
+          <button className="icon-button saved-list-remove" aria-label={`„${entry.title}“${entry.owner_name ? ` von ${entry.owner_name}` : ''} nicht mehr merken`} title="Nur aus gemerkten Listen entfernen" disabled={!!busy} onClick={() => void remove(entry)}>{busy === entry.list_id ? <LoaderCircle size={18} className="spin" /> : <Trash2 size={18} />}</button>
         </div>
       </article>)}</div>
       {!saved.loading && !saved.entries.length && !saved.error && <p className="library-empty">Noch keine Liste festgehalten.</p>}
