@@ -746,3 +746,18 @@ html[data-occasion=christmas] .save-shared-list[aria-pressed=true] { background:
 .highlight-choice strong { display: block; font-size: 13px; font-weight: 600; line-height: 1.5; }
 .highlight-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .highlight-choice > svg { flex-shrink: 0; color: #965b28; }
+
+.purchase-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; margin: -4px 0 14px; }
+.purchase-filter label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.purchase-filter input[type=checkbox] { width: 20px; height: 20px; min-height: 20px; flex-shrink: 0; padding: 0; margin: 0; accent-color: #254d3e; }
+.purchase-filter label span, .purchase-filter small { color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.5; }
+.app-shell .wish-card.is-purchased { border: 2px solid #254d3e; background: #eef4ef; box-shadow: inset 4px 0 0 #254d3e, 3px 3px 0 #254d3e26; }
+.wish-card.is-purchased .wish-body { background: #eef4ef; }
+.wish-card.is-purchased h2 { text-decoration: line-through; text-decoration-thickness: 1px; }
+.wish-card.is-purchased .wish-image-link { filter: grayscale(.65); }
+.app-shell .wish-card.is-purchased .gift-badge { top: 8px; bottom: auto; right: 8px; max-width: calc(100% - 16px); background: #254d3e; border-color: #254d3e; color: #fffdf8; font-weight: 700; }
+.wish-card .gift-purchase-status.is-purchased { padding: 12px 14px; background: #254d3e; border-color: #254d3e; }
+.gift-purchase-status.is-purchased p, .gift-purchase-status.is-purchased small, .gift-purchase-status.is-purchased .text-button { color: #fffdf8; }
+@container app-viewport (max-width: 620px) {
+  .app-shell .wish-card.is-purchased .gift-badge { top: 3px; right: 3px; max-width: calc(100% - 6px); }
+}

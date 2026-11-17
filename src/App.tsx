@@ -48,6 +48,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all')
+  const [showPurchased, setShowPurchased] = useState(false)
   const [sort, setSort] = useState<WishSort>(defaultSort)
   const [modal, setModal] = useState<'list' | 'edit-list' | 'item' | 'share' | 'install' | 'help' | 'lists' | 'info' | 'tools' | 'preview' | 'gift' | null>(null)
   const [editItem, setEditItem] = useState<Wish | null>(null)
@@ -65,6 +66,8 @@ export default function App() {
   const occasion = selected ? listOccasion(selected.title, selected.visibility) : null
   const canEdit = authReady && !route && !invite && (demo || !!user)
   const isOwner = canEdit && (demo || selected?.owner_id === user?.id)
+
+  useEffect(() => { setShowPurchased(false) }, [route, selectedId])
 
   useEffect(() => {
     if (canEdit) return
@@ -293,7 +296,12 @@ export default function App() {
     setModal('share')
   }
 
-  const shownItems = sortWishes(items.filter(item => (filter === 'all' || (filter === 'done' ? item.fulfilled : !item.fulfilled)) && `${item.title} ${item.notes} ${hostname(item.url)}`.toLocaleLowerCase('de').includes(query.toLocaleLowerCase('de'))), sort)
+  const purchaseView = !!route && canPurchase
+  const purchasedCount = purchaseView ? items.filter(item => item.purchased).length : 0
+  const visibleItems = purchaseView && !showPurchased ? items.filter(item => !item.purchased) : items
+  const filterTotal = visibleItems.length
+  const allPurchasedHidden = items.length > 0 && filterTotal === 0 && purchasedCount === items.length
+  const shownItems = sortWishes(visibleItems.filter(item => (filter === 'all' || (filter === 'done' ? item.fulfilled : !item.fulfilled)) && `${item.title} ${item.notes} ${hostname(item.url)}`.toLocaleLowerCase('de').includes(query.toLocaleLowerCase('de'))), sort)
   const name = user?.user_metadata?.full_name?.split(' ')[0] || 'Du'
 
   const listActions = canEdit && selected ? <>
@@ -388,7 +396,7 @@ export default function App() {
             </section> : <>
               {items.length > 0 && <div className="items-toolbar">
                 <div className="tabs" role="group" aria-label="Wünsche filtern" aria-describedby="wish-status-help">
-                  <button aria-label={`Alle Wünsche ${items.length}`} aria-pressed={filter === 'all'} className={filter === 'all' ? 'selected' : ''} onClick={() => setFilter('all')}>{compact ? 'Alle' : 'Alle Wünsche'} <span aria-hidden="true" key={items.length}>{items.length}</span></button>
+                  <button aria-label={`Alle Wünsche ${filterTotal}`} aria-pressed={filter === 'all'} className={filter === 'all' ? 'selected' : ''} onClick={() => setFilter('all')}>{compact ? 'Alle' : 'Alle Wünsche'} <span aria-hidden="true" key={filterTotal}>{filterTotal}</span></button>
                   <button aria-pressed={filter === 'open'} className={filter === 'open' ? 'selected' : ''} onClick={() => setFilter('open')}>Offen</button>
                   <button aria-pressed={filter === 'done'} className={filter === 'done' ? 'selected' : ''} onClick={() => setFilter('done')}>Erfüllt</button>
                 </div>
@@ -399,10 +407,14 @@ export default function App() {
                   </select></label>
                 </div>}
               </div>}
+              {items.length > 0 && purchaseView && <div className="purchase-filter">
+                <label><input type="checkbox" checked={showPurchased} onChange={event => setShowPurchased(event.target.checked)} aria-describedby="purchase-filter-help" /> Gekaufte anzeigen <span aria-hidden="true">({purchasedCount})</span></label>
+                <small id="purchase-filter-help">{showPurchased ? 'Bereits gekaufte Geschenke sind eingeblendet.' : `${purchasedCount} ${purchasedCount === 1 ? 'gekaufter Wunsch ausgeblendet' : 'gekaufte Wünsche ausgeblendet'}.`}</small>
+              </div>}
               {items.length > 0 && <p className="screen-reader-only" id="wish-status-help">Offen: noch gewünscht. Erfüllt: schon bekommen.</p>}
-              {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {items.length} Wünschen</> : <>{items.length} {items.length === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {items.length} {items.length === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
+              {items.length > 0 && (compact ? <div className={`mobile-result-summary ${!query && filter === 'all' ? 'screen-reader-only' : ''}`}><p role="status">{query || filter !== 'all' ? <>{shownItems.length} von {filterTotal} Wünschen</> : <>{filterTotal} {filterTotal === 1 ? 'Wunsch' : 'Wünsche'}</>}</p>{(query || filter !== 'all') && <button className="text-button" aria-label="Alle Wünsche zeigen" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche <X size={13} /></button>}</div> : (query || filter !== 'all') && <div className="filter-feedback"><p role="status">{shownItems.length} von {filterTotal} {filterTotal === 1 ? 'Wunsch' : 'Wünschen'}{query && <> für „{query}“</>}{filter !== 'all' && <> · {filter === 'open' ? 'nur offene' : 'nur erfüllte'}</>}</p>{shownItems.length > 0 && <button className="text-button" onClick={() => { setQuery(''); setFilter('all') }}>Alle Wünsche zeigen</button>}</div>)}
               {loading ? <Loading /> : <WishGrid revision={shownItems.map(item => `${item.id}:${item.fulfilled}:${item.purchased}`).join('|')}>{shownItems.map(item => <WishCard key={item.id} item={item} canEdit={canEdit} onHighlight={() => run(async () => { await repo.highlightItem(item.id, !item.highlighted); await refreshItems(selected.id); setNotice(item.highlighted ? 'Markierung entfernt.' : 'Als Herzenswunsch hervorgehoben.') })} canPurchase={!!route && canPurchase} onOpenGift={(url, label) => openGift(item, url, label)} busy={busy} onEdit={() => { setEditItem(item); setModal('item') }} onDelete={() => setDeleteTarget({ kind: 'item', id: item.id, title: item.title })} onFulfill={() => run(async () => { await repo.fulfillItem(item.id, !item.fulfilled); await refreshItems(selected.id); setNotice(item.fulfilled ? 'Wieder offen. Dein Wunsch hängt wieder an der Liste.' : 'Nagel auf den Kopf! Wunsch als erfüllt markiert.') })} />)}</WishGrid>}
-              {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p><button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button></div>}
+              {!loading && !shownItems.length && <div className="empty-state"><Search size={27} /><h3>{query ? 'Noch kein Treffer' : allPurchasedHidden && filter === 'all' ? 'Alle Wünsche sind bereits gekauft' : 'Keine Wünsche in diesem Filter'}</h3><p>{query ? 'Noch nicht den Nagel auf den Kopf getroffen? Versuche einen anderen Suchbegriff oder setze die Filter zurück.' : allPurchasedHidden && filter === 'all' ? 'Aktiviere „Gekaufte anzeigen“, um die bereits gekauften Geschenke wieder zu sehen und deine Kaufmarkierungen zu verwalten.' : filter === 'done' ? 'Noch nichts abgehakt? Hier hängen später deine erfüllten Wünsche.' : 'Hier ist gerade kein Wunsch mehr offen. Über „Alle“ siehst du auch erfüllte Wünsche.'}</p>{!(allPurchasedHidden && !query && filter === 'all') && <button className="button secondary" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</button>}</div>}
             </>}
           </div> : !loading && !error ? <section className="empty-state first-list"><span className="empty-icon"><WishMark /></span><h1>Deine erste Wunschliste</h1><p>Ein Nagel, ein Zettel, deine Wünsche. Erstelle eine Liste für einen Anlass oder sammle deine Ideen für später.</p>{canEdit && <button className="button primary" onClick={() => setModal('list')}><Plus size={18} /> Wunschliste erstellen</button>}</section> : loading ? <Loading /> : null}
         </>}
@@ -512,14 +524,14 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
     measure()
     return () => observer.disconnect()
   }, [item.notes, expanded])
-  return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
+  return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${canPurchase && item.purchased ? 'is-purchased' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
       <a className="wish-image-link" href={imageUrl} target="_blank" rel="noopener noreferrer" aria-label={`${imageLabel}: ${item.title}`} onClick={event => followGift(event, imageUrl, imageLabel)} onAuxClick={event => { if (event.button === 1) followGift(event, imageUrl, imageLabel) }}>
         {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
       </a>
       {celebrate && <span className="completion-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--burst-angle': `${index * 45}deg` } as CSSProperties} />)}</span>}
       {item.fulfilled && <span className="fulfilled-badge"><Check size={13} /> Erfüllt</span>}
-      {canPurchase && item.purchased && !item.fulfilled && <span className="gift-badge"><CheckCheck size={14} /> Bereits gekauft</span>}
+      {canPurchase && item.purchased && <span className="gift-badge"><CheckCheck size={14} /> Bereits gekauft</span>}
     </div>
     <div className="wish-body">
       {item.highlighted && <span className="wish-highlight-label"><Heart size={12} fill="currentColor" aria-hidden="true" /> Herzenswunsch</span>}
@@ -544,7 +556,7 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
         {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offerLabel} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
       </div>
     </div>
-    {canPurchase && !item.fulfilled && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
+    {canPurchase && (!item.fulfilled || item.purchased) && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
       {item.purchased ? <><p><CheckCheck size={16} /><strong>Bereits gekauft</strong></p><small>Bitte nicht noch einmal schenken.</small>{giftReceipt(item.id) && <button className="text-button" onClick={() => onOpenGift()}>Kaufmarkierung verwalten</button>}</> : <button className="button secondary" onClick={() => onOpenGift()}><Gift size={16} /> Als gekauft markieren</button>}
     </div>}
   </article>
@@ -581,7 +593,7 @@ function GiftDialog({ item, listId, route, repo, destination, destinationLabel, 
         setStatus('Jemand anderes hat dieses Geschenk bereits als gekauft markiert. Bitte stimmt euch ab, falls du es ebenfalls gekauft hast.')
       } else {
         setReceipt(proof)
-        setStatus('Festgenagelt! Andere Gäste sehen jetzt „Bereits gekauft“. Für den Besitzer bleibt alles unverändert.')
+        setStatus('Festgenagelt! Gekaufte Geschenke sind standardmäßig ausgeblendet. Mit „Gekaufte anzeigen“ kannst du deine Kaufmarkierung verwalten. Für den Besitzer bleibt alles unverändert.')
       }
       await refresh.current()
     } catch (e) { setError(message(e)) }
@@ -668,7 +680,7 @@ function HelpDialog({ guest, demo, onClose }: { guest: boolean; demo: boolean; o
       {guest ? <>
         <li><strong>Wünsche ansehen</strong><p>Lies die Hinweise zu Größe, Farbe oder Ausführung. „Offen“ zeigt, was sich die Person noch wünscht.</p></li>
         <li><strong>Im Shop öffnen</strong><p>„Zum Shop“ öffnet die Produktseite in einem neuen Tab. Ein Kauf findet direkt beim jeweiligen Shop statt.</p></li>
-        <li><strong>Geschenke absprechen</strong><p>Wenn du das Geschenk gekauft hast, wähle „Als gekauft markieren“. Andere Gäste sehen dann „Bereits gekauft“, der angemeldete Besitzer sieht keinen Kaufstatus. Dafür brauchst du kein Konto. Eine eigene Markierung kannst du in diesem Browser wieder aufheben.</p></li>
+        <li><strong>Geschenke absprechen</strong><p>Wenn du das Geschenk gekauft hast, wähle „Als gekauft markieren“. Gekaufte Wünsche sind zunächst ausgeblendet. Mit „Gekaufte anzeigen“ siehst du sie mit dem Hinweis „Bereits gekauft“ und kannst deine eigene Markierung in diesem Browser wieder aufheben. Dafür brauchst du kein Konto. Der angemeldete Besitzer sieht keinen Kaufstatus.</p></li>
       </> : <>
         <li><strong>Liste auswählen oder anlegen</strong><p>Öffne auf dem Handy oben „Listen“. Dort kannst du eine Liste auswählen oder mit „Neue Wunschliste“ eine anlegen, zum Beispiel für Geburtstag oder Weihnachten. Am Computer findest du deine Listen links.</p></li>
         <li><strong>Wünsche festhalten</strong><p>Öffne ein Produkt im Shop und kopiere seinen Link. Tippe unten auf „+ Wunsch“ oder am Computer auf „Wunsch hinzufügen“. Füge den Link ein, prüfe den Titel, ergänze bei Bedarf Hinweise und speichere.</p></li>
