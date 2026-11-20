@@ -553,8 +553,10 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
       {hasNotes && (notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}
       <div className="wish-bottom">
         <span className={`price ${item.price === null ? 'empty-price' : ''}`}>{item.price !== null ? money.format(item.price) : 'Kein Preis angegeben'}{item.price !== null && <small>ca.</small>}</span>
-        {!ebayOnly && <a href={item.url} target="_blank" rel="noopener noreferrer" className="shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}>Zum Shop <ExternalLink size={13} /></a>}
-        {offers.url && <a className="offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offerLabel} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><Search size={15} /><span>{offers.label}</span><ArrowUpRight size={14} /></a>}
+        <div className="wish-actions">
+          {!ebayOnly && <a href={item.url} target="_blank" rel="noopener noreferrer" className="wish-action shop-link" onClick={event => followGift(event, item.url, 'Zum Shop')} onAuxClick={event => { if (event.button === 1) followGift(event, item.url, 'Zum Shop') }}><span>Zum Shop</span><ExternalLink size={13} /></a>}
+          {offers.url && <a className="wish-action offer-search-link" href={offers.url} target="_blank" rel="noopener noreferrer" aria-label={`${offerLabel} für ${item.title}`} title={`${offers.provider}: ${offers.term}`} onClick={event => followGift(event, offers.url, offers.label)} onAuxClick={event => { if (event.button === 1) followGift(event, offers.url, offers.label) }}><span>{offers.label}</span><ExternalLink size={13} /></a>}
+        </div>
       </div>
     </div>
     {canPurchase && (!item.fulfilled || item.purchased) && <div className={`gift-purchase-status ${item.purchased ? 'is-purchased' : ''}`}>
