@@ -116,9 +116,14 @@ h1, h2, h3, p { margin: 0; }
 /* Lift the whole card so hover transforms cannot trap its menu below the next row. */
 .wish-card:has(.card-menu[open]) { z-index: 3; }
 .wish-card:hover { border-color: #9b7f92; box-shadow: 4px 4px 0 #ddd0d3; }
-.wish-image { position: relative; height: auto; aspect-ratio: 4 / 3; max-height: 340px; flex-shrink: 0; border-radius: 2px 2px 0 0; background: #fff; border-bottom: 1px solid var(--line); }
-.wish-image-link { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border-radius: inherit; background: #fff; }
-.wish-image-link > img { display: block; width: 100%; height: 100%; padding: 12px; object-fit: contain; object-position: center; border-radius: inherit; }
+.wish-image { position: relative; height: auto; aspect-ratio: 1; max-height: 360px; flex-shrink: 0; border-radius: 2px 2px 0 0; background: #eeeae4; border-bottom: 1px solid var(--line); }
+.wish-image-link { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: hidden; isolation: isolate; border-radius: inherit; background: #eeeae4; }
+/* Only the decorative backdrop is cropped. Product silhouettes and cover text stay intact. */
+.wish-image-backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.wish-image-backdrop img { display: block; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) saturate(.65); opacity: .28; transform: scale(1.18); }
+.wish-image-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fffdf84d, #eeeae400 55%, #3523340d); }
+.wish-image-link > img { position: relative; display: block; width: 100%; height: 100%; padding: 10px; object-fit: contain; object-position: center; filter: drop-shadow(0 6px 9px #35233426); }
+.wish-image-link > img.is-small-image { object-fit: scale-down; }
 .image-placeholder { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; height: 100%; border-radius: inherit; background: #ece3e9; color: #806377; }
 .image-placeholder span { color: #6e5264; font-size: 13px; }
 .wish-body { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 14px 14px 8px; }
@@ -547,7 +552,8 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
   .page-content { padding-inline: max(12px, var(--safe-left)) max(12px, var(--safe-right)); }
   .wish-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; min-height: 166px; padding: 10px; border-radius: 3px 3px 12px 3px; box-shadow: 2px 2px 0 #e9e1d5; }
   .wish-image { height: 96px; aspect-ratio: auto; align-self: start; border: 1px solid var(--line); border-radius: 2px 2px 8px 2px; }
-  .wish-image-link > img { padding: 5px; }
+  .wish-image-link > img { padding: 3px; filter: drop-shadow(0 2px 3px #35233426); }
+  .wish-image-backdrop img { filter: blur(10px) saturate(.65); }
   .image-placeholder { gap: 5px; padding: 6px; text-align: center; }
   .image-placeholder svg { width: 25px; height: 25px; }
   .image-placeholder span { font-size: 10px; line-height: 1.3; }

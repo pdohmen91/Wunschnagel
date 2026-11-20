@@ -501,6 +501,7 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
     onOpenGift(url, label)
   }
   const [imageFailed, setImageFailed] = useState(false)
+  const [smallImage, setSmallImage] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [notesOverflow, setNotesOverflow] = useState(false)
   const notesRef = useRef<HTMLParagraphElement>(null)
@@ -515,7 +516,7 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
     const timer = window.setTimeout(() => setCelebrate(false), 750)
     return () => window.clearTimeout(timer)
   }, [item.fulfilled])
-  useEffect(() => setImageFailed(false), [item.image_url])
+  useEffect(() => { setImageFailed(false); setSmallImage(false) }, [item.image_url])
   useEffect(() => {
     const node = notesRef.current
     if (!node || expanded) return
@@ -528,7 +529,10 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
   return <article data-wish-id={item.id} className={`wish-card ${item.highlighted ? 'is-highlighted' : ''} ${canPurchase && item.purchased ? 'is-purchased' : ''} ${item.fulfilled ? 'fulfilled' : ''} ${celebrate ? 'just-fulfilled' : ''}`}>
     <div className="wish-image">
       <a className="wish-image-link" href={imageUrl} target="_blank" rel="noopener noreferrer" aria-label={`${imageLabel}: ${item.title}`} onClick={event => followGift(event, imageUrl, imageLabel)} onAuxClick={event => { if (event.button === 1) followGift(event, imageUrl, imageLabel) }}>
-        {item.image_url && !imageFailed ? <img src={item.image_url} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
+        {item.image_url && !imageFailed ? <>
+          <span className="wish-image-backdrop" aria-hidden="true"><img src={item.image_url} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" /></span>
+          <img className={smallImage ? 'is-small-image' : undefined} src={item.image_url} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" onLoad={event => { const image = event.currentTarget; setSmallImage(Math.max(image.naturalWidth, image.naturalHeight) <= 160) }} onError={() => setImageFailed(true)} />
+        </> : <div className="image-placeholder"><Gift size={48} strokeWidth={1.1} /><span>{imageFailed ? 'Bild nicht erreichbar' : 'Kein Bild hinterlegt'}</span></div>}
       </a>
       {celebrate && <span className="completion-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--burst-angle': `${index * 45}deg` } as CSSProperties} />)}</span>}
       {item.fulfilled && <span className="fulfilled-badge"><Check size={13} /> Erfüllt</span>}

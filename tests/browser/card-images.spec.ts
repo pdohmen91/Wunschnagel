@@ -42,10 +42,13 @@ test('portrait, landscape, square and transparent images fit their card without 
       const style = getComputedStyle(node), rect = node.getBoundingClientRect(), frame = node.closest('.wish-image')!.getBoundingClientRect()
       return { fit: style.objectFit, width: rect.width, height: rect.height, frameWidth: frame.width, frameHeight: frame.height, background: getComputedStyle(node.closest('a')!).backgroundColor }
     })
-    expect(layout.fit).toBe('contain')
+    expect(layout.fit).toBe(example.path === 'small' ? 'scale-down' : 'contain')
     expect(layout.width).toBeLessThanOrEqual(layout.frameWidth + 1)
     expect(layout.height).toBeLessThanOrEqual(layout.frameHeight + 1)
-    expect(layout.background).toBe('rgb(255, 255, 255)')
+    expect(layout.background).toBe('rgb(238, 234, 228)')
+    await expect(card.locator('.wish-image').getByRole('img')).toHaveCount(1)
+    await expect(card.locator('.wish-image-backdrop')).toHaveAttribute('aria-hidden', 'true')
+    await expect(card.locator('.wish-image-backdrop img')).toHaveCSS('object-fit', 'cover')
     frameHeights.push(layout.frameHeight)
     if (!await compactUI(page) || page.viewportSize()!.width > 620) {
       expect(layout.frameHeight).toBeGreaterThan(200)
@@ -57,6 +60,7 @@ test('portrait, landscape, square and transparent images fit their card without 
   const broken = page.getByRole('article').filter({ hasText: 'Nicht erreichbar' })
   await broken.locator('.wish-image').scrollIntoViewIfNeeded()
   await expect(broken.locator('.image-placeholder')).toContainText('Bild nicht erreichbar')
+  await expect(broken.locator('.wish-image-backdrop')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: info.outputPath('card-image-formats.png'), fullPage: true })
 })
