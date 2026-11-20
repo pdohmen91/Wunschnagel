@@ -18,6 +18,7 @@ import { useInstallPrompt } from './lib/useInstallPrompt'
 import { FormFields } from './lib/FormFields'
 import { CollaborationPanel, Invitation } from './lib/Collaboration'
 import { useSavedLists } from './lib/useSavedLists'
+import { useListSelection } from './lib/useListSelection'
 import { SavedListsMenu, SavedListsPanel } from './lib/SavedListsPanel'
 import { EmojiPicker } from './lib/EmojiPicker'
 
@@ -39,7 +40,7 @@ export default function App() {
   const invite = useMemo(() => readInviteRoute(hash), [hash])
   const demo = uiFixturesEnabled && !invite
   const [lists, setLists] = useState<Wishlist[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { selectedId, setSelectedId, restoreSelection } = useListSelection(demo ? 'demo' : user?.id || null)
   const [sharedList, setSharedList] = useState<Wishlist | null>(null)
   const [canPurchase, setCanPurchase] = useState(false)
   const [giftTarget, setGiftTarget] = useState<{ itemId: string; url?: string; label?: string } | null>(null)
@@ -139,9 +140,9 @@ export default function App() {
   const reloadLists = useCallback(async () => {
     const next = await repo.lists()
     setLists(next)
-    setSelectedId(current => next.some(list => list.id === current) ? current : next[0]?.id || null)
+    restoreSelection(next)
     return next
-  }, [repo])
+  }, [repo, restoreSelection])
 
   useEffect(() => {
     if (route || invite || (!demo && !user)) { setLists([]); return }
@@ -151,11 +152,11 @@ export default function App() {
     repo.lists().then(next => {
       if (!active) return
       setLists(next)
-      setSelectedId(current => next.some(list => list.id === current) ? current : next[0]?.id || null)
+      restoreSelection(next)
       setLoading(false)
     }).catch(e => { if (active) { setError(message(e)); setLoading(false) } })
     return () => { active = false }
-  }, [repo, demo, user, route, invite])
+  }, [repo, demo, user, route, invite, restoreSelection])
 
   useEffect(() => {
     const current = ++requestId.current
