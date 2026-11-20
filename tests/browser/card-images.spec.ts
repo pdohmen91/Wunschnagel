@@ -38,6 +38,7 @@ test('portrait, landscape, square and transparent images fit their card without 
     await expect(image).toHaveJSProperty('complete', true)
     await expect(image).toHaveJSProperty('naturalWidth', example.width)
     await expect(image).toHaveJSProperty('naturalHeight', example.height)
+    await expect(image).toHaveCSS('object-fit', example.path === 'small' ? 'scale-down' : 'contain')
     const layout = await image.evaluate(node => {
       const style = getComputedStyle(node), rect = node.getBoundingClientRect(), frame = node.closest('.wish-image')!.getBoundingClientRect()
       return { fit: style.objectFit, width: rect.width, height: rect.height, frameWidth: frame.width, frameHeight: frame.height, background: getComputedStyle(node.closest('a')!).backgroundColor }
@@ -45,7 +46,7 @@ test('portrait, landscape, square and transparent images fit their card without 
     expect(layout.fit).toBe(example.path === 'small' ? 'scale-down' : 'contain')
     expect(layout.width).toBeLessThanOrEqual(layout.frameWidth + 1)
     expect(layout.height).toBeLessThanOrEqual(layout.frameHeight + 1)
-    expect(layout.background).toBe('rgb(238, 234, 228)')
+    expect(layout.background).toBe('rgb(255, 250, 242)')
     await expect(card.locator('.wish-image').getByRole('img')).toHaveCount(1)
     await expect(card.locator('.wish-image-backdrop')).toHaveAttribute('aria-hidden', 'true')
     await expect(card.locator('.wish-image-backdrop img')).toHaveCSS('object-fit', 'cover')
