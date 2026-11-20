@@ -536,9 +536,8 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
     </div>
     <div className="wish-body">
       {item.highlighted && <span className="wish-highlight-label"><Heart size={12} fill="currentColor" aria-hidden="true" /> Herzenswunsch</span>}
-      <div className="wish-card-meta">
-        <span className="shop-name"><span className="shop-dot" />{ebayOnly ? offers.provider : hostname(item.url)}<ArrowUpRight size={12} /></span>
-        {canEdit && <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
+      {canEdit && <div className="wish-card-meta">
+        <details className="card-menu" name="wish-actions" onKeyDown={e => { if (e.key === 'Escape') { void closeDetails(e.currentTarget); e.currentTarget.querySelector('summary')?.focus() } }}>
           <summary aria-label={`Optionen für ${item.title}`}><Pencil size={13} /><span>Bearbeiten</span></summary>
           <div onClick={e => { const details = e.currentTarget.closest('details'); if (details) void closeDetails(details) }}>
             <button onClick={onEdit}><Pencil size={14} /> Bearbeiten</button>
@@ -546,8 +545,8 @@ function WishCard({ item, canEdit, canPurchase, onOpenGift, busy, onEdit, onDele
             <button disabled={busy} onClick={onFulfill}><CheckCheck size={14} />{item.fulfilled ? 'Wieder offen' : 'Als erfüllt markieren'}</button>
             <button className="danger-text" disabled={busy} onClick={onDelete}><Trash2 size={14} /> Löschen</button>
           </div>
-        </details>}
-      </div>
+        </details>
+      </div>}
       <h2>{item.title}</h2>
       {hasNotes && <p ref={notesRef} id={`notes-${item.id}`} className={`wish-notes ${expanded ? 'expanded' : ''}`}>{item.notes}</p>}
       {hasNotes && (notesOverflow || expanded) && <button className="notes-toggle" aria-expanded={expanded} aria-controls={`notes-${item.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? 'Weniger anzeigen' : 'Alle Hinweise lesen'}<ChevronDown size={14} /></button>}

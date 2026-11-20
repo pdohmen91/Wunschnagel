@@ -101,7 +101,7 @@ test('all-offer eBay wishes hide original shop links and route the image through
   await mock(page, state)
   const wish = page.getByRole('article')
   await expect(wish.locator('a[href="https://shop.example/product"]')).toHaveCount(0)
-  await expect(wish.locator('.shop-name')).toHaveText('eBay')
+  await expect(wish.locator('.shop-name')).toHaveCount(0)
   const searchUrl = await wish.locator('.offer-search-link').getAttribute('href')
   await expect(wish.locator('.wish-image-link')).toHaveAttribute('href', searchUrl!)
   await wish.getByRole('link', { name: 'Bei eBay suchen: Eine besondere Espressokanne', exact: true }).click()

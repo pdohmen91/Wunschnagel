@@ -81,7 +81,7 @@ test('eBay all offers saves a normal search without changing the used-only optio
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   await expect(wish.locator('.shop-link')).toHaveCount(0)
   await expect(wish.locator('.wish-image-link')).toHaveAttribute('href', url.href)
-  await expect(wish.locator('.shop-name')).toHaveText('eBay')
+  await expect(wish.locator('.shop-name')).toHaveCount(0)
   await page.reload()
   await expect(link).toHaveAttribute('href', url.href)
   await expect(wish.locator('.shop-link')).toHaveCount(0)

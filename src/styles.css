@@ -122,9 +122,7 @@ h1, h2, h3, p { margin: 0; }
 .image-placeholder { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; height: 100%; border-radius: inherit; background: #ece3e9; color: #806377; }
 .image-placeholder span { color: #6e5264; font-size: 13px; }
 .wish-body { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 14px 14px 8px; }
-.wish-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.shop-name { display: flex; min-width: 0; align-items: center; gap: 6px; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .2px; overflow-wrap: anywhere; }
-.shop-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 1px; background: #b37345; }
+.wish-card-meta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 .wish-body h2 { margin-top: 8px; font-family: var(--serif); font-size: 20px; font-weight: 500; line-height: 1.25; letter-spacing: -.4px; overflow-wrap: anywhere; }
 .wish-notes { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-height: 62px; margin: 7px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 .wish-notes.expanded { display: block; }
@@ -378,9 +376,7 @@ h1, h2, h3, p { margin: 0; }
   .wish-body { padding: 18px 18px 12px; }
   .wish-body h2 { font-size: 25px; }
   .wish-notes { min-height: 0; font-size: 15px; line-height: 1.75; margin-bottom: 16px; }
-  .shop-name { font-size: 11px; }
   .price { font-size: 16px; }
-  .shop-link { font-size: 15px; }
   .list-empty { min-height: 300px; padding: 38px 20px; }
   .list-empty h2 { font-size: 28px; }
   .dialog { padding: 16px; width: calc(var(--app-visible-width, 100vw) - 24px); max-height: calc(var(--app-visible-height, 100dvh) - 24px - var(--safe-top) - var(--safe-bottom)); }
@@ -537,7 +533,6 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
   .wish-body { padding: 14px 14px 8px; }
   .wish-body h2 { font-size: 19px; line-height: 1.3; margin-top: 6px; }
   .wish-notes { -webkit-line-clamp: 2; min-height: 0; margin-top: 7px; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
-  .shop-name { font-size: 11px; }
   .wish-grid { gap: 12px; }
   .list-empty { min-height: 220px; padding: 24px 16px; gap: 12px; }
 }
@@ -558,7 +553,6 @@ html[data-keyboard-open=true] .dialog-form .dialog-actions { margin-top: 8px; pa
   .image-placeholder span { font-size: 10px; line-height: 1.3; }
   .wish-body { padding: 0; }
   .wish-body h2 { margin-top: 5px; font-size: 17px; line-height: 1.3; letter-spacing: -.2px; }
-  .shop-name { gap: 4px; font-size: 10px; }
   .wish-notes { margin-block: 6px 8px; font-size: 13px; line-height: 1.5; }
   .empty-price { display: none; }
   .notes-toggle { gap: 4px; margin-block: -4px 2px; font-size: 12px; text-align: left; }
@@ -625,8 +619,8 @@ html[data-occasion=christmas] .list-cover { box-shadow: inset 0 -3px 0 var(--acc
 html[data-occasion] .tabs button.selected { background: var(--soft); }
 html[data-occasion] .primary { border-color: var(--occasion-ink); box-shadow: 0 2px 0 var(--occasion-ink); }
 html[data-occasion] .primary:hover { background: var(--occasion-hover); border-color: var(--occasion-ink); }
-html[data-occasion] .offer-search-link { background: var(--soft); border-color: var(--occasion-detail); }
-html[data-occasion] .offer-search-link:hover { background: var(--occasion-hover); }
+html[data-occasion] .wish-action { background: var(--soft); border-color: var(--occasion-detail); }
+html[data-occasion] .wish-action:hover { background: var(--occasion-hover); }
 html[data-occasion] .gift-badge { background: var(--occasion-ink); border-color: var(--occasion-ink); }
 html[data-occasion] .guest-gift-guide, html[data-occasion] .gift-privacy { border-left-color: var(--occasion-detail); }
 @media (prefers-reduced-motion: reduce) {
